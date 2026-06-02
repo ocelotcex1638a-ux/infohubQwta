@@ -872,6 +872,12 @@ export default function OptionsPage() {
               <span className="text-white font-medium">{activeCount} options venues</span>.
               Currency selector to the right — BTC, ETH, SOL.
             </p>
+            <a
+              href="/options/builder"
+              className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold border border-violet-400/30 bg-violet-500/[0.08] text-violet-300 hover:bg-violet-500/[0.14] transition-colors"
+            >
+              Strategy &amp; payoff builder →
+            </a>
           </div>
 
           <div className="flex items-center gap-2">
