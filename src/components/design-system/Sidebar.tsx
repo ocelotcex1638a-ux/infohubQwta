@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -228,6 +228,10 @@ const DEFAULT_SECTIONS: SidebarSection[] = [
 
 interface SidebarProps { sections?: SidebarSection[]; className?: string; }
 
+// Persisted set of collapsed section ids. Bump the suffix if the section
+// id scheme ever changes so stale prefs don't hide/show the wrong groups.
+const SIDEBAR_COLLAPSED_KEY = 'infohub_sidebar_collapsed_v1';
+
 export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: SidebarProps) {
   // Real aggregator connectivity — same singleton hook the StatusBar
   // STREAMING badge + MarketTape ThroughputCounter use. No more
@@ -251,6 +255,15 @@ export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: Side
   const isMarketer = role === 'marketer'  || isAdmin;
   const isSupport  = role === 'support'   || isMod;
   const [q, setQ] = useState('');
+  // Collapsible sections. Seeded empty (= everything expanded) so the server
+  // render and the first client paint agree; real prefs hydrate after mount.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const toggleSection = (id: string) =>
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
 
   // Per-link gates inside the Team section — each panel surface is shown
   // only when the current role can actually reach it. Other sections
@@ -276,6 +289,39 @@ export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: Side
     const ql = q.toLowerCase();
     return visibleSections.map(s => ({ ...s, items: s.items.filter(it => it.label.toLowerCase().includes(ql)) })).filter(s => s.items.length);
   }, [q, visibleSections]);
+
+  // Hydrate collapse prefs once after mount (kept out of render so SSR and
+  // the first client paint match — reading localStorage during render would
+  // hydration-mismatch). Then persist on every subsequent change.
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+      if (raw) setCollapsed(new Set(JSON.parse(raw) as string[]));
+    } catch { /* storage blocked or corrupt — fall back to all-expanded */ }
+    hydratedRef.current = true;
+  }, []);
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, JSON.stringify(Array.from(collapsed))); } catch { /* storage blocked */ }
+  }, [collapsed]);
+  // Always reveal the section you're on: drop it from the collapsed set when
+  // the route changes into it, so the active link is never hidden.
+  useEffect(() => {
+    const active = visibleSections.find(s => s.items.some(it => it.href === pathname));
+    if (active) setCollapsed(prev => {
+      if (!prev.has(active.id)) return prev;
+      const next = new Set(prev); next.delete(active.id); return next;
+    });
+  }, [pathname, visibleSections]);
+
+  const isFiltering = q.trim().length > 0;
+  const activeSecId = visibleSections.find(s => s.items.some(it => it.href === pathname))?.id;
+  const collapsibleIds = visibleSections.map(s => s.id).filter(id => id !== activeSecId);
+  const allCollapsed = collapsibleIds.length > 0 && collapsibleIds.every(id => collapsed.has(id));
+  // Collapse-all leaves the active section open so you never lose your place.
+  const toggleAll = () => setCollapsed(allCollapsed ? new Set<string>() : new Set(collapsibleIds));
+  const resultCount = filtered.reduce((n, s) => n + s.items.length, 0);
 
   // Routes where the sidebar visually competes with the page content
   // and the user explicitly asked for full-width. /chart is the
@@ -323,23 +369,64 @@ export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: Side
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         )}
-      </div>
-      {filtered.map(sec => (
-        <div key={sec.id}>
-          <div style={{ fontSize: 9, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 700, padding: '0 12px 6px' }}>{sec.label}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {sec.items.map(it => {
-              const on = pathname === it.href;
-              return (
-                <Link key={it.href} href={it.href} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', background: on ? 'rgba(255,165,0,0.08)' : 'transparent', borderLeft: on ? '2px solid var(--hub-accent)' : '2px solid transparent', borderRadius: on ? '0 6px 6px 0' : 6, fontFamily: 'var(--font-sans)', fontSize: 12, color: on ? 'var(--fg-default)' : 'var(--fg-muted)', fontWeight: on ? 600 : 500, textAlign: 'left', textDecoration: 'none', transition: 'background 100ms' }}>
-                  <span style={{ color: on ? it.color : 'var(--fg-subtle)', flexShrink: 0, display: 'inline-flex' }} dangerouslySetInnerHTML={{ __html: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${it.icon}</svg>` }} />
-                  <span style={{ flex: 1 }}>{it.label}</span>
-                </Link>
-              );
-            })}
-          </div>
+        {/* Inline toolbar — kept inside the search block to dodge the aside's
+            16px column gap. Shows a live result count while filtering, else a
+            one-click expand/collapse-all for the 11-section index. */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8, padding: '0 4px' }}>
+          <span style={{ fontSize: 9, color: 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700 }}>
+            {isFiltering ? `${resultCount} result${resultCount === 1 ? '' : 's'}` : 'Menu'}
+          </span>
+          {!isFiltering && collapsibleIds.length > 0 && (
+            <button
+              type="button"
+              onClick={toggleAll}
+              style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 6px', border: 'none', background: 'transparent', color: 'var(--fg-subtle)', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, cursor: 'pointer', borderRadius: 5, transition: 'color 120ms' }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--fg-default)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--fg-subtle)'; }}
+              title={allCollapsed ? 'Expand all sections' : 'Collapse all sections'}
+            >
+              {allCollapsed ? 'Expand all' : 'Collapse all'}
+            </button>
+          )}
         </div>
-      ))}
+      </div>
+      {filtered.map(sec => {
+        const open = isFiltering || !collapsed.has(sec.id);
+        const sectionActive = sec.id === activeSecId;
+        return (
+          <div key={sec.id}>
+            <button
+              type="button"
+              onClick={() => toggleSection(sec.id)}
+              aria-expanded={open}
+              title={open ? `Collapse ${sec.label}` : `Expand ${sec.label}`}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '2px 8px 6px 12px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <span style={{ fontSize: 9, color: sectionActive ? 'var(--hub-accent)' : 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 700, flex: 1 }}>{sec.label}</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--fg-faint)', transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 160ms ease', flexShrink: 0 }}><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+            {open && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {sec.items.map(it => {
+                  const on = pathname === it.href;
+                  return (
+                    <Link
+                      key={it.href}
+                      href={it.href}
+                      style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', background: on ? 'rgba(255,165,0,0.08)' : 'transparent', borderLeft: on ? '2px solid var(--hub-accent)' : '2px solid transparent', borderRadius: on ? '0 6px 6px 0' : 6, fontFamily: 'var(--font-sans)', fontSize: 12, color: on ? 'var(--fg-default)' : 'var(--fg-muted)', fontWeight: on ? 600 : 500, textAlign: 'left', textDecoration: 'none', transition: 'background 100ms' }}
+                      onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                      onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{ color: on ? it.color : 'var(--fg-subtle)', flexShrink: 0, display: 'inline-flex' }} dangerouslySetInnerHTML={{ __html: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${it.icon}</svg>` }} />
+                      <span style={{ flex: 1 }}>{it.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
       {q.trim() && filtered.length === 0 && (
         <div style={{ padding: '6px 12px', fontSize: 11, color: 'var(--fg-subtle)', lineHeight: 1.5 }}>
           No menu items match “{q.trim()}”. Try <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: 10, background: 'var(--hub-secondary)', padding: '1px 5px', borderRadius: 3, color: 'var(--fg-muted)' }}>⌘K</kbd> to search coins &amp; pages.
