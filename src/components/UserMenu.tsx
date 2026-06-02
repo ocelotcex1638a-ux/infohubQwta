@@ -178,7 +178,7 @@ export default function UserMenu() {
                     <Link
                       href="/pricing"
                       onClick={() => setOpen(false)}
-                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-hub-yellow hover:text-hub-yellow-light transition-colors"
+                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
                     >
                       Upgrade
                       <ArrowUpRight className="w-2.5 h-2.5" />

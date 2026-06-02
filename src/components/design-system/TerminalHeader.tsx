@@ -549,13 +549,14 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
         href="/pricing"
         title="Free, Trader, Pro, Whale — free during launch"
         style={{
-          background: 'rgb(var(--hub-accent-rgb) / 0.10)',
-          border: '1px solid rgb(var(--hub-accent-rgb) / 0.35)',
+          // Green = "upgrade / go" CTA accent (distinct from the orange brand).
+          background: 'rgba(52,211,153,0.12)',
+          border: '1px solid rgba(52,211,153,0.40)',
           borderRadius: 8,
           padding: '6px 10px',
           fontSize: 11,
           fontWeight: 700,
-          color: 'var(--hub-accent)',
+          color: 'var(--pump-hot)',
           textDecoration: 'none',
           letterSpacing: '0.04em',
           textTransform: 'uppercase',

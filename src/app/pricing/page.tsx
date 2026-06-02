@@ -206,13 +206,13 @@ export default function PricingPage() {
                       const Icon = tierIcon(b.iconName);
                       const featured = t === 'pro';
                       return (
-                        <th scope="col" key={t} className={`px-4 py-3 text-center ${featured ? 'bg-hub-yellow/[0.06]' : ''}`}>
+                        <th scope="col" key={t} className={`px-4 py-3 text-center ${featured ? 'bg-emerald-500/[0.06]' : ''}`}>
                           <div className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-bold">
                             <Icon className={`w-3 h-3 ${b.textColor}`} aria-hidden />
                             <span className={b.textColor}>{b.label}</span>
                           </div>
                           {featured && (
-                            <div className="mt-1 text-[8px] font-bold uppercase tracking-[0.1em] text-hub-yellow">Most popular</div>
+                            <div className="mt-1 text-[8px] font-bold uppercase tracking-[0.1em] text-emerald-400">Most popular</div>
                           )}
                         </th>
                       );
@@ -258,7 +258,7 @@ export default function PricingPage() {
                             {row.label}
                           </th>
                           {TIER_ORDER.map((t) => (
-                            <td key={t} className={`px-4 py-2.5 text-center ${t === 'pro' ? 'bg-hub-yellow/[0.04]' : ''}`}>
+                            <td key={t} className={`px-4 py-2.5 text-center ${t === 'pro' ? 'bg-emerald-500/[0.04]' : ''}`}>
                               <FeatureCell value={row.values[t]} />
                             </td>
                           ))}
@@ -380,11 +380,11 @@ function TierCard({
   return (
     <div
       className={`relative rounded-xl border-2 ${b.borderTint} ${b.bgTint} p-5 flex flex-col ${desktopOrderClass} ${
-        isMostPopular ? 'ring-2 ring-hub-yellow/50 ring-offset-2 ring-offset-hub-black shadow-glow-md z-10 lg:scale-[1.03] lg:-translate-y-1' : ''
+        isMostPopular ? 'ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-hub-black shadow-glow-md z-10 lg:scale-[1.03] lg:-translate-y-1' : ''
       }`}
     >
       {isMostPopular && (
-        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-[0.15em] px-2.5 py-0.5 rounded-full bg-hub-yellow text-black shadow-glow-md">
+        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-[0.15em] px-2.5 py-0.5 rounded-full bg-emerald-400 text-black shadow-glow-md">
           Most popular
         </span>
       )}
