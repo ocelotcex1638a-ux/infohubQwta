@@ -60,6 +60,7 @@ const PERSONAS: Persona[] = [
     icon: Zap,
     tone: 'text-amber-400',
     tools: [
+      { label: 'Scalper Cockpit', href: '/scalper', hint: 'Chart + flow + positioning, one screen' },
       { label: 'Order Flow', href: '/orderflow', hint: 'Tape + aggressor side' },
       { label: 'CVD', href: '/cvd', hint: 'Cumulative volume delta' },
       { label: 'OB Imbalance', href: '/orderbook-imbalance', hint: 'Bid vs ask depth ratio' },
