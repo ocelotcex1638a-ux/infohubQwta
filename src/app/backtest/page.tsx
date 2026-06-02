@@ -17,7 +17,8 @@ import Footer from '@/components/Footer';
 import PageHero from '@/components/PageHero';
 import { TestTube, RefreshCw, AlertTriangle, ChevronDown, Calculator, TrendingUp } from 'lucide-react';
 
-type Strategy = 'dca' | 'funding-carry';
+type Strategy = 'dca' | 'funding-carry' | 'signal';
+type SignalKind = 'ma-cross' | 'rsi' | 'breakout';
 
 interface BacktestPoint {
   date: string;
@@ -71,6 +72,14 @@ export default function BacktestPage() {
   const [notionalUsd, setNotionalUsd] = useState(10_000);
   const [carrySymbol, setCarrySymbol] = useState('');
   const [carryLookback, setCarryLookback] = useState(30);
+  // Signal fields (reuses `asset` + `lookbackDays`)
+  const [signalKind, setSignalKind] = useState<SignalKind>('ma-cross');
+  const [maFast, setMaFast] = useState(10);
+  const [maSlow, setMaSlow] = useState(30);
+  const [rsiPeriod, setRsiPeriod] = useState(14);
+  const [rsiBuy, setRsiBuy] = useState(30);
+  const [rsiSell, setRsiSell] = useState(70);
+  const [channel, setChannel] = useState(20);
 
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -80,9 +89,12 @@ export default function BacktestPage() {
     setLoading(true);
     setError(null);
     try {
-      const body = strategy === 'dca'
-        ? { strategy, config: { asset, amountUsd, intervalDays, lookbackDays } }
-        : { strategy, config: { notionalUsd, lookbackDays: carryLookback, symbol: carrySymbol || undefined } };
+      const body =
+        strategy === 'dca'
+          ? { strategy, config: { asset, amountUsd, intervalDays, lookbackDays } }
+          : strategy === 'funding-carry'
+            ? { strategy, config: { notionalUsd, lookbackDays: carryLookback, symbol: carrySymbol || undefined } }
+            : { strategy, config: { asset, lookbackDays, signal: signalKind, fast: maFast, slow: maSlow, rsiPeriod, rsiBuy, rsiSell, channel, capitalUsd: 10_000 } };
       const res = await fetch('/api/backtest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -192,7 +204,7 @@ export default function BacktestPage() {
           {/* Form */}
           <div className="card-premium p-4 space-y-3 h-fit">
             <h2 className="text-sm font-semibold text-white mb-2">Strategy</h2>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => setStrategy('dca')}
                 className={`text-xs font-semibold py-1.5 px-2 rounded inline-flex items-center justify-center gap-1 ${
@@ -207,7 +219,15 @@ export default function BacktestPage() {
                   strategy === 'funding-carry' ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40' : 'bg-white/[0.03] text-neutral-400 border border-white/10'
                 }`}
               >
-                <TrendingUp className="w-3 h-3" /> Funding carry
+                <TrendingUp className="w-3 h-3" /> Carry
+              </button>
+              <button
+                onClick={() => setStrategy('signal')}
+                className={`text-xs font-semibold py-1.5 px-2 rounded inline-flex items-center justify-center gap-1 ${
+                  strategy === 'signal' ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40' : 'bg-white/[0.03] text-neutral-400 border border-white/10'
+                }`}
+              >
+                <TestTube className="w-3 h-3" /> Signal
               </button>
             </div>
 
@@ -226,6 +246,14 @@ export default function BacktestPage() {
                 <PresetChip label="$100k · 30d" onClick={() => { setNotionalUsd(100_000); setCarryLookback(30); setCarrySymbol(''); }} />
                 <PresetChip label="BTC-only"    onClick={() => { setCarrySymbol('BTC');   setCarryLookback(30); }} />
                 <PresetChip label="50d window"  onClick={() => { setCarryLookback(50); }} />
+              </div>
+            )}
+            {strategy === 'signal' && (
+              <div className="flex flex-wrap gap-1">
+                <PresetChip label="MA 10/30 · BTC" onClick={() => { setSignalKind('ma-cross'); setMaFast(10); setMaSlow(30); setAsset('bitcoin'); setLookbackDays(365); }} />
+                <PresetChip label="MA 20/50" onClick={() => { setSignalKind('ma-cross'); setMaFast(20); setMaSlow(50); setLookbackDays(365); }} />
+                <PresetChip label="RSI 14 · 30/70" onClick={() => { setSignalKind('rsi'); setRsiPeriod(14); setRsiBuy(30); setRsiSell(70); setLookbackDays(365); }} />
+                <PresetChip label="Breakout 20d" onClick={() => { setSignalKind('breakout'); setChannel(20); setLookbackDays(365); }} />
               </div>
             )}
 
@@ -280,6 +308,57 @@ export default function BacktestPage() {
               </>
             )}
 
+            {strategy === 'signal' && (
+              <>
+                <Field label="Asset">
+                  <div className="relative">
+                    <select
+                      value={asset}
+                      onChange={e => setAsset(e.target.value)}
+                      className="w-full bg-white/[0.04] border border-white/10 rounded px-2 py-1.5 text-white text-sm focus:outline-none appearance-none pr-8"
+                    >
+                      {COIN_OPTIONS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                  </div>
+                </Field>
+                <Field label="Signal">
+                  <div className="grid grid-cols-3 gap-1">
+                    {(['ma-cross', 'rsi', 'breakout'] as const).map((k) => (
+                      <button
+                        key={k}
+                        onClick={() => setSignalKind(k)}
+                        className={`text-[11px] py-1 rounded border ${signalKind === k ? 'bg-purple-500/20 text-purple-300 border-purple-400/40' : 'bg-white/[0.03] text-neutral-400 border-white/10'}`}
+                      >{k === 'ma-cross' ? 'MA cross' : k === 'rsi' ? 'RSI' : 'Breakout'}</button>
+                    ))}
+                  </div>
+                </Field>
+                {signalKind === 'ma-cross' && (
+                  <>
+                    <Field label={`Fast MA: ${maFast}d`}><input type="range" min={2} max={50} step={1} value={maFast} onChange={e => setMaFast(Number(e.target.value))} className="w-full" /></Field>
+                    <Field label={`Slow MA: ${maSlow}d`}><input type="range" min={5} max={200} step={1} value={maSlow} onChange={e => setMaSlow(Number(e.target.value))} className="w-full" /></Field>
+                  </>
+                )}
+                {signalKind === 'rsi' && (
+                  <>
+                    <Field label={`RSI period: ${rsiPeriod}`}><input type="range" min={2} max={30} step={1} value={rsiPeriod} onChange={e => setRsiPeriod(Number(e.target.value))} className="w-full" /></Field>
+                    <Field label={`Buy below: ${rsiBuy}`}><input type="range" min={5} max={50} step={1} value={rsiBuy} onChange={e => setRsiBuy(Number(e.target.value))} className="w-full" /></Field>
+                    <Field label={`Exit above: ${rsiSell}`}><input type="range" min={50} max={95} step={1} value={rsiSell} onChange={e => setRsiSell(Number(e.target.value))} className="w-full" /></Field>
+                  </>
+                )}
+                {signalKind === 'breakout' && (
+                  <Field label={`Donchian channel: ${channel}d`}><input type="range" min={5} max={60} step={1} value={channel} onChange={e => setChannel(Number(e.target.value))} className="w-full" /></Field>
+                )}
+                <Field label={`Lookback: ${lookbackDays} days`}>
+                  <input type="range" min={30} max={365} step={5} value={lookbackDays} onChange={e => setLookbackDays(Number(e.target.value))} className="w-full" />
+                </Field>
+                <p className="text-[10px] text-neutral-600 leading-relaxed">
+                  Long-or-flat on daily closes — fully long when the signal fires, otherwise in cash.
+                  No shorting, leverage, fees or slippage modelled: a clean read on the signal&apos;s edge, not a live-trading result.
+                </p>
+              </>
+            )}
+
             <button
               onClick={run}
               disabled={loading}
@@ -304,12 +383,12 @@ export default function BacktestPage() {
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <Stat
-                    label={strategy === 'dca' ? 'Final value' : 'Cumulative PnL'}
+                    label={strategy === 'funding-carry' ? 'Cumulative PnL' : 'Final value'}
                     value={fmtUsd(result.finalValueUsd)}
                     valueColor="text-white"
                   />
                   <Stat
-                    label={strategy === 'dca' ? 'Total deposited' : 'Notional per leg'}
+                    label={strategy === 'funding-carry' ? 'Notional per leg' : strategy === 'signal' ? 'Starting capital' : 'Total deposited'}
                     value={fmtUsd(result.totalDepositedUsd)}
                   />
                   <Stat
