@@ -71,7 +71,7 @@ const PUR  = 'var(--highlight-purple)';
 const MUTE = 'var(--fg-muted)';
 
 const DEFAULT_SECTIONS: SidebarSection[] = [
-  { id: 'derivatives', label: 'Derivatives', items: [
+  { id: 'derivatives', label: 'Derivatives & Arb', items: [
     { href: '/funding',                  label: 'Funding Rates',   color: PUMP, icon: I.fundRate },
     { href: '/funding-heatmap',          label: 'Funding Heatmap', color: PUMP, icon: I.fundHeat },
     { href: '/funding-countdown',        label: 'Funding Countdown', color: PUMP, icon: I.fundRate },
@@ -91,6 +91,7 @@ const DEFAULT_SECTIONS: SidebarSection[] = [
     { href: '/perp-dex-volume',          label: 'Perp DEX Volume', color: ACL,  icon: I.signal },
     { href: '/volume-share',             label: 'CEX vs DEX Vol',  color: ACL, icon: I.pieChart },
     { href: '/options',                  label: 'Options',         color: MUTE, icon: I.options },
+    { href: '/options/builder',          label: 'Strategy Builder', color: MUTE, icon: I.options },
     // /options-iv, /max-pain, /skew, /rv-iv consolidated into /options (May 2026)
     { href: '/longshort',                label: 'Long / Short',    color: PUR,  icon: I.ls },
     { href: '/etf',                      label: 'ETF Tracker',     color: ACC,  icon: I.etf },
@@ -111,6 +112,7 @@ const DEFAULT_SECTIONS: SidebarSection[] = [
     { href: '/alerts',                   label: 'Alerts',          color: ACC,  icon: I.alerts },
   ]},
   { id: 'spot', label: 'Spot & Markets', items: [
+    { href: '/scalper',           label: 'Scalper Cockpit', color: MUTE, icon: I.chart },
     { href: '/screener',          label: 'Screener',     color: MUTE, icon: I.screener },
     { href: '/chart',             label: 'Chart',        color: MUTE, icon: I.chart },
     { href: '/spreads',           label: 'Spreads',      color: MUTE, icon: I.spreads },
@@ -157,7 +159,7 @@ const DEFAULT_SECTIONS: SidebarSection[] = [
     { href: '/validators',        label: 'Validator Econ', color: PUMP, icon: I.shield },
     // /restaking + /restaking-delta consolidated into /staking (May 2026)
   ]},
-  { id: 'whales', label: 'Smart Money & Whales', items: [
+  { id: 'whales', label: 'Smart Money', items: [
     { href: '/smart-money',       label: 'Smart Money',    color: PUR,  icon: I.signal },
     { href: '/smart-money/leaderboard', label: 'Top Traders',  color: ACC, icon: I.trophy },
     // /smart-money-composite folded into /smart-money (May 2026)
@@ -178,6 +180,7 @@ const DEFAULT_SECTIONS: SidebarSection[] = [
     { href: '/news',              label: 'News',           color: MUTE, icon: I.news },
   ]},
   { id: 'tools', label: 'Tools', items: [
+    { href: '/tools',              label: 'Tools by Type', color: ACC,  icon: I.layers },
     { href: '/dashboard',          label: 'Dashboard',     color: ACC,  icon: I.dash },
     { href: '/positions',          label: 'Positions',     color: ACC,  icon: I.briefcase },
     { href: '/positions/journal',  label: 'Trade Journal', color: ACC,  icon: I.book },
