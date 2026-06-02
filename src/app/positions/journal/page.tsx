@@ -319,9 +319,150 @@ export default function JournalPage() {
             </div>
           );
         })}
+        <SetupJournal />
       </main>
       <Footer />
     </>
+  );
+}
+
+const JOURNAL_SETUPS = ['Breakout', 'Pullback', 'Reversal', 'Range', 'Trend follow', 'News', 'Other'] as const;
+const SETUP_JOURNAL_KEY = 'infohub_setup_journal_v1';
+
+interface SetupEntry {
+  id: string;
+  setup: string;
+  symbol: string;
+  side: 'long' | 'short';
+  /** Realized R-multiple (e.g. +2 for a 2R win, -1 for a full stop). */
+  r: number;
+  note?: string;
+  ts: number;
+}
+
+/**
+ * Manual setup journal — the discretionary layer on top of the auto-imported
+ * trade history above. Log each trade by setup + the R you booked, and see
+ * win-rate + expectancy PER setup so you can tell which patterns actually pay.
+ * Stored in localStorage (this device) — no backend, fully self-contained.
+ */
+function SetupJournal() {
+  const [entries, setEntries] = useState<SetupEntry[]>([]);
+  const [setup, setSetup] = useState<string>(JOURNAL_SETUPS[0]);
+  const [symbol, setSymbol] = useState('');
+  const [side, setSide] = useState<'long' | 'short'>('long');
+  const [rStr, setRStr] = useState('');
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SETUP_JOURNAL_KEY);
+      if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) setEntries(p); }
+    } catch { /* ignore */ }
+  }, []);
+
+  const persist = (next: SetupEntry[]) => {
+    setEntries(next);
+    try { localStorage.setItem(SETUP_JOURNAL_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  };
+
+  const rValid = Number.isFinite(parseFloat(rStr));
+  const add = () => {
+    const r = parseFloat(rStr);
+    if (!symbol.trim() || !Number.isFinite(r)) return;
+    const entry: SetupEntry = {
+      id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      setup, symbol: symbol.trim().toUpperCase(), side, r,
+      note: note.trim() || undefined, ts: Date.now(),
+    };
+    persist([entry, ...entries].slice(0, 500));
+    setSymbol(''); setRStr(''); setNote('');
+  };
+
+  const bySetup = useMemo(() => {
+    const m = new Map<string, { n: number; wins: number; sumR: number }>();
+    for (const e of entries) {
+      const s = m.get(e.setup) ?? { n: 0, wins: 0, sumR: 0 };
+      s.n++; if (e.r > 0) s.wins++; s.sumR += e.r;
+      m.set(e.setup, s);
+    }
+    return Array.from(m.entries())
+      .map(([k, s]) => ({ setup: k, n: s.n, winRate: (s.wins / s.n) * 100, avgR: s.sumR / s.n }))
+      .sort((a, b) => b.n - a.n);
+  }, [entries]);
+
+  return (
+    <section className="mt-6">
+      <div className="flex items-center gap-2 mb-1.5">
+        <h2 className="text-sm font-bold text-white">Setup journal</h2>
+        <span className="text-[10px] text-neutral-600">Manual · saved in your browser</span>
+      </div>
+      <p className="text-[11px] text-neutral-500 mb-3 max-w-2xl leading-relaxed">
+        Log each trade by setup + the R you booked (e.g. <span className="text-neutral-300">+2</span> for a 2R win, <span className="text-neutral-300">-1</span> for a full stop).
+        See which setups actually pay — win-rate and average R per setup.
+      </p>
+      <div className="grid lg:grid-cols-2 gap-3">
+        <div className="card-premium p-4">
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <select value={setup} onChange={e => setSetup(e.target.value)} className="select-caret bg-white/[0.04] border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:outline-none">
+              {JOURNAL_SETUPS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} placeholder="Symbol (e.g. BTC)" className="bg-white/[0.04] border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder:text-neutral-600 focus:outline-none" />
+            <div className="flex rounded overflow-hidden border border-white/10">
+              {(['long', 'short'] as const).map(sd => (
+                <button key={sd} onClick={() => setSide(sd)} className={`flex-1 text-[11px] py-1.5 capitalize ${side === sd ? (sd === 'long' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300') : 'bg-white/[0.02] text-neutral-500'}`}>{sd}</button>
+              ))}
+            </div>
+            <input value={rStr} onChange={e => setRStr(e.target.value)} inputMode="decimal" placeholder="Result in R (+2 / -1)" className="bg-white/[0.04] border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder:text-neutral-600 focus:outline-none" />
+          </div>
+          <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note (optional)" className="w-full bg-white/[0.04] border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder:text-neutral-600 focus:outline-none mb-2" />
+          <button onClick={add} disabled={!symbol.trim() || !rValid} className="w-full py-1.5 rounded bg-hub-yellow text-black text-xs font-semibold disabled:opacity-40">Log trade</button>
+
+          {entries.length > 0 && (
+            <ul className="mt-3 space-y-1 max-h-48 overflow-y-auto">
+              {entries.slice(0, 40).map(e => (
+                <li key={e.id} className="flex items-center gap-2 text-[11px] border-b border-white/[0.04] pb-1">
+                  <span className={`font-semibold ${e.side === 'long' ? 'text-emerald-400' : 'text-rose-400'}`}>{e.symbol}</span>
+                  <span className="text-neutral-500">{e.setup}</span>
+                  {e.note && <span className="text-neutral-600 truncate max-w-[120px]" title={e.note}>· {e.note}</span>}
+                  <span className="flex-1" />
+                  <span className={`font-mono ${e.r >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{e.r >= 0 ? '+' : ''}{e.r}R</span>
+                  <button onClick={() => persist(entries.filter(x => x.id !== e.id))} className="text-neutral-600 hover:text-rose-400" aria-label="Delete entry">×</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="card-premium p-4">
+          <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-medium mb-2">Performance by setup</div>
+          {bySetup.length === 0 ? (
+            <p className="text-xs text-neutral-600 py-6 text-center">Log a few trades to see which setups pay.</p>
+          ) : (
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="text-neutral-500 text-left">
+                  <th className="font-medium pb-1">Setup</th>
+                  <th className="font-medium pb-1 text-right">Trades</th>
+                  <th className="font-medium pb-1 text-right">Win %</th>
+                  <th className="font-medium pb-1 text-right">Avg R</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bySetup.map(s => (
+                  <tr key={s.setup} className="border-t border-white/[0.04]">
+                    <td className="py-1 text-white">{s.setup}</td>
+                    <td className="py-1 text-right font-mono text-neutral-300">{s.n}</td>
+                    <td className="py-1 text-right font-mono text-neutral-300">{s.winRate.toFixed(0)}%</td>
+                    <td className={`py-1 text-right font-mono ${s.avgR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{s.avgR >= 0 ? '+' : ''}{s.avgR.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
