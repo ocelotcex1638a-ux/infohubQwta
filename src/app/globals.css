@@ -428,7 +428,7 @@ option { background: var(--hub-secondary); color: var(--fg-default); }
   }
 }
 
-/* Tablet / narrow-desktop band: 5 nav groups + 220px search trigger +
+/* Tablet / narrow-desktop band: 6 nav groups + 200px search trigger +
    icon row don't fit under 1100px. Shrink the trigger and drop the ⌘K
    hint chip so the row reflows without horizontal scroll. */
 @media (min-width: 768px) and (max-width: 1099px) {

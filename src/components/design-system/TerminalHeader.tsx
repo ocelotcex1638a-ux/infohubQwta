@@ -370,6 +370,9 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileNavOpen]);
+  // Always dismiss the drawer when the route changes — defensive against any
+  // future navigable element that doesn't carry the per-link close handler.
+  useEffect(() => { setMobileNavOpen(false); }, [pathname]);
 
   const goToResult = (idx: number) => {
     const r = searchResults[idx];
@@ -413,7 +416,7 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
         <BrandMark size="md" />
       </Link>
       <div className="terminal-header-nav-divider" style={{ width: 1, height: 24, background: 'var(--hub-border-subtle)', margin: '0 8px' }} />
-      {/* The nav-group buttons (5 dropdowns × ~110px each) plus the
+      {/* The nav-group buttons (6 dropdowns) plus the
           search trigger + 3 icon buttons + sign-in fill the full
           1100-1200px width. Below that the nav was pushing the
           right-hand cluster off-screen. Globals.css collapses these
