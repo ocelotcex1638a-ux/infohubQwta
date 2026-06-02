@@ -7,6 +7,7 @@ import {
   FREE_TIER_PER_DAY,
   TRADER_TIER_PER_DAY,
 } from '@/lib/api/rate-limit';
+import { TIER_PRICE_MONTHLY } from '@/lib/constants/tiers';
 
 export const runtime = 'nodejs';
 export const preferredRegion = 'bom1';
@@ -35,7 +36,7 @@ export async function GET() {
     },
     endpoints: [
       { path: '/api/v1/funding', method: 'GET', description: `Real-time funding rates across ${ALL_EXCHANGES.length} exchanges` },
-      { path: '/api/v1/funding/history', method: 'GET', description: 'Historical funding rate snapshots — per-tier cap (Free 90d / Trader 180d / Pro 1y / Whale 5y)' },
+      { path: '/api/v1/funding/history', method: 'GET', description: 'Historical funding rate snapshots — per-tier cap (Free 30d / Trader 180d / Pro 1y / Whale 5y)' },
       { path: '/api/v1/funding-arb', method: 'GET', description: 'Cross-exchange funding-rate arbitrage scanner with annualised yield' },
       { path: '/api/v1/arbitrage', method: 'GET', description: 'Funding rate arbitrage opportunities with feasibility grades' },
       { path: '/api/v1/openinterest', method: 'GET', description: 'Open interest data across exchanges' },
@@ -73,17 +74,17 @@ export async function GET() {
       trader: {
         rateLimit: `${TRADER_TIER_PER_MINUTE} req/min`,
         dailyLimit: `${TRADER_TIER_PER_DAY.toLocaleString()} req/day`,
-        note: 'Free during launch — see /pricing. $12/mo after launch.',
+        note: `Free during launch — see /pricing. $${TIER_PRICE_MONTHLY.trader}/mo after launch.`,
       },
       pro: {
         rateLimit: `${PRO_TIER_PER_MINUTE} req/min`,
         dailyLimit: 'unlimited',
-        note: 'Free during launch — see /pricing. $29/mo after launch.',
+        note: `Free during launch — see /pricing. $${TIER_PRICE_MONTHLY.pro}/mo after launch.`,
       },
       whale: {
         rateLimit: 'unlimited',
         dailyLimit: 'unlimited',
-        note: 'Free during launch — see /pricing. $59/mo after launch. Includes custom webhooks, raw WebSocket feed, team seats.',
+        note: `Free during launch — see /pricing. $${TIER_PRICE_MONTHLY.whale}/mo after launch. Includes custom alert webhooks, priority alert delivery, and a 1:1 Telegram channel.`,
       },
     },
     documentation: 'https://info-hub.io/developers/docs',

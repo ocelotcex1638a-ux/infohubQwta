@@ -377,7 +377,7 @@ export const openApiSpec = {
               roundTripMakerPct: { type: 'number', description: 'May be negative for venues with maker rebate' },
             },
           },
-          fundingInterval: { type: 'string', enum: ['1h', '4h', '8h', 'unknown'], description: 'Settlement cadence for this venue' },
+          fundingInterval: { type: 'string', enum: ['1h', '2h', '4h', '8h', '24h', 'unknown'], description: 'Settlement cadence for this venue' },
           supportsPredictedRate: {
             type: 'boolean',
             description: 'Whether /api/v1/funding rows for this venue emit a non-null predictedRate field. Use this to filter your coverage matrix without probing /funding.',

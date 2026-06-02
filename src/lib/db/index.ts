@@ -3733,7 +3733,7 @@ export async function createApiKey(userId: string, name: string = 'Default'): Pr
   const userBillingTier = tierRows[0]?.billing_tier ?? null;
   const tier = userRole === 'admin'
     ? 'whale'
-    : (userBillingTier === 'pro' || userBillingTier === 'whale')
+    : (userBillingTier === 'trader' || userBillingTier === 'pro' || userBillingTier === 'whale')
       ? userBillingTier
       : 'free';
 

@@ -321,7 +321,7 @@ const ENDPOINT_GROUPS = [
       ['GET', '/api/v1/top-movers', 'Top gainers & losers by 24h change'],
       ['GET', '/api/v1/global-stats', 'Altcoin season, BTC dominance, market cap'],
       ['GET', '/api/v1/fear-greed', 'Fear & Greed Index + 30d history'],
-      ['GET', '/api/v1/funding/history', 'Historical funding snapshots (up to 14d)'],
+      ['GET', '/api/v1/funding/history', 'Historical funding snapshots (up to your tier window, 30d–5y)'],
       ['GET', '/api/v1/listing-radar', 'Binance listing announcement tracker'],
       ['GET', '/api/v1/earnings-calendar', 'Token unlocks, TGEs, halvings, governance'],
     ],

@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
             symbol, hours,
             totalCount: 0, totalVolumeUsd: 0,
             longVolumeUsd: 0, shortVolumeUsd: 0,
-            longShortRatio: null,
+            longShare: null,
             largest: null,
           },
           meta: { timestamp: Date.now(), mode: 'summary' },

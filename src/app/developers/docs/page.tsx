@@ -391,7 +391,7 @@ export default function DocsPage() {
               </p>
               <CodeBlock title="Header format">{`Authorization: Bearer ih_your_api_key_here`}</CodeBlock>
               <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 text-[13px] text-gray-400 space-y-2">
-                <p>Keys start with <code className="text-amber-400">ih_</code> and are 36 characters long.</p>
+                <p>Keys start with <code className="text-amber-400">ih_</code> and are 35 characters long.</p>
                 <p>Generate up to 5 keys at <Link href="/developers" className="text-amber-400 hover:underline">/developers</Link>.</p>
                 <p>Keys are hashed server side. The full key is shown once at creation. Store it securely.</p>
               </div>
@@ -1061,7 +1061,7 @@ const cacheKey = \`fee:\${meta.feeModel.version}\`;`}</CodeBlock>
 
             {/* Funding History */}
             <Section id="funding-history" title="Funding History" method="GET" path="/api/v1/funding/history">
-              <p className="text-gray-400 mb-4">Historical funding rate snapshots from the database. 10-minute resolution. Lookback cap depends on your tier: <strong>Free 90d / Trader 180d / Pro 1y / Whale 5y</strong>.</p>
+              <p className="text-gray-400 mb-4">Historical funding rate snapshots from the database. 10-minute resolution. Lookback cap depends on your tier: <strong>Free 30d / Trader 180d / Pro 1y / Whale 5y</strong>.</p>
               <ParamTable params={[
                 ['symbols', 'string', '(required)', 'Comma-separated symbols (max 20)'],
                 ['days', 'number', '7', 'Lookback period (1 to your tier cap)'],
