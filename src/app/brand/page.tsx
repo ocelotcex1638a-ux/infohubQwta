@@ -111,6 +111,7 @@ export default function BrandPage() {
           description={
             <>
               <span>Download official logos, colors, and brand assets for use in articles, integrations, and partner materials.</span>
+              <span className="block mt-2 text-neutral-400 text-sm">The InfoHub mark is a circuit-board <span className="text-white font-semibold">i</span><span className="text-hub-yellow font-semibold">H</span> monogram — glowing orange traces on deep navy, echoing the terminal&apos;s electric, data-dense feel.</span>
               <span className="flex items-center gap-6 mt-3">
                 <span className="flex items-center gap-2 text-neutral-500 text-xs">
                   <Image className="w-3.5 h-3.5 text-hub-yellow/60" />
@@ -384,9 +385,9 @@ export default function BrandPage() {
               </h3>
               <ul className="space-y-2 text-neutral-600 text-sm">
                 <li>Stretch or distort the logo</li>
-                <li>Change logo colors arbitrarily</li>
-                <li>Add effects like shadows or glows</li>
-                <li>Place on busy backgrounds</li>
+                <li>Recolor the mark outside the brand palette</li>
+                <li>Rotate, skew, or rearrange the iH monogram</li>
+                <li>Place on busy or low-contrast backgrounds</li>
               </ul>
             </div>
           </div>
