@@ -11,7 +11,7 @@
  * spamming doesn't hammer CoinGecko / our DB.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { runDcaBacktest, runFundingCarryBacktest } from '@/lib/backtest';
+import { runDcaBacktest, runFundingCarryBacktest, runSignalBacktest, type SignalKind } from '@/lib/backtest';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,8 +51,24 @@ export async function POST(request: NextRequest) {
         lookbackDays: Number(body.config?.lookbackDays) || 30,
         symbol: body.config?.symbol ? String(body.config.symbol).toUpperCase() : undefined,
       });
+    } else if (body.strategy === 'signal') {
+      const VALID: SignalKind[] = ['ma-cross', 'rsi', 'breakout'];
+      const sig = String(body.config?.signal ?? 'ma-cross') as SignalKind;
+      const num = (v: unknown) => (v != null && Number.isFinite(Number(v)) ? Number(v) : undefined);
+      result = await runSignalBacktest({
+        asset: String(body.config?.asset ?? 'bitcoin'),
+        lookbackDays: Number(body.config?.lookbackDays) || 180,
+        signal: VALID.includes(sig) ? sig : 'ma-cross',
+        capitalUsd: Number(body.config?.capitalUsd) || 10_000,
+        fast: num(body.config?.fast),
+        slow: num(body.config?.slow),
+        rsiPeriod: num(body.config?.rsiPeriod),
+        rsiBuy: num(body.config?.rsiBuy),
+        rsiSell: num(body.config?.rsiSell),
+        channel: num(body.config?.channel),
+      });
     } else {
-      return NextResponse.json({ error: 'Unknown strategy. Use "dca" or "funding-carry"' }, { status: 400 });
+      return NextResponse.json({ error: 'Unknown strategy. Use "dca", "funding-carry", or "signal"' }, { status: 400 });
     }
 
     const responseBody = { success: true, result };

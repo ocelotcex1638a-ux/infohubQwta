@@ -33,7 +33,7 @@ export interface BacktestPoint {
 }
 
 export interface BacktestResult {
-  strategy: 'dca' | 'funding-carry';
+  strategy: 'dca' | 'funding-carry' | 'signal';
   config: Record<string, any>;
   series: BacktestPoint[];
   /** Summary stats. */
@@ -353,6 +353,201 @@ export async function runFundingCarryBacktest(config: FundingCarryConfig): Promi
     finalValueUsd: cumulative,
     totalDepositedUsd: config.notionalUsd,
     totalReturnPct: config.notionalUsd > 0 ? (cumulative / config.notionalUsd) * 100 : 0,
+    maxDrawdownPct: maxDd * 100,
+    annualisedVolPct: annVol,
+    sharpe,
+    trades,
+    ts: Date.now(),
+  };
+}
+
+// ─── Directional signal backtest (MA cross · RSI · breakout) ─────────────────
+//
+// Long-or-flat on daily closes: when the signal is "on" the strategy is fully
+// long (1×) the asset, otherwise it sits in cash. No shorting, no leverage, and
+// no fees/slippage modelled — a clean read on whether the *signal* had an edge,
+// labelled as such in the UI. Indicators + sim are pure and unit-tested.
+
+export type SignalKind = 'ma-cross' | 'rsi' | 'breakout';
+
+export interface SignalConfig {
+  /** CoinGecko id, e.g. 'bitcoin'. */
+  asset: string;
+  lookbackDays: number;
+  signal: SignalKind;
+  /** Starting capital (constant; not a DCA). Default 10,000. */
+  capitalUsd?: number;
+  // ma-cross
+  fast?: number;   // default 10
+  slow?: number;   // default 30
+  // rsi (mean-reversion: long under `rsiBuy`, flat over `rsiSell`)
+  rsiPeriod?: number; // default 14
+  rsiBuy?: number;    // default 30
+  rsiSell?: number;   // default 70
+  // breakout (Donchian channel of the prior `channel` closes)
+  channel?: number;   // default 20
+}
+
+/** Simple moving average; null until `period` samples are available. */
+export function sma(values: number[], period: number): Array<number | null> {
+  const out: Array<number | null> = new Array(values.length).fill(null);
+  if (period <= 0) return out;
+  let sum = 0;
+  for (let i = 0; i < values.length; i++) {
+    sum += values[i];
+    if (i >= period) sum -= values[i - period];
+    if (i >= period - 1) out[i] = sum / period;
+  }
+  return out;
+}
+
+/** Wilder's RSI (0-100); null until warmed up. */
+export function rsiWilder(values: number[], period = 14): Array<number | null> {
+  const out: Array<number | null> = new Array(values.length).fill(null);
+  if (values.length < period + 1) return out;
+  let gain = 0, loss = 0;
+  for (let i = 1; i <= period; i++) {
+    const ch = values[i] - values[i - 1];
+    if (ch >= 0) gain += ch; else loss -= ch;
+  }
+  let avgGain = gain / period, avgLoss = loss / period;
+  const rsiOf = (g: number, l: number) => (l === 0 ? 100 : 100 - 100 / (1 + g / l));
+  out[period] = rsiOf(avgGain, avgLoss);
+  for (let i = period + 1; i < values.length; i++) {
+    const ch = values[i] - values[i - 1];
+    const g = ch > 0 ? ch : 0;
+    const l = ch < 0 ? -ch : 0;
+    avgGain = (avgGain * (period - 1) + g) / period;
+    avgLoss = (avgLoss * (period - 1) + l) / period;
+    out[i] = rsiOf(avgGain, avgLoss);
+  }
+  return out;
+}
+
+/** Donchian channel from the PRIOR `period` closes (excludes the current bar,
+ *  so a breakout at bar i is compared against history, not itself). */
+export function donchianChannel(values: number[], period: number): { hi: Array<number | null>; lo: Array<number | null> } {
+  const hi: Array<number | null> = new Array(values.length).fill(null);
+  const lo: Array<number | null> = new Array(values.length).fill(null);
+  for (let i = period; i < values.length; i++) {
+    let h = -Infinity, l = Infinity;
+    for (let j = i - period; j < i; j++) { h = Math.max(h, values[j]); l = Math.min(l, values[j]); }
+    hi[i] = h;
+    lo[i] = l;
+  }
+  return { hi, lo };
+}
+
+/**
+ * Build a 0/1 long-or-flat position series for the chosen signal. No lookahead:
+ * position[i] is decided from indicators observable at close i and earns the
+ * i→i+1 return in the simulator. RSI + breakout are stateful (hold until the
+ * opposite threshold); MA-cross is stateless (long while fast > slow).
+ */
+export function signalPositions(closes: number[], config: SignalConfig): number[] {
+  const n = closes.length;
+  const pos = new Array<number>(n).fill(0);
+  if (n === 0) return pos;
+
+  if (config.signal === 'ma-cross') {
+    const fast = sma(closes, Math.max(2, config.fast ?? 10));
+    const slow = sma(closes, Math.max(3, config.slow ?? 30));
+    for (let i = 0; i < n; i++) {
+      const f = fast[i], s = slow[i];
+      pos[i] = f != null && s != null && f > s ? 1 : 0;
+    }
+  } else if (config.signal === 'rsi') {
+    const r = rsiWilder(closes, Math.max(2, config.rsiPeriod ?? 14));
+    const buy = config.rsiBuy ?? 30;
+    const sell = config.rsiSell ?? 70;
+    let cur = 0;
+    for (let i = 0; i < n; i++) {
+      const v = r[i];
+      if (v != null) {
+        if (v < buy) cur = 1;
+        else if (v > sell) cur = 0;
+      }
+      pos[i] = cur;
+    }
+  } else {
+    // breakout
+    const { hi, lo } = donchianChannel(closes, Math.max(2, config.channel ?? 20));
+    let cur = 0;
+    for (let i = 0; i < n; i++) {
+      const h = hi[i], l = lo[i];
+      if (h != null && closes[i] > h) cur = 1;
+      else if (l != null && closes[i] < l) cur = 0;
+      pos[i] = cur;
+    }
+  }
+  return pos;
+}
+
+/**
+ * Pure long/flat simulator. Rebalances cash↔units to match `positions` at each
+ * day's close (value-neutral, fee-free). Returns the daily value series, daily
+ * returns (for vol/Sharpe), and trade count (entries + exits).
+ */
+export function simulateSignalCore(
+  daily: Array<{ date: string; price: number }>,
+  positions: number[],
+  capital: number,
+): { series: BacktestPoint[]; dailyReturns: number[]; trades: number } {
+  let cash = capital;
+  let units = 0;
+  let trades = 0;
+  let prevValue = capital;
+  const series: BacktestPoint[] = [];
+  const dailyReturns: number[] = [];
+
+  for (let i = 0; i < daily.length; i++) {
+    const price = daily[i].price;
+    const valueBefore = cash + units * price;
+    if (i > 0 && prevValue > 0) dailyReturns.push((valueBefore - prevValue) / prevValue);
+
+    const want = positions[i] ?? 0;
+    if (want === 1 && units === 0 && cash > 0) { units = cash / price; cash = 0; trades++; }
+    else if (want === 0 && units > 0) { cash = units * price; units = 0; trades++; }
+
+    const value = cash + units * price;
+    series.push({ date: daily[i].date, valueUsd: value, depositedUsd: capital, roiPct: ((value - capital) / capital) * 100 });
+    prevValue = value;
+  }
+  return { series, dailyReturns, trades };
+}
+
+/** Run a directional signal backtest on daily closes. */
+export async function runSignalBacktest(config: SignalConfig): Promise<BacktestResult> {
+  const days = Math.min(Math.max(config.lookbackDays, 30), 365);
+  const capital = Math.max(config.capitalUsd ?? 10_000, 1);
+
+  const raw = await fetchCoinGeckoPrices(config.asset.toLowerCase(), days);
+  const daily = bucketDaily(raw);
+  if (daily.length < 5) throw new Error(`Not enough price history for ${config.asset}`);
+
+  const closes = daily.map((d) => d.price);
+  const positions = signalPositions(closes, config);
+  const { series, dailyReturns, trades } = simulateSignalCore(daily, positions, capital);
+
+  const finalValue = series[series.length - 1].valueUsd;
+  let peak = 0, maxDd = 0;
+  for (const p of series) {
+    peak = Math.max(peak, p.valueUsd);
+    if (peak > 0) { const dd = (peak - p.valueUsd) / peak; if (dd > maxDd) maxDd = dd; }
+  }
+  const meanReturn = dailyReturns.reduce((s, r) => s + r, 0) / Math.max(1, dailyReturns.length);
+  const variance = dailyReturns.reduce((s, r) => s + (r - meanReturn) ** 2, 0) / Math.max(1, dailyReturns.length);
+  const annVol = Math.sqrt(variance) * Math.sqrt(365) * 100;
+  const annReturn = meanReturn * 365 * 100;
+  const sharpe = annVol > 0 ? annReturn / annVol : 0;
+
+  return {
+    strategy: 'signal',
+    config,
+    series,
+    finalValueUsd: finalValue,
+    totalDepositedUsd: capital,
+    totalReturnPct: ((finalValue - capital) / capital) * 100,
     maxDrawdownPct: maxDd * 100,
     annualisedVolPct: annVol,
     sharpe,
