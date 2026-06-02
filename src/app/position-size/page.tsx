@@ -53,6 +53,7 @@ export default function PositionSizePage() {
   const [accountStr, setAccountStr] = useState('10000');
   const [riskPctStr, setRiskPctStr] = useState('1');
   const [entryStr, setEntryStr] = useState('75000');
+  const [planCopied, setPlanCopied] = useState(false);
   const [stopStr, setStopStr] = useState('73000');
   const [targetStr, setTargetStr] = useState('80000');
   const [leverageStr, setLeverageStr] = useState('');  // optional override for liq calc
@@ -247,11 +248,36 @@ export default function PositionSizePage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <div className="text-xs font-bold text-white uppercase tracking-wider">Sizing</div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/[0.04] ${riskColor}`}>
-                    {riskTier} leverage
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/[0.04] ${riskColor}`}>
+                      {riskTier} leverage
+                    </span>
+                    <button
+                      type="button"
+                      title="Copy this trade plan as text (paste into Discord, a journal, etc.)"
+                      onClick={() => {
+                        const r = result!;
+                        const plan = [
+                          `${side.toUpperCase()} trade plan`,
+                          `Entry $${entry.toLocaleString()} · Stop $${stop.toLocaleString()}${target > 0 ? ` · Target $${target.toLocaleString()}` : ''}`,
+                          `Size $${Math.round(r.notional).toLocaleString()} · ${r.positionUnits.toFixed(4)} units · ${r.leverageNeeded.toFixed(1)}x`,
+                          `Risk $${Math.round(r.riskUsd).toLocaleString()} (${riskPct}% of $${account.toLocaleString()}) · stop ${r.stopDistPct.toFixed(2)}%`,
+                          target > 0 ? `R:R ${r.rrRatio.toFixed(2)}R · target PnL +$${Math.round(r.targetPnl).toLocaleString()}` : '',
+                          `infohub · /position-size`,
+                        ].filter(Boolean).join('\n');
+                        try {
+                          navigator.clipboard?.writeText(plan);
+                          setPlanCopied(true);
+                          setTimeout(() => setPlanCopied(false), 1500);
+                        } catch { /* clipboard unavailable */ }
+                      }}
+                      className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border border-white/10 bg-white/[0.03] text-neutral-300 hover:text-white transition-colors"
+                    >
+                      <Copy className="w-3 h-3" /> {planCopied ? 'Copied!' : 'Copy plan'}
+                    </button>
+                  </div>
                 </div>
 
                 {!result!.directionValid && (
