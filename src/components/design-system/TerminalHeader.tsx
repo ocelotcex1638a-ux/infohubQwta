@@ -238,6 +238,14 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
   }, [openKey]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  // Mobile nav drawer (hamburger) — below lg the left sidebar is hidden, so
+  // the header's group nav becomes a slide-in drawer rather than a
+  // horizontally scrolling button row.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileGroup, setMobileGroup] = useState<string | null>(null);
+  // Hover-intent timer for the desktop dropdowns (open on a short delay so
+  // sweeping the cursor across the bar doesn't pop menus).
+  const hoverTimerRef = useRef<number | null>(null);
 
   // Search palette state
   const [searchOpen, setSearchOpen] = useState(false);
@@ -353,11 +361,37 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
     }
   }, [searchOpen]);
 
+  // Clear any pending hover-open timer on unmount.
+  useEffect(() => () => { if (hoverTimerRef.current != null) window.clearTimeout(hoverTimerRef.current); }, []);
+  // Close the mobile drawer on Escape.
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileNavOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileNavOpen]);
+
   const goToResult = (idx: number) => {
     const r = searchResults[idx];
     if (!r) return;
     setSearchOpen(false);
     router.push(r.href);
+  };
+
+  const clearHoverTimer = () => {
+    if (hoverTimerRef.current != null) { window.clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
+  };
+  // Open on hover with intent: instant if a menu is already open (responsive
+  // switching), otherwise after a short delay so pass-through doesn't pop one.
+  const openGroupHover = (key: string) => {
+    clearHoverTimer();
+    if (openKey) { setOpenKey(key); return; }
+    hoverTimerRef.current = window.setTimeout(() => { setOpenKey(key); hoverTimerRef.current = null; }, 140);
+  };
+  const openMobileNav = () => {
+    const active = NAV_GROUPS.find(g => g.items.some(it => it.href === pathname));
+    setMobileGroup(active?.key ?? null);
+    setMobileNavOpen(true);
   };
   return (
     <header
@@ -365,10 +399,20 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
       className="terminal-header"
       style={{ position: 'sticky', top: 0, zIndex: 40, height: 48, flexShrink: 0, background: 'rgba(7,9,13,0.92)', backdropFilter: 'blur(8px)', borderBottom: '1px solid var(--hub-border)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 4 }}
     >
+      <button
+        type="button"
+        className="terminal-header-mobile-toggle"
+        aria-label="Open navigation menu"
+        aria-expanded={mobileNavOpen}
+        onClick={openMobileNav}
+        style={{ ...iconBtn, marginRight: 4 }}
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+      </button>
       <Link href="/home" aria-label="Home" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', padding: '0 4px', height: '100%' }}>
         <BrandMark size="md" />
       </Link>
-      <div style={{ width: 1, height: 24, background: 'var(--hub-border-subtle)', margin: '0 8px' }} />
+      <div className="terminal-header-nav-divider" style={{ width: 1, height: 24, background: 'var(--hub-border-subtle)', margin: '0 8px' }} />
       {/* The nav-group buttons (5 dropdowns × ~110px each) plus the
           search trigger + 3 icon buttons + sign-in fill the full
           1100-1200px width. Below that the nav was pushing the
@@ -389,7 +433,7 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
             ? g.items.filter(it => !['login', 'signup', 'forgot'].includes(it.id))
             : g.items;
           return (
-            <div key={g.key} style={{ position: 'relative', height: '100%' }} onMouseEnter={() => setOpenKey(g.key)}>
+            <div key={g.key} style={{ position: 'relative', height: '100%' }} onMouseEnter={() => openGroupHover(g.key)} onMouseLeave={clearHoverTimer}>
               {/* Button needs onClick too — onMouseEnter alone doesn't
                   fire on touch devices. Mobile users couldn't open
                   any nav dropdown at all (the sidebar is now hidden
@@ -400,7 +444,7 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
                   else triggerRefs.current.delete(g.key);
                 }}
                 type="button"
-                onClick={() => setOpenKey(isOpen ? null : g.key)}
+                onClick={() => { clearHoverTimer(); setOpenKey(isOpen ? null : g.key); }}
                 aria-expanded={isOpen}
                 aria-haspopup="menu"
                 style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', gap: 6, color: groupActive ? 'var(--hub-accent)' : (isOpen ? 'var(--fg-default)' : 'var(--fg-muted)'), fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: groupActive ? 600 : 500, letterSpacing: '-0.005em', cursor: 'pointer', whiteSpace: 'nowrap' }}
@@ -413,7 +457,7 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
               {isOpen && triggerRect && (
                 <div
                   data-nav-dropdown-panel="true"
-                  onMouseEnter={() => setOpenKey(g.key)}
+                  onMouseEnter={() => { clearHoverTimer(); setOpenKey(g.key); }}
                   onMouseLeave={() => setOpenKey(null)}
                   style={{
                     // FIXED positioning escapes the nav's overflow clip
@@ -632,6 +676,69 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ─── Mobile nav drawer (hamburger) ─── */}
+      {mobileNavOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation menu"
+          onClick={() => setMobileNavOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 95, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex' }}
+        >
+          <nav
+            aria-label="Mobile primary navigation"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 'min(320px, 86vw)', height: '100%', background: 'rgba(12,15,20,0.99)', borderRight: '1px solid var(--hub-border-hover)', boxShadow: '0 0 60px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: 10, gap: 2 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 4px 10px', position: 'sticky', top: 0, background: 'rgba(12,15,20,0.99)', zIndex: 1 }}>
+              <BrandMark size="md" />
+              <button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Close menu" style={{ ...iconBtn }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+            {NAV_GROUPS.map(g => {
+              const gOpen = mobileGroup === g.key;
+              const groupActive = g.items.some(it => it.href === pathname);
+              const items = (g.key === 'tools' && isAuthed)
+                ? g.items.filter(it => !['login', 'signup', 'forgot'].includes(it.id))
+                : g.items;
+              return (
+                <div key={g.key}>
+                  <button
+                    type="button"
+                    onClick={() => setMobileGroup(gOpen ? null : g.key)}
+                    aria-expanded={gOpen}
+                    style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '10px 8px', border: 'none', background: gOpen ? 'rgba(255,255,255,0.03)' : 'transparent', borderRadius: 8, cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <span style={{ color: 'var(--hub-accent)', display: 'inline-flex' }}>{g.icon}</span>
+                    <span style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: groupActive ? 'var(--hub-accent)' : 'var(--fg-default)' }}>{g.label}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--fg-subtle)', transform: gOpen ? 'rotate(90deg)' : 'none', transition: 'transform 160ms' }}><path d="m9 18 6-6-6-6" /></svg>
+                  </button>
+                  {gOpen && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingBottom: 4 }}>
+                      {items.map(it => {
+                        const on = pathname === it.href;
+                        return (
+                          <Link
+                            key={it.id}
+                            href={it.href}
+                            onClick={() => setMobileNavOpen(false)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px 9px 30px', borderRadius: 6, background: on ? 'rgb(var(--hub-accent-rgb) / 0.10)' : 'transparent', borderLeft: on ? '2px solid var(--hub-accent)' : '2px solid transparent', color: on ? 'var(--hub-accent)' : 'var(--fg-muted)', fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: on ? 600 : 500, textDecoration: 'none' }}
+                          >
+                            <span style={{ flex: 1 }}>{it.label}</span>
+                            {it.hint && <span style={{ fontSize: 10, color: 'var(--fg-subtle)', whiteSpace: 'nowrap' }}>{it.hint}</span>}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
         </div>
       )}
 

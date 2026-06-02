@@ -454,6 +454,17 @@ header.terminal-header [data-iconbtn]:hover {
   background: var(--hub-secondary);
 }
 
+/* Mobile primary nav: below lg (1024px) the left sidebar is hidden, so swap
+   the inline group-dropdown row for a hamburger that opens a full drawer
+   (TerminalHeader mobileNavOpen). !important beats the inline display:flex
+   on the iconBtn-styled toggle so it stays hidden on desktop. */
+.terminal-header-mobile-toggle { display: none !important; }
+@media (max-width: 1023px) {
+  header.terminal-header .terminal-header-nav { display: none !important; }
+  header.terminal-header .terminal-header-nav-divider { display: none !important; }
+  header.terminal-header .terminal-header-mobile-toggle { display: inline-flex !important; }
+}
+
 /* Quick-links chips (RecentChips) — inline styles set the resting border/
    color, so the hover needs !important to win. Gives the dead `transition:
    all 100ms` something to animate. */
