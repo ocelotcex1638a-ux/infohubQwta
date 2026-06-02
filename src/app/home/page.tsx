@@ -472,6 +472,12 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+          <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 10 }}>
+            Not sure where to start?{' '}
+            <Link href="/tools" style={{ color: 'var(--hub-accent)', textDecoration: 'none', fontWeight: 600 }}>
+              Find tools by how you trade →
+            </Link>
+          </p>
         </section>
       )}
 

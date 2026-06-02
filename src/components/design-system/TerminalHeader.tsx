@@ -46,6 +46,7 @@ const NAV_GROUPS: NavGroup[] = [
   { key: 'scan', label: 'Scan & Trade',
     icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>,
     items: [
+      { id: 'tools-hub',    label: 'Tools by Type',     href: '/tools',     hint: 'Find tools for your trading style' },
       { id: 'screener',     label: 'Screener',          href: '/screener',  hint: 'Filter & sort markets' },
       { id: 'chart',        label: 'Chart',             href: '/chart',              hint: 'Candles + book + tape' },
       { id: 'options',      label: 'Options',           href: '/options',   hint: 'Max pain · OI by strike · IV smile · skew · RV vs IV' },
