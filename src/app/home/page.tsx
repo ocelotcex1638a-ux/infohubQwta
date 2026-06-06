@@ -22,6 +22,7 @@ import { SatPing, StreamBars, Sparkline } from '@/components/design-system';
 import { BtcHalvingCountdown } from '@/components/BtcHalvingCountdown';
 import CompetitorComparison from '@/components/CompetitorComparison';
 import OnboardingChecklist from '@/components/OnboardingChecklist';
+import { ANNUAL_DISCOUNT_PCT } from '@/lib/constants/tiers';
 
 // ────────────────────────────────────────────────────────────────────
 // Helpers
@@ -448,27 +449,52 @@ export default function HomePage() {
           }}>
             <div style={{ minWidth: 0 }}>
               <h2 style={{ fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--fg-default)', lineHeight: 1.12, margin: 0 }}>
-                Every funding rate, liquidation, and whale position — <span style={{ color: 'var(--hub-accent)' }}>free</span>.
+                The crypto-derivatives terminal for scalpers, day traders, swing traders, and holders.
               </h2>
               <p style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 8, maxWidth: 580, lineHeight: 1.5 }}>
-                The crypto-derivatives terminal. {ALL_EXCHANGES.length} venues, live funding · open interest · liquidations · on-chain whales — no paywall on the data.
+                Live funding, open interest, liquidations, whale positions, and on-chain context across {ALL_EXCHANGES.length} venues. Free during launch, with annual billing that saves {ANNUAL_DISCOUNT_PCT}% once checkout goes live.
               </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14 }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', height: 30, padding: '0 10px',
+                  borderRadius: 999, background: 'rgba(255,193,7,0.12)', border: '1px solid rgba(255,193,7,0.28)',
+                  color: '#fbbf24', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
+                }}>
+                  Free during launch
+                </span>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', height: 30, padding: '0 10px',
+                  borderRadius: 999, background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.35)',
+                  color: 'var(--pump-hot)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
+                }}>
+                  Annual saves {ANNUAL_DISCOUNT_PCT}%
+                </span>
+                <Link href="/pricing" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4, height: 30, padding: '0 12px', borderRadius: 8,
+                  background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.40)',
+                  color: 'var(--pump-hot)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
+                  textDecoration: 'none', whiteSpace: 'nowrap',
+                }}>
+                  Upgrade now <ChevronRight size={12} />
+                </Link>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-              <Link href="/signup" style={{
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, flexShrink: 0, flexWrap: 'wrap' }}>
+              <Link href="/pricing" style={{
                 display: 'inline-flex', alignItems: 'center', height: 38, padding: '0 16px', borderRadius: 9,
-                background: 'var(--hub-accent)', color: '#000', fontSize: 13, fontWeight: 700,
+                background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.40)',
+                color: 'var(--pump-hot)', fontSize: 13, fontWeight: 700,
                 textDecoration: 'none', whiteSpace: 'nowrap',
               }}>
-                Create free account
+                Explore pricing
               </Link>
-              <Link href="/screener" style={{
-                display: 'inline-flex', alignItems: 'center', height: 38, padding: '0 14px', borderRadius: 9,
+              <Link href="/signup" style={{
+                display: 'inline-flex', alignItems: 'center', height: 38, padding: '0 16px', borderRadius: 9,
                 background: 'var(--hub-darker)', border: '1px solid var(--hub-border-subtle)',
                 color: 'var(--fg-default)', fontSize: 13, fontWeight: 600,
                 textDecoration: 'none', whiteSpace: 'nowrap',
               }}>
-                Browse the terminal
+                Create free account
               </Link>
             </div>
           </div>

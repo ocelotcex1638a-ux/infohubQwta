@@ -83,9 +83,8 @@ export default function PricingPage() {
           accent="hub-yellow"
           description={
             <>
-              Everything is free during launch. Prices below are what each tier will
-              cost once we exit the early-access window. Cancel anytime, access until
-              the period ends.
+              Everything is free during launch. Annual billing saves 17% once checkout
+              goes live, so the lower rate stays easy to spot before you subscribe.
             </>
           }
         />
@@ -95,7 +94,11 @@ export default function PricingPage() {
           <p className="text-[12px] sm:text-[13px] text-amber-200">
             <Sparkles className="inline w-3.5 h-3.5 -mt-0.5 mr-1.5 text-amber-300" aria-hidden />
             <span className="font-semibold text-amber-300">Free during launch</span> · Trader,
-            Pro + Whale tiers all unlocked while we onboard early users · <Link href="/referrals" className="underline decoration-amber-400/40 hover:decoration-amber-300 font-medium">10% off forever for anyone you refer</Link>
+            Pro + Whale tiers unlocked while we onboard early users ·
+            <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-2 py-[1px] mx-1 font-bold uppercase tracking-wide text-emerald-300 border border-emerald-400/30">
+              Annual -17%
+            </span>
+            · <Link href="/referrals" className="underline decoration-amber-400/40 hover:decoration-amber-300 font-medium">10% off forever for anyone you refer</Link>
           </p>
         </section>
 
@@ -119,16 +122,19 @@ export default function PricingPage() {
               onClick={() => setPeriod('annual')}
               className={`px-4 py-1.5 rounded-full text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/50 ${
                 period === 'annual'
-                  ? 'bg-hub-yellow/15 text-hub-yellow border border-hub-yellow/30'
+                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/30'
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
               Annual
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-hub-yellow/15 text-hub-yellow border border-hub-yellow/30">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">
                 Save {ANNUAL_DISCOUNT_PCT}%
               </span>
             </button>
           </div>
+          <p className="mt-2 text-[11px] text-emerald-300 text-center">
+            Annual billing saves 17% - that&apos;s 2 months free.
+          </p>
         </div>
 
         {/* ─── Tier cards (4 cards — Pro is the conversion anchor) ─── */}

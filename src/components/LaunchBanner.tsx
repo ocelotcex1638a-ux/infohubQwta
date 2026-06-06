@@ -10,7 +10,8 @@
  * target audience) saw an "annoying ad bar" they couldn't stop. Now
  * localStorage so dismiss = permanent until we ship a new banner key.
  * Bump STORAGE_KEY when the message materially changes (e.g. launch
- * ends, prices change) so the banner re-surfaces for everyone.
+ * ends, prices change, annual discount callout changes) so the banner
+ * re-surfaces for everyone.
  *
  * Shown to EVERY user including admins. Admins were previously hidden
  * (rationale: "already Whale, no upsell") but that meant the team
@@ -30,7 +31,7 @@ import { Sparkles, X, ArrowRight } from 'lucide-react';
 
 // Bump when the banner message materially changes so the new copy
 // re-surfaces for users who'd dismissed the previous one.
-const STORAGE_KEY = 'launch-banner-dismissed-v1';
+const STORAGE_KEY = 'launch-banner-dismissed-v2';
 
 export default function LaunchBanner() {
   const { status } = useSession();
@@ -49,7 +50,7 @@ export default function LaunchBanner() {
   if (pathname === '/pricing') return null;
 
   // Don't render while session is resolving — avoids a flash before the
-  // dismissed-state hydrates from sessionStorage.
+  // dismissed-state hydrates from localStorage.
   if (status === 'loading') return null;
 
   if (dismissed) return null;
@@ -68,23 +69,28 @@ export default function LaunchBanner() {
         <div className="flex-1 min-w-0 flex items-center gap-2 text-[11px] sm:text-xs">
           <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0 animate-pulse" aria-hidden />
           <p className="text-neutral-200 truncate">
-            <span className="inline-flex items-center rounded-full bg-amber-400 px-2 py-[1px] font-extrabold uppercase tracking-wide text-black shadow-[0_0_16px_rgba(255,193,7,0.75)]">Free during launch!</span>
+            <span className="inline-flex items-center rounded-full bg-amber-400 px-2 py-[1px] font-extrabold uppercase tracking-wide text-black shadow-[0_0_16px_rgba(255,193,7,0.75)]">
+              Free during launch!
+            </span>
             <span className="text-neutral-300">
-              {' '}Trader, Pro + Whale tiers unlocked for everyone — free while we onboard early users.
+              {' '}Trader, Pro + Whale tiers unlocked for everyone.
+            </span>
+            <span className="ml-2 inline-flex items-center rounded-full bg-emerald-400/15 px-2 py-[1px] font-extrabold uppercase tracking-wide text-emerald-300 border border-emerald-400/30">
+              Annual -17%
             </span>
           </p>
           <Link
             href="/pricing"
-            className="hidden sm:inline-flex items-center gap-1 text-amber-300 hover:text-amber-200 font-semibold whitespace-nowrap"
+            className="hidden sm:inline-flex items-center gap-1 text-emerald-300 hover:text-emerald-200 font-semibold whitespace-nowrap"
           >
-            See pricing <ArrowRight className="w-3 h-3" />
+            Upgrade now <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
         <Link
           href="/pricing"
-          className="sm:hidden text-[11px] font-semibold text-amber-300 hover:text-amber-200 whitespace-nowrap"
+          className="sm:hidden text-[11px] font-semibold text-emerald-300 hover:text-emerald-200 whitespace-nowrap"
         >
-          Pricing →
+          Upgrade →
         </Link>
         <button
           type="button"
