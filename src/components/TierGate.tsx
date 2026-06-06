@@ -112,7 +112,7 @@ function LaunchHintChip({ requires }: { requires: Exclude<Tier, 'free'> }) {
     <div className={`mb-4 rounded-lg border ${bgClass} px-3 py-2 flex items-center gap-2 text-[12px]`}>
       <Icon className={`w-3.5 h-3.5 ${b.textColor} flex-shrink-0`} aria-hidden />
       <span className="text-neutral-300">
-        <strong className={b.textColor}>{b.label} tier</strong> feature — free during launch.{' '}
+        <strong className={b.textColor}>{b.label} tier</strong> feature.{' '}
         <Link href="/pricing" className="text-emerald-300 hover:underline">See pricing →</Link>
       </span>
     </div>

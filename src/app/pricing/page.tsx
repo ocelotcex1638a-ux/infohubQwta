@@ -52,10 +52,10 @@ function formatLimit(value: number): string {
   return value.toLocaleString();
 }
 
-/** "Pro" is the conversion-target middle tier in the 4-card desktop grid,
- *  but renders FIRST on mobile (conversion-focused stacking). Whale next
- *  as the premium anchor, then Trader as the cheap-entry paid, then Free. */
-const MOBILE_ORDER: Tier[] = ['pro', 'whale', 'trader', 'free'];
+/** Paid plans are shown first everywhere so Free doesn't set the anchor.
+ *  Pro leads, Trader follows as the entry paid tier, Whale is the premium
+ *  anchor, and Free stays last. */
+const CARD_ORDER: Tier[] = ['pro', 'trader', 'whale', 'free'];
 
 export default function PricingPage() {
   const { data: session } = useSession();
@@ -83,8 +83,10 @@ export default function PricingPage() {
           accent="hub-yellow"
           description={
             <>
-              Everything is free during launch. Annual billing saves 17% once checkout
-              goes live, so the lower rate stays easy to spot before you subscribe.
+              Paid plans already cover real use cases: more alerts, more watched
+              wallets, API archive, tax CSV, custom dashboards, setup scanner,
+              priority delivery, custom webhooks, and a 1:1 Telegram channel with
+              the team.
             </>
           }
         />
@@ -98,7 +100,6 @@ export default function PricingPage() {
             <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-2 py-[1px] mx-1 font-bold uppercase tracking-wide text-emerald-300 border border-emerald-400/30">
               Annual -17%
             </span>
-            · <Link href="/referrals" className="underline decoration-amber-400/40 hover:decoration-amber-300 font-medium">10% off forever for anyone you refer</Link>
           </p>
         </section>
 
@@ -135,22 +136,19 @@ export default function PricingPage() {
           <p className="mt-2 text-[11px] text-emerald-300 text-center">
             Annual billing saves 17% - that&apos;s 2 months free.
           </p>
+          <p className="mt-2 text-[11px] text-neutral-400 text-center leading-relaxed max-w-2xl mx-auto">
+            Trader adds more alerts and watched wallets. Pro adds API archive, tax CSV,
+            custom dashboards, and the setup scanner. Whale adds priority delivery,
+            custom webhooks, and a direct Telegram channel with the team.
+          </p>
         </div>
 
         {/* ─── Tier cards (4 cards — Pro is the conversion anchor) ─── */}
-        {/* DOM order is Pro → Whale → Trader → Free (mobile order). Desktop
-            reorders to Free → Trader → Pro → Whale via the literal
-            `sm:order-N` classes Tailwind can find at build time. 2×2 grid
-            on sm, 4-column row on lg. */}
+        {/* DOM order keeps the paid plans first on every breakpoint so Free
+            doesn't set the benchmark. 2×2 grid on sm, 4-column row on lg. */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          {MOBILE_ORDER.map((t) => {
-            const desktopOrder = TIER_ORDER.indexOf(t); // 0=free, 1=trader, 2=pro, 3=whale
-            // Literal class strings so Tailwind's content scanner picks them up
-            const desktopOrderClass =
-              desktopOrder === 0 ? 'sm:order-1'
-              : desktopOrder === 1 ? 'sm:order-2'
-              : desktopOrder === 2 ? 'sm:order-3'
-              : 'sm:order-4';
+          {CARD_ORDER.map((t) => {
+            const desktopOrderClass = 'sm:order-none';
             return (
               <TierCard
                 key={t}
@@ -296,7 +294,7 @@ export default function PricingPage() {
             />
             <FaqItem
               q="What's the difference between Trader, Pro, and Whale?"
-              a={`Trader ($${TIER_PRICE_MONTHLY.trader}) is active retail — every venue real-time, ${TIER_LIMITS.trader.maxAlerts} alerts, ${TIER_LIMITS.trader.maxWatchedWallets} wallets, ${TIER_LIMITS.trader.historyDays}d history, ${TIER_LIMITS.trader.apiPerMinute}/min API. Pro ($${TIER_PRICE_MONTHLY.pro}) is "trade for a living" — adds API archive (1y) + Tax CSV export + Custom dashboards + Setup scanner, plus ${TIER_LIMITS.pro.maxAlerts} alerts, ${TIER_LIMITS.pro.maxWatchedWallets} wallets, 1y history, ${TIER_LIMITS.pro.apiPerMinute}/min API. Whale ($${TIER_PRICE_MONTHLY.whale}) is funds + desks — adds priority alert delivery (dedicated queue), custom alert webhooks, 5y archive, unlimited everything, and a 1:1 Telegram channel with the team.`}
+              a={`Trader ($${TIER_PRICE_MONTHLY.trader}) is active retail — every venue real-time, ${TIER_LIMITS.trader.maxAlerts} alerts, ${TIER_LIMITS.trader.maxWatchedWallets} wallets, ${TIER_LIMITS.trader.historyDays}d history, ${TIER_LIMITS.trader.apiPerMinute}/min API. Pro ($${TIER_PRICE_MONTHLY.pro}) is "trade for a living" — adds API archive (1y) + Tax CSV export + Custom dashboards + Setup scanner, plus ${TIER_LIMITS.pro.maxAlerts} alerts, ${TIER_LIMITS.pro.maxWatchedWallets} wallets, 1y history, ${TIER_LIMITS.pro.apiPerMinute}/min API. Whale ($${TIER_PRICE_MONTHLY.whale}) is funds + desks — adds priority alert delivery (dedicated queue), custom alert webhooks, 5y archive, unlimited alerts, unlimited watched wallets, and a 1:1 Telegram channel with the team.`}
             />
             <FaqItem
               q="How far back does historical data go?"
@@ -308,7 +306,7 @@ export default function PricingPage() {
             />
             <FaqItem
               q="Is there a free trial?"
-              a="No traditional trial — but right now everyone gets full Trader + Pro + Whale features free during launch, which is effectively a long open trial of every paid tier. The Free tier itself stays free forever (no card required, no time limit), so you can always test the data terminal without committing to anything."
+              a="No traditional trial — but right now everyone gets full Trader + Pro + Whale features during launch, which is effectively an open access period for every paid tier. The Free tier itself stays free forever (no card required, no time limit), so you can always test the data terminal without committing to anything."
             />
             <FaqItem
               q="Earn 20% commission as an affiliate?"
@@ -720,7 +718,7 @@ function CheckoutComingSoonModal({
       >
         <Icon className={`w-10 h-10 mx-auto mb-3 ${b.textColor}`} aria-hidden />
         <h3 id="checkout-modal-title" className="text-base font-bold text-white mb-2">
-          {b.label} ({period}) — free during launch
+          {b.label} ({period}) — launch access open
         </h3>
         <p className="text-[12px] text-neutral-400 mb-4 leading-relaxed">
           You already have access to all {b.label} features. Crypto checkout via

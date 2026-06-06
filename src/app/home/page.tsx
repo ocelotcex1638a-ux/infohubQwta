@@ -452,7 +452,7 @@ export default function HomePage() {
                 The crypto-derivatives terminal for scalpers, day traders, swing traders, and holders.
               </h2>
               <p style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 8, maxWidth: 580, lineHeight: 1.5 }}>
-                Live funding, open interest, liquidations, whale positions, and on-chain context across {ALL_EXCHANGES.length} venues. Free during launch, with annual billing that saves {ANNUAL_DISCOUNT_PCT}% once checkout goes live.
+                Live funding, open interest, liquidations, whale positions, and on-chain context across {ALL_EXCHANGES.length} venues. Paid plans already unlock more alerts, more watched wallets, API archive, tax CSV, custom dashboards, setup scanner, priority delivery, custom webhooks, and a 1:1 Telegram channel.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14 }}>
                 <span style={{

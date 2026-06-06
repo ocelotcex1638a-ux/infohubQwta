@@ -8,7 +8,8 @@
  *   Trader $15  — Active retail. All venues + power dashboards + 15 alerts.
  *   Pro    $49  — "I trade for a living". + API archive, tax export,
  *                  custom dashboards, setup scanner.
- *   Whale  $99  — Funds + desks. + Priority alerts, unlimited everything.
+ *   Whale  $99  — Funds + desks. + Priority alerts, custom webhooks,
+ *                 1:1 Telegram.
  *
  * Today: Pro + Trader + Whale are "FREE DURING LAUNCH" — the prices
  * are visible on /pricing for transparency but no charges happen yet.
@@ -153,7 +154,7 @@ export const TIER_BRANDING: Record<Tier, TierBranding> = {
     bgTint: 'bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.05]',
     borderTint: 'border-amber-400/40',
     iconName: 'Crown',
-    tagline: 'Funds + desks — priority alerts + unlimited everything',
+    tagline: 'Funds + desks — priority alerts, custom webhooks, 1:1 Telegram',
   },
 };
 
@@ -245,7 +246,7 @@ export const TOOLS_BY_TIER: TierToolList[] = [
   {
     tier: 'whale',
     heading: 'Whale adds',
-    description: 'Funds + desks — priority alerts + unlimited everything',
+    description: 'Funds + desks — priority alerts, custom webhooks, and 1:1 Telegram',
     items: [
       { label: 'Priority alert delivery', hint: 'Dedicated Whale queue — delivers in seconds, vs the 5-min standard cron' },
       { label: 'Custom alert webhooks', href: '/developers/webhooks', hint: 'HMAC-signed POSTs to your endpoint' },

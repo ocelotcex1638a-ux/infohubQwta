@@ -142,7 +142,7 @@ export default function ToolsPage() {
           description={
             <>Whatever you trade — directional swings, intraday scalps, spot
               bags, options, or funding carry — there&apos;s a workbench here for
-              it. Everything below is free during launch. Jump to your style:</>
+              it. Jump to your style:</>
           }
           className="mb-4"
         />

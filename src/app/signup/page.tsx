@@ -288,6 +288,23 @@ function SignupContent() {
                   Create account
                 </h1>
                 <p className="text-neutral-500 text-sm mt-1.5">Sync watchlists, alerts &amp; settings across devices</p>
+                <div className="mt-5 rounded-xl border border-emerald-400/20 bg-emerald-500/[0.04] p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300">
+                    Upgrade later if you need more
+                  </p>
+                  <p className="mt-2 text-[12px] leading-relaxed text-neutral-400">
+                    Trader adds more alerts and watched wallets. Pro adds API archive,
+                    tax CSV, custom dashboards, and the setup scanner. Whale adds
+                    priority delivery, custom webhooks, and a 1:1 Telegram channel
+                    with the team.
+                  </p>
+                  <Link
+                    href="/pricing"
+                    className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-300 hover:text-emerald-200"
+                  >
+                    Compare tiers <ArrowRight size={14} />
+                  </Link>
+                </div>
               </div>
 
               {error && (

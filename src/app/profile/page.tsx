@@ -798,7 +798,7 @@ function BillingTab() {
       description={
         isAdminGrandfathered
           ? "Admin accounts are grandfathered to the Whale tier — all features unlocked, no billing."
-          : "Trader, Pro + Whale tiers are all free during launch — everyone gets unlimited everything while we onboard early users. See /pricing for what each tier will cost once we exit early access."
+          : "Trader, Pro + Whale tiers are available during launch. See /pricing for the real tier limits and post-launch prices."
       }
     >
       {/* Current-tier card */}
@@ -821,7 +821,7 @@ function BillingTab() {
                 {isAdminGrandfathered
                   ? 'Admin grandfather — no billing applies'
                   : isPaidTier
-                  ? `Free during launch (normally $${monthlyPrice}/mo)`
+                  ? `Launch access open (normally $${monthlyPrice}/mo)`
                   : 'No card required — Free tier stays free forever'}
               </div>
             </div>
@@ -873,7 +873,7 @@ function BillingTab() {
         >
           <div>
             <div className={`text-[13px] font-bold ${upgradeBranding.textColor}`}>
-              Upgrade to {upgradeBranding.label} — free during launch
+              Upgrade to {upgradeBranding.label} — see pricing
             </div>
             <div className="text-[11px] text-neutral-400 mt-0.5">{upgradeBranding.tagline}</div>
           </div>

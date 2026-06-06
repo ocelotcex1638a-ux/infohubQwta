@@ -974,8 +974,8 @@ function PlanUsagePanel({
             {isAdmin
               ? 'staff · grandfathered to Whale'
               : userTier === 'free'
-              ? 'no card needed · Pro free during launch'
-              : 'free during launch'}
+              ? 'no card needed · launch access open'
+              : 'launch access open'}
           </p>
         </div>
         <Link
@@ -999,7 +999,7 @@ function PlanUsagePanel({
             href="/pricing"
             className="block text-center text-xs font-semibold py-2 rounded-lg bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-all border border-emerald-400/30"
           >
-            Try paid features — free during launch →
+            See paid tiers →
           </Link>
           <Link
             href="/invite"

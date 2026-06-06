@@ -68,7 +68,7 @@ const STEPS: Step[] = [
           liquidations, spreads, whales, signals.
         </p>
         <p style={{ margin: 0, color: '#a3a3a3', fontSize: 12 }}>
-          Free during launch. No card required. 30-second tour will show you what to do first.
+          No card required. 30-second tour will show you what to do first.
         </p>
       </>
     ),
@@ -153,7 +153,7 @@ const STEPS: Step[] = [
           actually use — funding for your favourite symbol, your watchlist, your alerts.
         </p>
         <p style={{ margin: 0, color: '#a3a3a3', fontSize: 12 }}>
-          Drag widgets in, drop them where you want, layout auto-saves. (Pro tier feature — free during launch.)
+          Drag widgets in, drop them where you want, layout auto-saves. (Pro tier feature — see pricing.)
         </p>
       </>
     ),
