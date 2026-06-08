@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   TIER_ORDER,
+  PRICING_CARD_ORDER,
   TIER_LIMITS,
   TIER_PRICE_MONTHLY,
   TIER_PRICE_ANNUAL,
@@ -27,6 +28,16 @@ const ALL_TIERS: Tier[] = ['free', 'trader', 'pro', 'whale'];
 describe('TIER_ORDER', () => {
   it('is exactly free → trader → pro → whale', () => {
     expect(TIER_ORDER).toEqual(['free', 'trader', 'pro', 'whale']);
+  });
+});
+
+describe('PRICING_CARD_ORDER', () => {
+  it('leads with Pro and ends with Free for /pricing column alignment', () => {
+    expect(PRICING_CARD_ORDER).toEqual(['pro', 'trader', 'whale', 'free']);
+  });
+
+  it('contains every tier exactly once', () => {
+    expect([...PRICING_CARD_ORDER].sort()).toEqual([...TIER_ORDER].sort());
   });
 });
 

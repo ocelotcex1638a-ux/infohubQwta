@@ -43,6 +43,11 @@ export const TIER_ORDER: Tier[] = ['free', 'trader', 'pro', 'whale'];
  */
 export const MOST_POPULAR_TIER: Tier = 'pro';
 
+/** Column order on /pricing — Pro leads so Free doesn't anchor the grid.
+ *  Used for tier cards, feature boxes, and the comparison table so every
+ *  row stays visually aligned on desktop. */
+export const PRICING_CARD_ORDER: Tier[] = ['pro', 'trader', 'whale', 'free'];
+
 export interface TierLimits {
   /** API requests per minute (per key) */
   apiPerMinute: number;
@@ -215,7 +220,7 @@ export const TOOLS_BY_TIER: TierToolList[] = [
   {
     tier: 'trader',
     heading: 'Trader adds',
-    description: 'Active-retail power tools — all venues, wallet copy-trading, more alerts, longer history',
+    description: 'Everything in Free, plus more alerts and watched wallets, longer history, and active-retail power tools.',
     items: [
       { label: 'Spreads', href: '/spreads', hint: 'Cross-venue arb · net-of-fees' },
       { label: 'Funding Arb', href: '/spread-scanner', hint: 'Long/short pair grader A→D' },
@@ -233,7 +238,7 @@ export const TOOLS_BY_TIER: TierToolList[] = [
   {
     tier: 'pro',
     heading: 'Pro adds',
-    description: 'Trade-for-a-living tools — power API + tax + dashboards + scanner',
+    description: 'Everything in Trader, plus API archive, tax CSV, custom dashboards, and the setup scanner.',
     items: [
       { label: 'API funding-history archive (1y)', href: '/developers/docs', hint: 'Bulk historical funding export via /api/v1/funding/history' },
       { label: 'Tax CSV export', href: '/positions/tax', hint: 'Positions + funding paid + realized PnL' },
@@ -246,7 +251,7 @@ export const TOOLS_BY_TIER: TierToolList[] = [
   {
     tier: 'whale',
     heading: 'Whale adds',
-    description: 'Funds + desks — priority alerts, custom webhooks, and 1:1 Telegram',
+    description: 'Everything in Pro, plus priority delivery, custom webhooks, and a direct Telegram channel with the team.',
     items: [
       { label: 'Priority alert delivery', hint: 'Dedicated Whale queue — delivers in seconds, vs the 5-min standard cron' },
       { label: 'Custom alert webhooks', href: '/developers/webhooks', hint: 'HMAC-signed POSTs to your endpoint' },

@@ -23,7 +23,7 @@ import Footer from '@/components/Footer';
 import PageHero from '@/components/PageHero';
 import { Sparkles, Compass, Zap, Crown, Check, X as XIcon, ArrowRight, CreditCard } from 'lucide-react';
 import {
-  TIER_ORDER,
+  PRICING_CARD_ORDER,
   TIER_LIMITS,
   TIER_PRICE_MONTHLY,
   TIER_PRICE_ANNUAL,
@@ -52,10 +52,9 @@ function formatLimit(value: number): string {
   return value.toLocaleString();
 }
 
-/** Paid plans are shown first everywhere so Free doesn't set the anchor.
- *  Pro leads, Trader follows as the entry paid tier, Whale is the premium
- *  anchor, and Free stays last. */
-const CARD_ORDER: Tier[] = ['pro', 'trader', 'whale', 'free'];
+const TOOLS_BY_TIER_MAP = Object.fromEntries(
+  TOOLS_BY_TIER.map((entry) => [entry.tier, entry]),
+) as Record<Tier, TierToolList>;
 
 export default function PricingPage() {
   const { data: session } = useSession();
@@ -81,14 +80,6 @@ export default function PricingPage() {
           title="Pick your"
           accentNoun="tier"
           accent="hub-yellow"
-          description={
-            <>
-              Paid plans already cover real use cases: more alerts, more watched
-              wallets, API archive, tax CSV, custom dashboards, setup scanner,
-              priority delivery, custom webhooks, and a 1:1 Telegram channel with
-              the team.
-            </>
-          }
         />
 
         {/* ─── Launch notice + Monthly/Annual toggle ─── */}
@@ -103,7 +94,7 @@ export default function PricingPage() {
           </p>
         </section>
 
-        <div className="flex items-center justify-center mb-6">
+        <div className="flex justify-center mb-6">
           <div role="group" aria-label="Billing period" className="inline-flex rounded-full border border-white/[0.08] bg-white/[0.02] p-1">
             <button
               type="button"
@@ -133,52 +124,35 @@ export default function PricingPage() {
               </span>
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-emerald-300 text-center">
-            Annual billing saves 17% - that&apos;s 2 months free.
-          </p>
-          <p className="mt-2 text-[11px] text-neutral-400 text-center leading-relaxed max-w-2xl mx-auto">
-            Trader adds more alerts and watched wallets. Pro adds API archive, tax CSV,
-            custom dashboards, and the setup scanner. Whale adds priority delivery,
-            custom webhooks, and a direct Telegram channel with the team.
-          </p>
         </div>
 
         {/* ─── Tier cards (4 cards — Pro is the conversion anchor) ─── */}
         {/* DOM order keeps the paid plans first on every breakpoint so Free
             doesn't set the benchmark. 2×2 grid on sm, 4-column row on lg. */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          {CARD_ORDER.map((t) => {
-            const desktopOrderClass = 'sm:order-none';
-            return (
-              <TierCard
-                key={t}
-                tier={t}
-                period={period}
-                isCurrentTier={currentTier === t}
-                isMostPopular={t === MOST_POPULAR_TIER}
-                onSubscribe={() => setShowCheckoutModal(t)}
-                desktopOrderClass={desktopOrderClass}
-              />
-            );
-          })}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10 items-stretch">
+          {PRICING_CARD_ORDER.map((t) => (
+            <TierCard
+              key={t}
+              tier={t}
+              period={period}
+              isCurrentTier={currentTier === t}
+              isMostPopular={t === MOST_POPULAR_TIER}
+              onSubscribe={() => setShowCheckoutModal(t)}
+            />
+          ))}
         </section>
 
         {/* ─── What's in each tier — four cumulative columns showing
             what Free includes, what Trader adds, what Pro adds, what
             Whale adds. Surfaces the upgrade path concretely. ─── */}
         <section className="mb-12">
-          <h2 className="text-base font-bold text-white mb-1 px-1">
+          <h2 className="text-base font-bold text-white mb-4 px-1">
             What&apos;s in each tier
           </h2>
-          <p className="text-[12px] text-neutral-400 mb-4 px-1 leading-relaxed">
-            Each tier is cumulative — Trader includes everything in Free, Pro
-            includes everything in Trader, Whale includes everything in Pro.
-            Below is what each tier adds.
-          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {TOOLS_BY_TIER.map((tierList) => (
-              <TierToolListCard key={tierList.tier} tierList={tierList} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
+            {PRICING_CARD_ORDER.map((t) => (
+              <TierToolListCard key={t} tierList={TOOLS_BY_TIER_MAP[t]} />
             ))}
           </div>
 
@@ -205,7 +179,7 @@ export default function PricingPage() {
                     <th scope="col" className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-neutral-500 font-semibold sticky left-0 bg-hub-darker">
                       Feature
                     </th>
-                    {TIER_ORDER.map((t) => {
+                    {PRICING_CARD_ORDER.map((t) => {
                       const b = TIER_BRANDING[t];
                       const Icon = tierIcon(b.iconName);
                       const featured = t === 'pro';
@@ -234,7 +208,7 @@ export default function PricingPage() {
                           <tr className="bg-hub-darker">
                             <th
                               scope="colgroup"
-                              colSpan={1 + TIER_ORDER.length}
+                              colSpan={1 + PRICING_CARD_ORDER.length}
                               className="px-4 pt-4 pb-1.5 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-hub-yellow/80 sticky left-0 bg-hub-darker"
                             >
                               {row.group}
@@ -261,7 +235,7 @@ export default function PricingPage() {
                           >
                             {row.label}
                           </th>
-                          {TIER_ORDER.map((t) => (
+                          {PRICING_CARD_ORDER.map((t) => (
                             <td key={t} className={`px-4 py-2.5 text-center ${t === 'pro' ? 'bg-emerald-500/[0.04]' : ''}`}>
                               <FeatureCell value={row.values[t]} />
                             </td>
@@ -356,7 +330,6 @@ interface TierCardProps {
   isCurrentTier: boolean;
   isMostPopular: boolean;
   onSubscribe: () => void;
-  desktopOrderClass: string;
 }
 
 function TierCard({
@@ -365,7 +338,6 @@ function TierCard({
   isCurrentTier,
   isMostPopular,
   onSubscribe,
-  desktopOrderClass,
 }: TierCardProps) {
   const b = TIER_BRANDING[tier];
   const limits = TIER_LIMITS[tier];
@@ -383,8 +355,8 @@ function TierCard({
 
   return (
     <div
-      className={`relative rounded-xl border-2 ${b.borderTint} ${b.bgTint} p-5 flex flex-col ${desktopOrderClass} ${
-        isMostPopular ? 'ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-hub-black shadow-glow-md z-10 lg:scale-[1.03] lg:-translate-y-1' : ''
+      className={`relative rounded-xl border-2 ${b.borderTint} ${b.bgTint} p-5 flex flex-col h-full ${
+        isMostPopular ? 'ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-hub-black shadow-glow-md' : ''
       }`}
     >
       {isMostPopular && (
@@ -600,7 +572,7 @@ function TierToolListCard({ tierList }: { tierList: TierToolList }) {
     : 'bg-white/[0.02]';
 
   return (
-    <div className={`rounded-xl border ${borderClass} ${bgClass} p-4 flex flex-col`}>
+    <div className={`rounded-xl border ${borderClass} ${bgClass} p-4 flex flex-col h-full`}>
       <div className="flex items-center gap-2 mb-1">
         <Icon className={`w-4 h-4 ${branding.textColor}`} aria-hidden />
         <h3 className="text-[12px] font-bold uppercase tracking-[0.1em] text-white">
