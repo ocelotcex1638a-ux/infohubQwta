@@ -328,7 +328,9 @@ export default function ConnectionsPage() {
               <Wallet className="w-6 h-6 text-neutral-700 mx-auto mb-2" />
               <p className="text-sm text-neutral-400">No wallets connected yet.</p>
               <p className="text-[11px] text-neutral-600 mt-1">
-                Read-only — paste a wallet address to track its DEX positions.
+                Read-only — paste a wallet address to track its DEX positions. gTrade needs the{' '}
+                <strong className="text-neutral-500">Arbitrum</strong> chain (not Hyperliquid). Instant liq lookup at{' '}
+                <span className="text-emerald-300 font-mono">/trader/0x…</span> — no signup.
               </p>
             </div>
           ) : (

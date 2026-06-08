@@ -56,6 +56,24 @@ interface HLPosition {
   leverageType: 'cross' | 'isolated' | null;
 }
 
+interface GTradePosition {
+  symbol: string;
+  isLong: boolean;
+  sizeUsd: number;
+  entryPrice: number;
+  markPrice: number;
+  unrealizedPnl: number;
+  roePct: number;
+  leverage: number | null;
+  liquidationPrice: number | null;
+}
+
+interface GTradeDossier {
+  address: string;
+  summary: { openCount: number; totalNotional: number; totalUnrealized: number; totalMargin: number };
+  openPositions: GTradePosition[];
+}
+
 interface HLDossier {
   address: string;
   displayName: string | null;
@@ -241,6 +259,48 @@ function GMXPositionList({ positions, chain }: { positions: GMXPosition[]; chain
   );
 }
 
+function GTradePositionList({ positions }: { positions: GTradePosition[] }) {
+  if (positions.length === 0) {
+    return <div className="text-[11px] text-neutral-600 text-center py-3">No open positions on gTrade</div>;
+  }
+  return (
+    <div>
+      {positions.map((p, i) => (
+        <div key={i} className="flex items-center gap-3 py-2 border-b border-white/[0.04] last:border-0">
+          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+            p.isLong ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'
+          }`}>
+            {p.isLong ? 'L' : 'S'}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-white font-semibold">{p.symbol}</span>
+              {p.leverage !== null && (
+                <span className="text-[10px] font-mono text-hub-yellow/80 bg-hub-yellow/[0.08] px-1 rounded">{p.leverage.toFixed(1)}×</span>
+              )}
+            </div>
+            <div className="text-[10px] text-neutral-600 font-mono">
+              {fmtUSD(p.sizeUsd)} · entry ${p.entryPrice.toLocaleString('en-US', { maximumFractionDigits: p.entryPrice < 1 ? 4 : 2 })}
+              {p.markPrice > 0 && <> · now ${p.markPrice.toLocaleString('en-US', { maximumFractionDigits: p.markPrice < 1 ? 4 : 2 })}</>}
+              {p.liquidationPrice != null && p.liquidationPrice > 0 && (
+                <> · liq ${p.liquidationPrice.toLocaleString('en-US', { maximumFractionDigits: p.liquidationPrice < 1 ? 4 : 2 })}</>
+              )}
+            </div>
+          </div>
+          <div className="text-right whitespace-nowrap">
+            <div className={`text-xs font-mono font-semibold tabular-nums ${p.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {p.unrealizedPnl >= 0 ? '+' : ''}{fmtUSD(p.unrealizedPnl)}
+            </div>
+            <div className={`text-[9px] font-mono tabular-nums ${p.roePct >= 0 ? 'text-green-400/70' : 'text-red-400/70'}`}>
+              {fmtPct(p.roePct)}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function HLPositionList({ positions }: { positions: HLPosition[] }) {
   if (positions.length === 0) {
     return <div className="text-[11px] text-neutral-600 text-center py-3">No open positions on Hyperliquid</div>;
@@ -332,6 +392,17 @@ export default function TraderUnifiedPage() {
     enabled: !!address,
   });
 
+  const gtrade = useApi<GTradeDossier>({
+    key: address ? `trader-gtrade-${address}` : null,
+    refreshInterval: 60_000,
+    fetcher: async () => {
+      const res = await fetch(`/api/gtrade-traders/${address}`, { signal: AbortSignal.timeout(12_000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    enabled: !!address,
+  });
+
   // Auto-log the visit once we know the trader exists. Displayed name from HL
   // (if available) gets stored so the recents strip can show a friendly label.
   useRecordTraderVisit(address, hl.data?.displayName);
@@ -387,12 +458,14 @@ export default function TraderUnifiedPage() {
     const openUnrealized =
       (gmxArb.data?.openPositions ?? []).reduce((s, p) => s + p.unrealizedPnl, 0) +
       (gmxAvax.data?.openPositions ?? []).reduce((s, p) => s + p.unrealizedPnl, 0) +
-      (hl.data?.openPositions ?? []).reduce((s, p) => s + p.unrealizedPnl, 0);
+      (hl.data?.openPositions ?? []).reduce((s, p) => s + p.unrealizedPnl, 0) +
+      (gtrade.data?.openPositions ?? []).reduce((s, p) => s + p.unrealizedPnl, 0);
 
     const openNotional =
       (gmxArb.data?.openPositions ?? []).reduce((s, p) => s + p.sizeUsd, 0) +
       (gmxAvax.data?.openPositions ?? []).reduce((s, p) => s + p.sizeUsd, 0) +
-      (hl.data?.openPositions ?? []).reduce((s, p) => s + p.sizeUsd, 0);
+      (hl.data?.openPositions ?? []).reduce((s, p) => s + p.sizeUsd, 0) +
+      (gtrade.data?.openPositions ?? []).reduce((s, p) => s + p.sizeUsd, 0);
 
     const lifetimeRealized =
       (gmxArb.data?.summary?.realizedPnl ?? 0) +
@@ -405,16 +478,18 @@ export default function TraderUnifiedPage() {
     const openPositionCount =
       (gmxArb.data?.openPositions?.length ?? 0) +
       (gmxAvax.data?.openPositions?.length ?? 0) +
-      (hl.data?.openPositions?.length ?? 0);
+      (hl.data?.openPositions?.length ?? 0) +
+      (gtrade.data?.openPositions?.length ?? 0);
 
     const venuesActive = [
       (gmxArb.data?.openPositions?.length ?? 0) > 0,
       (gmxAvax.data?.openPositions?.length ?? 0) > 0,
       (hl.data?.openPositions?.length ?? 0) > 0,
+      (gtrade.data?.openPositions?.length ?? 0) > 0,
     ].filter(Boolean).length;
 
     return { openUnrealized, openNotional, lifetimeRealized, accountValue, openPositionCount, venuesActive };
-  }, [gmxArb.data, gmxAvax.data, hl.data]);
+  }, [gmxArb.data, gmxAvax.data, hl.data, gtrade.data]);
 
   if (!address) {
     return (
@@ -483,6 +558,7 @@ export default function TraderUnifiedPage() {
                     ...(gmxArb.data?.openPositions?.length || gmxArb.data?.summary?.totalTrades ? ['gmx-arbitrum'] : []),
                     ...(gmxAvax.data?.openPositions?.length || gmxAvax.data?.summary?.totalTrades ? ['gmx-avalanche'] : []),
                     ...(hl.data?.openPositions?.length || Object.keys(hl.data?.summary?.performance ?? {}).length ? ['hyperliquid'] : []),
+                    ...(gtrade.data?.openPositions?.length ? ['gtrade'] : []),
                   ]}
                   size={16}
                   className="!p-1.5 !rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]"
@@ -550,7 +626,7 @@ export default function TraderUnifiedPage() {
                 <div className={`font-mono text-sm tabular-nums font-semibold ${rollup.lifetimeRealized >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {rollup.lifetimeRealized >= 0 ? '+' : ''}{fmtUSD(rollup.lifetimeRealized)}
                 </div>
-                <div className="text-[9px] text-neutral-600 mt-0.5">3-venue sum</div>
+                <div className="text-[9px] text-neutral-600 mt-0.5">4-venue sum</div>
               </div>
             </div>
           </div>
@@ -570,6 +646,7 @@ export default function TraderUnifiedPage() {
           const arbActive = !!gmxArb.data && (gmxArb.data.openPositions.length > 0 || gmxArb.data.summary.totalTrades > 0);
           const avaxActive = !!gmxAvax.data && (gmxAvax.data.openPositions.length > 0 || gmxAvax.data.summary.totalTrades > 0);
           const hlActive = !!hl.data && (hl.data.openPositions.length > 0 || Object.keys(hl.data.summary.performance ?? {}).length > 0);
+          const gtradeActive = !!gtrade.data && (gtrade.data.openPositions.length > 0);
 
           const renderArb = (compact = false) => (
             <VenueSection
@@ -634,19 +711,42 @@ export default function TraderUnifiedPage() {
             </VenueSection>
           );
 
+          const renderGTrade = (compact = false) => (
+            <VenueSection
+              label="gTrade"
+              accent="#22d3ee"
+              href={`https://gains.trade/trader#${address}`}
+              explorerUrl={`https://arbiscan.io/address/${address}`}
+              isLoading={gtrade.isLoading}
+              error={gtrade.error}
+              hasActivity={gtradeActive}
+              compactWhenEmpty={compact}
+              stats={gtrade.data && gtradeActive ? [
+                { label: 'Open Notional', value: fmtUSD(gtrade.data.summary.totalNotional) },
+                { label: 'Unrealized', value: fmtUSD(gtrade.data.summary.totalUnrealized), positive: gtrade.data.summary.totalUnrealized >= 0 },
+                { label: 'Positions', value: `${gtrade.data.summary.openCount}` },
+                { label: 'Margin', value: fmtUSD(gtrade.data.summary.totalMargin ?? 0) },
+              ] : undefined}
+            >
+              <GTradePositionList positions={gtrade.data?.openPositions ?? []} />
+            </VenueSection>
+          );
+
           const activeRenderers: React.ReactNode[] = [];
           const emptyRenderers: React.ReactNode[] = [];
           if (arbActive || gmxArb.isLoading) activeRenderers.push(<div key="arb">{renderArb(false)}</div>);
           else emptyRenderers.push(<div key="arb-empty">{renderArb(true)}</div>);
           if (avaxActive || gmxAvax.isLoading) activeRenderers.push(<div key="avax">{renderAvax(false)}</div>);
           else emptyRenderers.push(<div key="avax-empty">{renderAvax(true)}</div>);
+          if (gtradeActive || gtrade.isLoading) activeRenderers.push(<div key="gtrade">{renderGTrade(false)}</div>);
+          else emptyRenderers.push(<div key="gtrade-empty">{renderGTrade(true)}</div>);
           if (hlActive || hl.isLoading) activeRenderers.push(<div key="hl">{renderHL(false)}</div>);
           else emptyRenderers.push(<div key="hl-empty">{renderHL(true)}</div>);
 
-          // Grid columns adapt to how many venues are actually active.
-          // 1 active → single column full-width, 2 → two columns, 3 → three.
           const activeCount = activeRenderers.length;
-          const gridCls = activeCount >= 3
+          const gridCls = activeCount >= 4
+            ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3'
+            : activeCount >= 3
             ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3'
             : activeCount === 2
               ? 'grid grid-cols-1 md:grid-cols-2 gap-3'
@@ -669,7 +769,7 @@ export default function TraderUnifiedPage() {
         {/* Footer meta */}
         <div className="mt-4 flex items-center gap-3 text-[10px] text-neutral-600 font-mono flex-wrap">
           <span className="inline-flex items-center gap-1">
-            <Activity className="w-2.5 h-2.5" /> Pulled in parallel from GMX V2 subgraphs + Hyperliquid mainnet
+            <Activity className="w-2.5 h-2.5" /> Pulled in parallel from GMX V2 subgraphs, gTrade on-chain, and Hyperliquid mainnet
           </span>
           <span>·</span>
           <span>Auto-refreshes every 60s</span>

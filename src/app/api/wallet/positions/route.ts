@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { gtradeWalletClient } from '@/lib/wallet-clients/gtrade';
 
 export const runtime = 'nodejs';
 export const preferredRegion = 'bom1';
@@ -407,7 +408,7 @@ async function fetchDYDXPositions(address: string): Promise<DexPosition[]> {
 
 export async function GET(request: NextRequest) {
   const address = new URL(request.url).searchParams.get('address');
-  const exchange = new URL(request.url).searchParams.get('exchange'); // Optional: 'hyperliquid', 'gmx', 'dydx', or 'all' (default)
+  const exchange = new URL(request.url).searchParams.get('exchange'); // Optional: 'hyperliquid', 'gmx', 'gtrade', 'dydx', or 'all' (default)
   if (!address) {
     return NextResponse.json({ error: 'Missing address parameter' }, { status: 400 });
   }
@@ -534,6 +535,35 @@ export async function GET(request: NextRequest) {
       allPositions.push(...positions);
       const totalValue = positions.reduce((s, p) => s + p.positionValue, 0);
       exchanges.push({ name: 'GMX', accountValue: totalValue, totalMarginUsed: 0, positionCount: positions.length });
+    })());
+  }
+
+  // gTrade (Gains Network, Arbitrum on-chain)
+  if (target === 'all' || target === 'gtrade') {
+    fetchers.push((async () => {
+      const positions = await gtradeWalletClient.fetchPositions(address);
+      for (const p of positions) {
+        const positionValue = p.positionValue ?? 0;
+        const margin = p.marginUsed ?? 0;
+        const pnl = p.unrealizedPnl ?? 0;
+        allPositions.push({
+          exchange: 'gTrade',
+          symbol: p.symbol,
+          side: p.side,
+          size: p.size ?? 0,
+          entryPrice: p.entryPrice ?? 0,
+          markPrice: p.markPrice ?? p.entryPrice ?? 0,
+          positionValue,
+          unrealizedPnl: pnl,
+          roe: margin > 0 ? (pnl / margin) * 100 : 0,
+          leverage: p.leverage ?? 0,
+          liquidationPrice: p.liquidationPrice ?? null,
+          marginUsed: margin,
+        });
+      }
+      const totalValue = positions.reduce((s, p) => s + (p.positionValue ?? 0), 0);
+      const totalMargin = positions.reduce((s, p) => s + (p.marginUsed ?? 0), 0);
+      exchanges.push({ name: 'gTrade', accountValue: totalValue, totalMarginUsed: totalMargin, positionCount: positions.length });
     })());
   }
 

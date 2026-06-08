@@ -744,6 +744,9 @@ async function _doInitDB(): Promise<void> {
       id SERIAL PRIMARY KEY,
       user_id TEXT NOT NULL,
       address TEXT NOT NULL,
+      -- venue: which upstream reader to poll for this address. Back-compat
+      -- default kept as 'hyperliquid' so existing rows behave unchanged.
+      venue TEXT NOT NULL DEFAULT 'hyperliquid',
       label TEXT,
       -- bitfield of enabled triggers; default: all on
       trigger_opened BOOLEAN DEFAULT TRUE,
@@ -758,7 +761,7 @@ async function _doInitDB(): Promise<void> {
       realized_pnl_usd REAL DEFAULT 1000,        -- |realized PnL| > $1k
       funding_paid_usd REAL DEFAULT 1000,        -- |Δ cumFunding| > $1k
       created_at TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE(user_id, address)
+      UNIQUE(user_id, address, venue)
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_hl_watched_user ON hl_watched_wallets(user_id)`;

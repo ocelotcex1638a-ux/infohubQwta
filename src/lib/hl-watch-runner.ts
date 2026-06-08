@@ -41,6 +41,7 @@ interface SubscriberRow {
   id: number;
   user_id: string;
   address: string;
+  venue: string;
   label: string | null;
   trigger_opened: boolean;
   trigger_closed: boolean;
@@ -124,13 +125,15 @@ async function runTickInner(): Promise<WatchTickStats> {
   const sql = getSQL();
 
   const addrRows = await sql`
-    SELECT DISTINCT address FROM hl_watched_wallets
-  ` as Array<{ address: string }>;
-  stats.addresses = addrRows.length;
+    SELECT DISTINCT address, venue FROM hl_watched_wallets
+  ` as Array<{ address: string; venue: string }>;
+  // addrRows may contain multiple rows per address (one per venue).
+  const uniqueAddrs = new Set(addrRows.map(r => r.address));
+  stats.addresses = uniqueAddrs.size;
   if (addrRows.length === 0) return { ...stats, ok: true, durationMs: Date.now() - t0 };
 
   const subRows = await sql`
-    SELECT id, user_id, address, label,
+    SELECT id, user_id, address, venue, label,
            trigger_opened, trigger_closed, trigger_size_changed,
            trigger_liq_danger, trigger_realized_pnl, trigger_funding_paid,
            size_change_pct, liq_danger_pct, realized_pnl_usd, funding_paid_usd
@@ -173,14 +176,17 @@ async function runTickInner(): Promise<WatchTickStats> {
   const CONCURRENCY = 16;
   type Job = { address: string; venue: Venue };
   const queue: Job[] = [];
-  for (const r of addrRows) for (const v of VENUES) queue.push({ address: r.address, venue: v });
+  // Build jobs only for the (address, venue) pairs users actually subscribed to
+  for (const r of addrRows) queue.push({ address: r.address, venue: r.venue as Venue });
   const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
     while (true) {
       const job = queue.shift();
       if (!job) return;
       const key = `${job.address}|${job.venue}`;
       try {
-        await processAddressVenue(job.address, job.venue, subsByAddr.get(job.address) ?? [], snapByKey.get(key) ?? null, sql, stats);
+        // Only pass subscribers who subscribed for this venue
+        const subsForAddr = (subsByAddr.get(job.address) ?? []).filter(s => (s as any).venue === job.venue);
+        await processAddressVenue(job.address, job.venue, subsForAddr, snapByKey.get(key) ?? null, sql, stats);
       } catch (e) {
         stats.errors.push(`${job.address.slice(0, 8)}/${job.venue}: ${e instanceof Error ? e.message : 'unknown'}`);
       }
