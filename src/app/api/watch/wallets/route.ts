@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, getUserTier } from '@/lib/auth';
 import { getSQL, isDBConfigured } from '@/lib/db';
-import { parseJsonbArray, parseJsonbObject, MAX_WATCHED_WALLETS } from '@/lib/hl-watch';
+import { parseJsonbArray, parseJsonbObject, MAX_WATCHED_WALLETS, VENUES } from '@/lib/hl-watch';
 import { TIER_LIMITS } from '@/lib/constants/tiers';
 
 export const runtime = 'nodejs';
@@ -31,7 +31,7 @@ export async function GET() {
   const userId = session.user.id;
 
   const wallets = await sql`
-    SELECT id, address, label,
+    SELECT id, address, venue, label,
            trigger_opened, trigger_closed, trigger_size_changed,
            trigger_liq_danger, trigger_realized_pnl, trigger_funding_paid,
            size_change_pct, liq_danger_pct, realized_pnl_usd, funding_paid_usd,
@@ -39,7 +39,7 @@ export async function GET() {
     FROM hl_watched_wallets
     WHERE user_id = ${userId}
     ORDER BY created_at DESC
-  ` as Array<{ id: number; address: string; label: string | null; created_at: string }>;
+  ` as Array<{ id: number; address: string; venue: string; label: string | null; created_at: string }>;
 
   // Pull the latest 50 events across all the user's watched addresses
   // (across both venues — gTrade + Hyperliquid). Defensively parse the
@@ -77,14 +77,29 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   if (!isDBConfigured()) return NextResponse.json({ error: 'database not configured' }, { status: 503 });
 
-  let body: { address?: string; label?: string };
+  let body: { address?: string; label?: string; venue?: string; chain?: string };
   try { body = await req.json(); } catch { body = {}; }
-
   const address = (body.address ?? '').trim().toLowerCase();
   if (!ADDR_RE.test(address)) {
     return NextResponse.json({ error: 'invalid EVM address' }, { status: 400 });
   }
   const label = (body.label ?? '').trim().slice(0, 80) || null;
+
+  // Determine venue: accept explicit `venue` (one of VENUES), or map
+  // known chains (e.g. 'arbitrum') to the appropriate venue. Default
+  // to 'hyperliquid' for backward compatibility.
+  let venue = 'hyperliquid';
+  const vraw = (body.venue ?? body.chain ?? '').toString().trim().toLowerCase();
+  if (vraw) {
+    if (vraw === 'arbitrum') {
+      // gTrade is the Arbitrum on-chain reader we support today
+      venue = 'gtrade';
+    } else if (VENUES.includes(vraw as any)) {
+      venue = vraw as any;
+    } else {
+      return NextResponse.json({ error: `unsupported venue/chain: ${vraw}` }, { status: 400 });
+    }
+  }
 
   const sql = getSQL();
   const userId = session.user.id;
@@ -130,11 +145,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const [row] = await sql`
-      INSERT INTO hl_watched_wallets (user_id, address, label)
-      VALUES (${userId}, ${address}, ${label})
-      ON CONFLICT (user_id, address) DO UPDATE SET label = EXCLUDED.label
-      RETURNING id, address, label, created_at
-    ` as Array<{ id: number; address: string; label: string | null; created_at: string }>;
+      INSERT INTO hl_watched_wallets (user_id, address, venue, label)
+      VALUES (${userId}, ${address}, ${venue}, ${label})
+      ON CONFLICT (user_id, address, venue) DO UPDATE SET label = EXCLUDED.label
+      RETURNING id, address, venue, label, created_at
+    ` as Array<{ id: number; address: string; venue: string; label: string | null; created_at: string }>;
     return NextResponse.json({ wallet: row });
   } catch (e) {
     console.error('[watch/wallets POST] insert failed:', e);

@@ -39,7 +39,7 @@ const COLLATERALS: Record<number, { symbol: string; decimals: number; usdRef: 's
   1: { symbol: 'DAI',  decimals: 18, usdRef: 'stable' },
   2: { symbol: 'ETH',  decimals: 18, usdRef: 'crypto' }, // WETH on Arb
   3: { symbol: 'USDC', decimals: 6,  usdRef: 'stable' },
-  4: { symbol: 'ARB',  decimals: 18, usdRef: 'crypto' },
+  4: { symbol: 'GNS',  decimals: 18, usdRef: 'crypto' },
 };
 
 const TRADE_TUPLE =

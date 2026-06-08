@@ -226,6 +226,7 @@ function WatchPageInner() {
   const [loading, setLoading] = useState(true);
   const [addrInput, setAddrInput] = useState(prefillAddr);
   const [labelInput, setLabelInput] = useState('');
+  const [chainInput, setChainInput] = useState('arbitrum');
   // Refs for the deep-link flow: when the user lands here from
   // /trader/[address]'s "Watch positions" CTA the address is
   // already filled — we scroll the add-form into view and focus
@@ -418,7 +419,7 @@ function WatchPageInner() {
       const res = await fetch('/api/watch/wallets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: addr, label }),
+        body: JSON.stringify({ address: addr, label, chain: chainInput }),
       });
       if (res.ok) await load();
     } catch (e) { console.error('[watch] subscribe error:', e); }
@@ -434,7 +435,7 @@ function WatchPageInner() {
       const res = await fetch('/api/watch/wallets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: addr, label: labelInput.trim() || null }),
+        body: JSON.stringify({ address: addr, label: labelInput.trim() || null, chain: chainInput }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || `HTTP ${res.status}`);
@@ -635,7 +636,7 @@ function WatchPageInner() {
               </span>
             )}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px_auto] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_180px_auto] gap-2">
             <input
               type="text" value={addrInput}
               onChange={e => { setAddrInput(e.target.value); setError(null); }}
@@ -646,6 +647,16 @@ function WatchPageInner() {
               className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white font-mono placeholder-neutral-600 focus:outline-none focus:border-hub-yellow/40"
               autoComplete="off" spellCheck={false}
             />
+            <select
+              value={chainInput}
+              onChange={e => setChainInput(e.target.value)}
+              aria-label="Chain / venue"
+              className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-hub-yellow/40"
+            >
+              <option value="hyperliquid">Hyperliquid</option>
+              <option value="arbitrum">Arbitrum (gTrade)</option>
+              <option value="gmx">GMX</option>
+            </select>
             <input
               ref={labelInputRef}
               type="text" value={labelInput}

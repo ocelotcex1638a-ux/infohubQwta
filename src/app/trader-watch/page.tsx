@@ -179,6 +179,59 @@ async function fetchGMXPositions(address: string, chain: 'arbitrum' | 'avalanche
   }
 }
 
+interface GTradePositionRow {
+  symbol: string;
+  isLong: boolean;
+  sizeUsd: number;
+  entryPrice: number;
+  markPrice: number;
+  unrealizedPnl: number;
+  roePct: number;
+  leverage: number | null;
+  liquidationPrice: number | null;
+}
+
+interface GTradeDossier {
+  address: string;
+  openPositions: GTradePositionRow[];
+}
+
+async function fetchGTradePositions(address: string): Promise<NormalizedPosition[]> {
+  try {
+    const res = await fetch(`/api/gtrade-traders/${address}`, {
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as Partial<GTradeDossier>;
+    const positions = json?.openPositions ?? [];
+    return positions.map(p => {
+      const mark = p.markPrice;
+      const liq = p.liquidationPrice;
+      const liqDist = (liq != null && mark > 0)
+        ? (Math.abs(mark - liq) / mark) * 100
+        : null;
+      return {
+        trader: address.toLowerCase(),
+        traderLabel: trunc(address),
+        venue: 'gTrade' as const,
+        symbol: (p.symbol || '').toUpperCase(),
+        side: p.isLong ? 'long' : 'short',
+        sizeUsd: p.sizeUsd,
+        entryPrice: p.entryPrice,
+        markPrice: mark,
+        unrealizedPnl: p.unrealizedPnl,
+        pnlPct: p.roePct,
+        liqPrice: liq,
+        liqDistPct: liqDist,
+        leverage: p.leverage ?? null,
+        funding8hPct: null,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 async function fetchHLPositions(address: string): Promise<NormalizedPosition[]> {
   try {
     const res = await fetch(`/api/hl-traders/${address}`, {
@@ -302,11 +355,12 @@ export default function TraderWatchPage() {
     // venue tagging.
     const tasks: Promise<NormalizedPosition[]>[] = [];
     for (const b of bookmarks) {
-      const venues = b.venues ?? ['gmx-arbitrum', 'gmx-avalanche', 'hyperliquid'];
+      const venues = b.venues ?? ['gmx-arbitrum', 'gmx-avalanche', 'hyperliquid', 'gtrade'];
       for (const v of venues) {
         if (v === 'gmx-arbitrum')   tasks.push(fetchGMXPositions(b.address, 'arbitrum'));
         if (v === 'gmx-avalanche')  tasks.push(fetchGMXPositions(b.address, 'avalanche'));
         if (v === 'hyperliquid')    tasks.push(fetchHLPositions(b.address));
+        if (v === 'gtrade')         tasks.push(fetchGTradePositions(b.address));
       }
     }
 
