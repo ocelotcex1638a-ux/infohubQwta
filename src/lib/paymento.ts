@@ -3,7 +3,7 @@ import { TIER_PRICE_ANNUAL, TIER_PRICE_MONTHLY, type Tier } from '@/lib/constant
 
 export const PAYMENTO_API_BASE = 'https://api.paymento.io/v1';
 export const PAYMENTO_GATEWAY_BASE = 'https://app.paymento.io/gateway';
-const PAYMENTO_REQUEST_TIMEOUT_MS = 12000;
+const PAYMENTO_REQUEST_TIMEOUT_MS = 8000;
 const PAYMENTO_SETTINGS_TIMEOUT_MS = 2500;
 
 export type PaymentoTier = Exclude<Tier, 'free'>;

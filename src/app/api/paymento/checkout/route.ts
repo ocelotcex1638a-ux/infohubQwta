@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, verifySameOrigin } from '@/lib/auth';
-import { initDB, isDBConfigured, getSQL, recordAuditEvent } from '@/lib/db';
+import { isDBConfigured } from '@/lib/db';
 import {
   buildPaymentoAdditionalData,
   buildPaymentoGatewayUrl,
@@ -72,9 +72,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid amount' }, { status: 400, headers: NO_STORE });
   }
 
-  await initDB();
-  const db = getSQL();
-
   const orderId = buildPaymentoOrderId();
   const baseUrl = getBaseUrl(request);
   const returnUrl = buildPaymentoReturnUrl(baseUrl, {
@@ -103,78 +100,20 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    // Keep the checkout request focused on creating the hosted session.
-    // IPN should be configured once in Paymento, not on every checkout.
-
-    await db`
-      INSERT INTO paymento_checkouts (
-        user_id, order_id, tier, period, fiat_amount, fiat_currency,
-        status, return_url, callback_url, email, additional_data,
-        request_payload, updated_at
-      )
-      VALUES (
-        ${session.user.id},
-        ${orderId},
-        ${paymentTier},
-        ${billingPeriod},
-        ${amountUsd},
-        'USD',
-        'creating',
-        ${returnUrl},
-        ${callbackUrl},
-        ${email},
-        ${JSON.stringify(additionalData)}::jsonb,
-        ${JSON.stringify(requestPayload)}::jsonb,
-        NOW()
-      )
-    `;
-
     const paymentoResponse = await createPaymentoRequest(requestPayload);
     const token = extractToken(paymentoResponse.body);
     if (paymentoResponse.success === false) {
-      await db`
-        UPDATE paymento_checkouts
-        SET status = 'failed',
-            verify_payload = ${JSON.stringify(paymentoResponse)}::jsonb,
-            updated_at = NOW()
-        WHERE order_id = ${orderId}
-      `;
       return NextResponse.json(
         { error: paymentoResponse.message || paymentoResponse.error || 'Paymento rejected the request' },
         { status: 502, headers: NO_STORE },
       );
     }
     if (!token) {
-      await db`
-        UPDATE paymento_checkouts
-        SET status = 'failed',
-            verify_payload = ${JSON.stringify(paymentoResponse)}::jsonb,
-            updated_at = NOW()
-        WHERE order_id = ${orderId}
-      `;
       return NextResponse.json(
         { error: paymentoResponse.message || paymentoResponse.error || 'Paymento did not return a token' },
         { status: 502, headers: NO_STORE },
       );
     }
-
-    await db`
-      UPDATE paymento_checkouts
-      SET token = ${token},
-          status = 'requested',
-          verify_payload = ${JSON.stringify(paymentoResponse)}::jsonb,
-          updated_at = NOW()
-      WHERE order_id = ${orderId}
-    `;
-
-    await recordAuditEvent('paymento_checkout_created', {
-      userId: session.user.id,
-      orderId,
-      token,
-      tier: paymentTier,
-      period: billingPeriod,
-      amountUsd,
-    }).catch(() => undefined);
 
     return NextResponse.json(
       {
@@ -192,12 +131,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Paymento checkout error:', error);
-    await db`
-      UPDATE paymento_checkouts
-      SET status = 'failed',
-          updated_at = NOW()
-      WHERE order_id = ${orderId}
-    `.catch(() => undefined);
     return NextResponse.json(
       { error: 'Unable to start Paymento checkout' },
       { status: 500, headers: NO_STORE },

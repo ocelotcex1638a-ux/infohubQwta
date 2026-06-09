@@ -64,6 +64,127 @@ function computeNextExpiry(currentExpiresAt: Date | null, period: PaymentoPeriod
   return next;
 }
 
+function parseAmount(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+type CheckoutRow = {
+  id: number;
+  user_id: string;
+  order_id: string;
+  token: string | null;
+  payment_id: string | number | null;
+  tier: string;
+  period: string;
+  fiat_amount: string | number;
+  fiat_currency: string;
+  status: string;
+  order_status: number | null;
+  return_url: string | null;
+  callback_url: string | null;
+  email: string | null;
+  additional_data: unknown;
+  request_payload: unknown;
+  verify_payload: unknown;
+  callback_payload: unknown;
+  paid_at: string | Date | null;
+  verified_at: string | Date | null;
+  expires_at: string | Date | null;
+};
+
+type UserRow = {
+  id: string;
+  email: string | null;
+  role: string | null;
+  billing_tier: string | null;
+  billing_expires_at: string | Date | null;
+  referred_by_user_id: string | null;
+};
+
+async function upsertCheckoutRow(
+  tx: any,
+  params: {
+    userId: string;
+    orderId: string;
+    token: string | null;
+    paymentId: number | null;
+    tier: PaymentoTier;
+    period: PaymentoPeriod;
+    amountUsd: number;
+    currency: string;
+    status: string;
+    orderStatus: number;
+    returnUrl: string | null;
+    callbackUrl: string | null;
+    email: string | null;
+    additionalData: Record<string, string>;
+    requestPayload: unknown;
+    verifyPayload: unknown;
+    callbackPayload: unknown;
+    paidAt: string | null;
+    verifiedAt: string | null;
+    expiresAt: string | null;
+  },
+) {
+  await tx`
+    INSERT INTO paymento_checkouts (
+      user_id, order_id, token, payment_id, tier, period, fiat_amount, fiat_currency,
+      status, order_status, return_url, callback_url, email, additional_data,
+      request_payload, verify_payload, callback_payload, paid_at, verified_at, expires_at,
+      updated_at
+    )
+    VALUES (
+      ${params.userId},
+      ${params.orderId},
+      ${params.token},
+      ${params.paymentId},
+      ${params.tier},
+      ${params.period},
+      ${params.amountUsd},
+      ${params.currency},
+      ${params.status},
+      ${params.orderStatus},
+      ${params.returnUrl},
+      ${params.callbackUrl},
+      ${params.email},
+      ${JSON.stringify(params.additionalData)}::jsonb,
+      ${JSON.stringify(params.requestPayload)}::jsonb,
+      ${JSON.stringify(params.verifyPayload)}::jsonb,
+      ${JSON.stringify(params.callbackPayload)}::jsonb,
+      ${params.paidAt},
+      ${params.verifiedAt},
+      ${params.expiresAt},
+      NOW()
+    )
+    ON CONFLICT (order_id) DO UPDATE SET
+      user_id = EXCLUDED.user_id,
+      token = COALESCE(EXCLUDED.token, paymento_checkouts.token),
+      payment_id = COALESCE(EXCLUDED.payment_id, paymento_checkouts.payment_id),
+      tier = EXCLUDED.tier,
+      period = EXCLUDED.period,
+      fiat_amount = EXCLUDED.fiat_amount,
+      fiat_currency = EXCLUDED.fiat_currency,
+      status = EXCLUDED.status,
+      order_status = EXCLUDED.order_status,
+      return_url = COALESCE(EXCLUDED.return_url, paymento_checkouts.return_url),
+      callback_url = COALESCE(EXCLUDED.callback_url, paymento_checkouts.callback_url),
+      email = COALESCE(EXCLUDED.email, paymento_checkouts.email),
+      additional_data = EXCLUDED.additional_data,
+      request_payload = COALESCE(EXCLUDED.request_payload, paymento_checkouts.request_payload),
+      verify_payload = EXCLUDED.verify_payload,
+      callback_payload = EXCLUDED.callback_payload,
+      paid_at = EXCLUDED.paid_at,
+      verified_at = EXCLUDED.verified_at,
+      expires_at = EXCLUDED.expires_at,
+      updated_at = NOW()
+  `;
+}
+
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const secret = getPaymentoSecretKey();
@@ -125,140 +246,146 @@ export async function POST(request: NextRequest) {
       pc.callback_payload,
       pc.paid_at,
       pc.verified_at,
-      pc.expires_at,
-      u.email AS user_email,
-      u.role AS user_role,
-      u.billing_tier AS current_billing_tier,
-      u.billing_expires_at,
-      u.referred_by_user_id
+      pc.expires_at
     FROM paymento_checkouts pc
-    JOIN users u ON u.id = pc.user_id
     WHERE pc.token = ${token || null} OR pc.order_id = ${orderId || ''}
     LIMIT 1
-  ` as Array<{
-    id: number;
-    user_id: string;
-    order_id: string;
-    token: string | null;
-    payment_id: string | number | null;
-    tier: string;
-    period: string;
-    fiat_amount: string | number;
-    fiat_currency: string;
-    status: string;
-    order_status: number | null;
-    return_url: string | null;
-    callback_url: string | null;
-    email: string | null;
-    additional_data: unknown;
-    request_payload: unknown;
-    verify_payload: unknown;
-    callback_payload: unknown;
-    paid_at: string | Date | null;
-    verified_at: string | Date | null;
-    expires_at: string | Date | null;
-    user_email: string | null;
-    user_role: string | null;
-    current_billing_tier: string | null;
-    billing_expires_at: string | Date | null;
-    referred_by_user_id: string | null;
-  }>;
+  ` as CheckoutRow[];
 
-  const checkout = checkoutRows[0];
-  if (!checkout) {
-    console.error('Paymento webhook: unknown order', { token, orderId, orderStatus });
+  const checkout = checkoutRows[0] ?? null;
+  const resolvedUserId = checkout?.user_id ?? callbackData.userId ?? null;
+  if (!resolvedUserId) {
+    console.error('Paymento webhook: missing user identity', { token, orderId, orderStatus, callbackData });
+    return NextResponse.json({ error: 'Missing payment metadata' }, { status: 500, headers: NO_STORE });
+  }
+
+  const userRows = await db`
+    SELECT id, email, role, billing_tier, billing_expires_at, referred_by_user_id
+    FROM users
+    WHERE id = ${resolvedUserId}
+    LIMIT 1
+  ` as UserRow[];
+  const user = userRows[0];
+  if (!user) {
+    console.error('Paymento webhook: unknown user', { token, orderId, orderStatus, userId: resolvedUserId });
     return NextResponse.json({ error: 'Unknown order' }, { status: 500, headers: NO_STORE });
   }
 
-  const tier = normalizeTier(checkout.tier);
-  const period = normalizePeriod(checkout.period);
+  const tier = normalizeTier(checkout?.tier ?? callbackData.tier);
+  const period = normalizePeriod(checkout?.period ?? callbackData.period);
   if (!tier || !period) {
     return NextResponse.json({ error: 'Invalid checkout record' }, { status: 500, headers: NO_STORE });
   }
 
-  if (checkout.status === 'approved' || checkout.status === 'paid') {
+  const amountUsd = parseAmount(callbackData.amountUsd) ?? Number(checkout?.fiat_amount ?? 0);
+  const currency = (checkout?.fiat_currency ?? callbackData.currency ?? 'USD').toString() || 'USD';
+  const nextTier = user.role === 'admin'
+    ? 'whale'
+    : TIER_RANK[tier] > TIER_RANK[normalizeTier(user.billing_tier) ?? 'free']
+      ? tier
+      : (normalizeTier(user.billing_tier) ?? 'free');
+  const currentExpiresAt = user.billing_expires_at ? new Date(user.billing_expires_at) : null;
+  const finalStatus = isPaymentoFinalStatus(orderStatus);
+  const currentStatus = checkout?.status ?? statusLabel(orderStatus);
+
+  if (checkout && (currentStatus === 'approved' || currentStatus === 'paid')) {
     return NextResponse.json({ ok: true, duplicate: true }, { headers: NO_STORE });
   }
 
-  const verifiedPayload = isPaymentoFinalStatus(orderStatus)
-    ? await verifyPaymentoRequest(token || checkout.token || '')
+  const verifiedPayload = finalStatus
+    ? await verifyPaymentoRequest(token || checkout?.token || '')
     : null;
 
-  if (isPaymentoFinalStatus(orderStatus) && !verifiedPayload?.success) {
-    await db`
-      UPDATE paymento_checkouts
-      SET status = ${statusLabel(orderStatus)},
-          order_status = ${orderStatus},
-          callback_payload = ${JSON.stringify(payload)}::jsonb,
-          verify_payload = ${JSON.stringify(verifiedPayload ?? {})}::jsonb,
-          updated_at = NOW()
-      WHERE id = ${checkout.id}
-    `.catch(() => undefined);
+  if (finalStatus && !verifiedPayload?.success) {
+    await db.begin(async (txRaw) => {
+      const tx = txRaw as any;
+      await upsertCheckoutRow(tx, {
+        userId: user.id,
+        orderId: checkout?.order_id ?? orderId,
+        token: token || checkout?.token || null,
+        paymentId: typeof payload.PaymentId === 'number' ? payload.PaymentId : Number(payload.PaymentId ?? 0) || null,
+        tier,
+        period,
+        amountUsd,
+        currency,
+        status: statusLabel(orderStatus),
+        orderStatus,
+        returnUrl: checkout?.return_url ?? null,
+        callbackUrl: checkout?.callback_url ?? null,
+        email: checkout?.email ?? user.email,
+        additionalData: callbackData,
+        requestPayload: checkout?.request_payload ?? null,
+        verifyPayload: verifiedPayload ?? {},
+        callbackPayload: payload,
+        paidAt: null,
+        verifiedAt: null,
+        expiresAt: null,
+      });
+    }).catch(() => undefined);
     return NextResponse.json({ error: 'Payment verification failed' }, { status: 502, headers: NO_STORE });
   }
 
-  const callbackJson = JSON.stringify(payload);
-  const verifiedJson = JSON.stringify(verifiedPayload ?? {});
   const finalizedAt = new Date().toISOString();
-  const currentExpiresAt = checkout.billing_expires_at
-    ? new Date(checkout.billing_expires_at)
-    : null;
-  const currentActiveTier = currentExpiresAt && Number.isFinite(currentExpiresAt.getTime()) && currentExpiresAt.getTime() > Date.now()
-    ? (normalizeTier(checkout.current_billing_tier) ?? 'free')
-    : 'free';
-  const nextTier = TIER_RANK[tier] > TIER_RANK[currentActiveTier] ? tier : currentActiveTier === 'free'
-    ? tier
-    : currentActiveTier;
+  const nextExpiry = finalStatus ? computeNextExpiry(currentExpiresAt, period) : null;
+  const callbackJson = payload;
+  const verifiedJson = verifiedPayload ?? {};
+  const paymentId = typeof payload.PaymentId === 'number' ? payload.PaymentId : Number(payload.PaymentId ?? 0) || null;
 
   await db.begin(async (txRaw) => {
     const tx = txRaw as any;
-    const lockedRows = await tx`
-      SELECT id, verified_at, status
-      FROM paymento_checkouts
-      WHERE id = ${checkout.id}
-      FOR UPDATE
-    ` as Array<{ id: number; verified_at: string | Date | null; status: string }>;
-
-    if (lockedRows[0]?.verified_at || lockedRows[0]?.status === 'approved' || lockedRows[0]?.status === 'paid') {
-      return;
+    if (checkout?.id) {
+      const lockedRows = await tx`
+        SELECT id, verified_at, status
+        FROM paymento_checkouts
+        WHERE id = ${checkout.id}
+        FOR UPDATE
+      ` as Array<{ id: number; verified_at: string | Date | null; status: string }>;
+      if (lockedRows[0]?.verified_at || lockedRows[0]?.status === 'approved' || lockedRows[0]?.status === 'paid') {
+        return;
+      }
     }
 
-    const nextExpiry = computeNextExpiry(currentExpiresAt, period);
+    await upsertCheckoutRow(tx, {
+      userId: user.id,
+      orderId: checkout?.order_id ?? orderId,
+      token: token || checkout?.token || null,
+      paymentId,
+      tier,
+      period,
+      amountUsd,
+      currency,
+      status: finalStatus ? 'approved' : statusLabel(orderStatus),
+      orderStatus,
+      returnUrl: checkout?.return_url ?? null,
+      callbackUrl: checkout?.callback_url ?? null,
+      email: checkout?.email ?? user.email,
+      additionalData: checkout?.additional_data ? callbackData : callbackData,
+      requestPayload: checkout?.request_payload ?? null,
+      verifyPayload: verifiedJson,
+      callbackPayload: callbackJson,
+      paidAt: finalStatus ? finalizedAt : null,
+      verifiedAt: finalStatus ? finalizedAt : null,
+      expiresAt: finalStatus && nextExpiry ? nextExpiry.toISOString() : null,
+    });
 
-    await tx`
-      UPDATE paymento_checkouts
-      SET token = COALESCE(token, ${token || null}),
-          payment_id = COALESCE(payment_id, ${typeof payload.PaymentId === 'number' ? payload.PaymentId : Number(payload.PaymentId ?? 0) || null}),
-          status = ${isPaymentoFinalStatus(orderStatus) ? 'approved' : statusLabel(orderStatus)},
-          order_status = ${orderStatus},
-          callback_payload = ${callbackJson}::jsonb,
-          verify_payload = ${verifiedJson}::jsonb,
-          paid_at = ${isPaymentoFinalStatus(orderStatus) ? finalizedAt : null},
-          verified_at = ${isPaymentoFinalStatus(orderStatus) ? finalizedAt : null},
-          expires_at = ${isPaymentoFinalStatus(orderStatus) ? nextExpiry.toISOString() : null},
-          updated_at = NOW()
-      WHERE id = ${checkout.id}
-    `;
-
-    if (isPaymentoFinalStatus(orderStatus) && checkout.user_role !== 'admin') {
+    if (finalStatus && user.role !== 'admin' && nextExpiry) {
       await tx`
         UPDATE users
         SET billing_tier = ${nextTier},
             billing_expires_at = ${nextExpiry.toISOString()}
-        WHERE id = ${checkout.user_id}
+        WHERE id = ${user.id}
       `;
     }
 
-    if (isPaymentoFinalStatus(orderStatus) && checkout.referred_by_user_id) {
+    if (finalStatus && user.referred_by_user_id) {
       const existingConversion = await tx`
         SELECT 1
         FROM referral_events
-        WHERE referred_user_id = ${checkout.user_id}
+        WHERE referred_user_id = ${user.id}
           AND event_type = 'conversion'
         LIMIT 1
       `;
       if (existingConversion.length === 0) {
-        const amountUsd = Number(checkout.fiat_amount ?? 0);
         const commissionUsd = Math.round(amountUsd * 0.2 * 100) / 100;
         await tx`
           INSERT INTO referral_events (
@@ -270,15 +397,15 @@ export async function POST(request: NextRequest) {
             metadata
           )
           VALUES (
-            ${checkout.referred_by_user_id},
-            ${checkout.user_id},
+            ${user.referred_by_user_id},
+            ${user.id},
             'conversion',
             ${amountUsd},
             ${commissionUsd},
             ${JSON.stringify({
               provider: 'paymento',
-              orderId: checkout.order_id,
-              token: token || checkout.token,
+              orderId: checkout?.order_id ?? orderId,
+              token: token || checkout?.token,
               tier,
               period,
             })}::jsonb
@@ -288,11 +415,9 @@ export async function POST(request: NextRequest) {
     }
   });
 
-  if (isPaymentoFinalStatus(orderStatus)) {
-    const amountUsd = Number(checkout.fiat_amount ?? 0);
-    const nextExpiry = computeNextExpiry(currentExpiresAt, period);
+  if (finalStatus) {
     const tierBranding = TIER_BRANDING[nextTier];
-    const recipient = checkout.email || checkout.user_email;
+    const recipient = checkout?.email || user.email;
     if (recipient) {
       sendSubscriptionConfirmed({
         to: recipient,
@@ -300,15 +425,15 @@ export async function POST(request: NextRequest) {
         tierLabel: tierBranding.label,
         amountUsd,
         period,
-        nextRenewalIso: nextExpiry.toISOString().slice(0, 10),
+        nextRenewalIso: nextExpiry ? nextExpiry.toISOString().slice(0, 10) : finalizedAt.slice(0, 10),
       }).catch((error) => {
         console.warn('Paymento webhook: confirmation email failed', error);
       });
     }
     await recordAuditEvent('paymento_subscription_confirmed', {
-      userId: checkout.user_id,
-      orderId: checkout.order_id,
-      token: token || checkout.token,
+      userId: user.id,
+      orderId: checkout?.order_id ?? orderId,
+      token: token || checkout?.token,
       tier: nextTier,
       period,
       amountUsd,
@@ -317,9 +442,9 @@ export async function POST(request: NextRequest) {
     }).catch(() => undefined);
   } else {
     await recordAuditEvent('paymento_callback_received', {
-      userId: checkout.user_id,
-      orderId: checkout.order_id,
-      token: token || checkout.token,
+      userId: user.id,
+      orderId: checkout?.order_id ?? orderId,
+      token: token || checkout?.token,
       tier,
       period,
       orderStatus,
@@ -332,8 +457,8 @@ export async function POST(request: NextRequest) {
     {
       ok: true,
       status: statusLabel(orderStatus),
-      verified: isPaymentoFinalStatus(orderStatus),
-      orderId: checkout.order_id,
+      verified: finalStatus,
+      orderId: checkout?.order_id ?? orderId,
     },
     { headers: NO_STORE },
   );
