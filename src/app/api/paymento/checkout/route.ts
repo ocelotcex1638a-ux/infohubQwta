@@ -9,7 +9,6 @@ import {
   createPaymentoRequest,
   getPaymentoAmount,
   getPaymentoApiKey,
-  setPaymentoIpnUrl,
   type PaymentoPeriod,
   type PaymentoTier,
 } from '@/lib/paymento';
@@ -104,10 +103,8 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    const settings = await setPaymentoIpnUrl(callbackUrl);
-    if (!settings.success) {
-      console.warn('Paymento checkout: failed to persist IPN settings', settings);
-    }
+    // Keep the checkout request focused on creating the hosted session.
+    // IPN should be configured once in Paymento, not on every checkout.
 
     await db`
       INSERT INTO paymento_checkouts (
