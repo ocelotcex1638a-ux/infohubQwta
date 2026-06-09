@@ -107,10 +107,6 @@ export async function POST(request: NextRequest) {
     const settings = await setPaymentoIpnUrl(callbackUrl);
     if (!settings.success) {
       console.warn('Paymento checkout: failed to persist IPN settings', settings);
-      return NextResponse.json(
-        { error: 'Unable to configure Paymento callbacks right now' },
-        { status: 502, headers: NO_STORE },
-      );
     }
 
     await db`

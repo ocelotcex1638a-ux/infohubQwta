@@ -3,6 +3,8 @@ import { TIER_PRICE_ANNUAL, TIER_PRICE_MONTHLY, type Tier } from '@/lib/constant
 
 export const PAYMENTO_API_BASE = 'https://api.paymento.io/v1';
 export const PAYMENTO_GATEWAY_BASE = 'https://app.paymento.io/gateway';
+const PAYMENTO_REQUEST_TIMEOUT_MS = 12000;
+const PAYMENTO_SETTINGS_TIMEOUT_MS = 2500;
 
 export type PaymentoTier = Exclude<Tier, 'free'>;
 export type PaymentoPeriod = 'monthly' | 'annual';
@@ -163,6 +165,19 @@ async function parsePaymentoResponse<T>(res: Response): Promise<PaymentoApiRespo
   }
 }
 
+async function fetchPaymento(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function createPaymentoRequest(
   body: PaymentoCheckoutRequest,
 ): Promise<PaymentoApiResponse<string>> {
@@ -171,7 +186,7 @@ export async function createPaymentoRequest(
     throw new Error('PAYMENTO_API_KEY is not configured');
   }
 
-  const res = await fetch(`${PAYMENTO_API_BASE}/payment/request`, {
+  const res = await fetchPaymento(`${PAYMENTO_API_BASE}/payment/request`, {
     method: 'POST',
     headers: {
       'Api-key': apiKey,
@@ -179,7 +194,7 @@ export async function createPaymentoRequest(
       Accept: 'text/plain',
     },
     body: JSON.stringify(body),
-  });
+  }, PAYMENTO_REQUEST_TIMEOUT_MS);
 
   return parsePaymentoResponse<string>(res);
 }
@@ -190,7 +205,7 @@ export async function verifyPaymentoRequest(token: string): Promise<PaymentoApiR
     throw new Error('PAYMENTO_API_KEY is not configured');
   }
 
-  const res = await fetch(`${PAYMENTO_API_BASE}/payment/verify`, {
+  const res = await fetchPaymento(`${PAYMENTO_API_BASE}/payment/verify`, {
     method: 'POST',
     headers: {
       'Api-key': apiKey,
@@ -198,7 +213,7 @@ export async function verifyPaymentoRequest(token: string): Promise<PaymentoApiR
       Accept: 'text/plain',
     },
     body: JSON.stringify({ token }),
-  });
+  }, PAYMENTO_REQUEST_TIMEOUT_MS);
 
   return parsePaymentoResponse<Record<string, unknown>>(res);
 }
@@ -209,7 +224,7 @@ export async function setPaymentoIpnUrl(ipnUrl: string): Promise<PaymentoApiResp
     throw new Error('PAYMENTO_API_KEY is not configured');
   }
 
-  const res = await fetch(`${PAYMENTO_API_BASE}/payment/settings`, {
+  const res = await fetchPaymento(`${PAYMENTO_API_BASE}/payment/settings`, {
     method: 'POST',
     headers: {
       'Api-key': apiKey,
@@ -220,8 +235,7 @@ export async function setPaymentoIpnUrl(ipnUrl: string): Promise<PaymentoApiResp
       IPN_Url: ipnUrl,
       IPN_Method: 1,
     }),
-  });
+  }, PAYMENTO_SETTINGS_TIMEOUT_MS);
 
   return parsePaymentoResponse<Record<string, unknown>>(res);
 }
-
