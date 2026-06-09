@@ -12,7 +12,7 @@
  *
  * Today (May 2026): paid tiers are FREE DURING LAUNCH. Prices visible
  * with strike-through so users see the future cost, but the "Subscribe"
- * CTAs stub out to a "coming soon" modal until NowPayments is wired.
+ * CTAs open a Paymento-hosted checkout for signed-in buyers.
  */
 
 import { useState, useEffect, useRef, Fragment } from 'react';
@@ -21,7 +21,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PageHero from '@/components/PageHero';
-import { Sparkles, Compass, Zap, Crown, Check, X as XIcon, ArrowRight, CreditCard } from 'lucide-react';
+import { Sparkles, Compass, Zap, Crown, Check, X as XIcon, ArrowRight, CreditCard, Loader2 } from 'lucide-react';
 import {
   PRICING_CARD_ORDER,
   TIER_LIMITS,
@@ -60,6 +60,8 @@ export default function PricingPage() {
   const { data: session } = useSession();
   const [period, setPeriod] = useState<Period>('monthly');
   const [showCheckoutModal, setShowCheckoutModal] = useState<Tier | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutTier, setCheckoutTier] = useState<Tier | null>(null);
 
   const isSignedIn = !!session;
   const userTier = resolveUserTier({
@@ -69,6 +71,30 @@ export default function PricingPage() {
   // Only mark a card "current" if the user is actually signed in. Logged-out
   // users see signup CTAs on every card (including Free).
   const currentTier: Tier | null = isSignedIn ? userTier : null;
+
+  async function startCheckout(tier: Tier) {
+    if (tier === 'free') return;
+    setCheckoutError(null);
+    setCheckoutTier(tier);
+    try {
+      const res = await fetch('/api/paymento/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier, period }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.error || `Checkout failed (HTTP ${res.status})`);
+      }
+      if (typeof json.paymentUrl !== 'string' || !json.paymentUrl) {
+        throw new Error('Paymento did not return a checkout URL');
+      }
+      window.location.assign(json.paymentUrl);
+    } catch (error) {
+      setCheckoutTier(null);
+      setCheckoutError(error instanceof Error ? error.message : 'Unable to start checkout');
+    }
+  }
 
   return (
     <div className="min-h-screen bg-hub-black">
@@ -260,7 +286,7 @@ export default function PricingPage() {
             />
             <FaqItem
               q="How does payment work?"
-              a="Crypto via NowPayments — pay in USDT/USDC on Ethereum, Solana, Arbitrum, Base, plus BTC and ETH. Hosted checkout, takes <60s. No card needed, no signup form. (Stripe option will follow.)"
+              a="Crypto via Paymento — pay in USDT/USDC on Ethereum, Solana, Arbitrum, Base, plus BTC and ETH. Hosted checkout, takes <60s. No card needed, no signup form."
             />
             <FaqItem
               q="Can I cancel anytime?"
@@ -310,10 +336,17 @@ export default function PricingPage() {
 
       {/* ─── Checkout-coming-soon modal ─── */}
       {showCheckoutModal && (
-        <CheckoutComingSoonModal
+        <CheckoutModal
           tier={showCheckoutModal}
           period={period}
-          onClose={() => setShowCheckoutModal(null)}
+          isLoading={checkoutTier === showCheckoutModal}
+          error={checkoutError}
+          onStartCheckout={startCheckout}
+          onClose={() => {
+            setShowCheckoutModal(null);
+            setCheckoutError(null);
+            setCheckoutTier(null);
+          }}
         />
       )}
 
@@ -644,13 +677,19 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-function CheckoutComingSoonModal({
+function CheckoutModal({
   tier,
   period,
+  isLoading,
+  error,
+  onStartCheckout,
   onClose,
 }: {
   tier: Tier;
   period: Period;
+  isLoading: boolean;
+  error: string | null;
+  onStartCheckout: (tier: Tier) => Promise<void>;
   onClose: () => void;
 }) {
   const b = TIER_BRANDING[tier];
@@ -690,13 +729,19 @@ function CheckoutComingSoonModal({
       >
         <Icon className={`w-10 h-10 mx-auto mb-3 ${b.textColor}`} aria-hidden />
         <h3 id="checkout-modal-title" className="text-base font-bold text-white mb-2">
-          {b.label} ({period}) — launch access open
+          Continue to {b.label} checkout
         </h3>
         <p className="text-[12px] text-neutral-400 mb-4 leading-relaxed">
-          You already have access to all {b.label} features. Crypto checkout via
-          NowPayments goes live when we exit early access — we&apos;ll email you
-          ahead of time with the exact date.
+          You&apos;ll be redirected to Paymento&apos;s hosted crypto checkout to
+          complete your {period} subscription. Paymento will return you here
+          once the transaction is submitted, and InfoHub activates access after
+          the blockchain confirmation clears.
         </p>
+        {error && (
+          <p className="mb-4 rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-left text-[12px] text-rose-200">
+            {error}
+          </p>
+        )}
         <div className="flex gap-2 justify-center">
           <button
             ref={dismissRef}
@@ -706,12 +751,15 @@ function CheckoutComingSoonModal({
           >
             Got it
           </button>
-          <Link
-            href="/faq"
-            className="px-4 py-2 text-[12px] font-semibold rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+          <button
+            type="button"
+            onClick={() => onStartCheckout(tier)}
+            disabled={isLoading}
+            className="px-4 py-2 text-[12px] font-semibold rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400/50 disabled:cursor-not-allowed disabled:opacity-70 inline-flex items-center gap-2"
           >
-            FAQ
-          </Link>
+            {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+            {isLoading ? 'Redirecting' : 'Continue to Paymento'}
+          </button>
         </div>
       </div>
     </div>

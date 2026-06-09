@@ -766,9 +766,10 @@ function BillingTab() {
   const { data: session } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role;
   const billingTier = (session?.user as { billingTier?: string } | undefined)?.billingTier ?? null;
+  const billingExpiresAt = (session?.user as { billingExpiresAt?: string | null } | undefined)?.billingExpiresAt ?? null;
   // Admin role auto-resolves to whale regardless of billing_tier.
   // Non-admins read users.billing_tier (now in the JWT). Default 'free'
-  // until NowPayments wires up paid signups.
+  // until the Paymento webhook confirms a paid order.
   const tier = resolveUserTier({ role, billingTier });
   const branding = TIER_BRANDING[tier];
   const limits = TIER_LIMITS[tier];
@@ -781,6 +782,10 @@ function BillingTab() {
   // onboard early users. Admin is grandfathered to Whale.
   const isAdminGrandfathered = role === 'admin';
   const isPaidTier = tier !== 'free';
+  const paidThrough = billingExpiresAt ? new Date(billingExpiresAt) : null;
+  const paidThroughIso = paidThrough && Number.isFinite(paidThrough.getTime())
+    ? paidThrough.toISOString().slice(0, 10)
+    : null;
 
   // Pick the "upgrade target" for the CTA — Free→Trader, Trader→Pro,
   // Pro→Whale, Whale users get a "you're at the top" state.
@@ -821,7 +826,7 @@ function BillingTab() {
                 {isAdminGrandfathered
                   ? 'Admin grandfather — no billing applies'
                   : isPaidTier
-                  ? `Launch access open (normally $${monthlyPrice}/mo)`
+                  ? `Paymento billing active (normally $${monthlyPrice}/mo)${paidThroughIso ? ` · paid through ${paidThroughIso}` : ''}`
                   : 'No card required — Free tier stays free forever'}
               </div>
             </div>
@@ -890,10 +895,10 @@ function BillingTab() {
         <ArrowRight className="w-3 h-3" aria-hidden />
       </Link>
 
-      <p className="text-[11px] text-neutral-600 italic mt-4">
+        <p className="text-[11px] text-neutral-600 italic mt-4">
         {isAdminGrandfathered
           ? "Admin tier is permanent — you'll never be billed regardless of how the public pricing evolves."
-          : "Crypto checkout via NowPayments goes live when we exit early access. We'll email you ahead of time with the exact date."}
+          : "Crypto checkout runs through Paymento. You can upgrade from /pricing, and we’ll email you before any renewal date approaches."}
       </p>
     </SectionCard>
   );

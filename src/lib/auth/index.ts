@@ -165,15 +165,21 @@ export async function getUserRole(userId: string): Promise<'owner' | 'admin' | '
 export async function getUserTier(userId: string): Promise<'free' | 'trader' | 'pro' | 'whale'> {
   try {
     const db = getSQL();
-    const rows = await db`SELECT role, billing_tier FROM users WHERE id = ${userId}`;
+    const rows = await db`SELECT role, billing_tier, billing_expires_at FROM users WHERE id = ${userId}`;
     if (rows.length === 0) return 'free';
     // Lazy import to avoid pulling tier constants into the auth module's
     // server-bundle when they're only needed for this one helper.
     const { resolveUserTier } = await import('@/lib/constants/tiers');
-    return resolveUserTier({
+    const resolved = resolveUserTier({
       role: rows[0].role as string | null,
       billingTier: rows[0].billing_tier as 'free' | 'trader' | 'pro' | 'whale' | null,
     });
+    if (rows[0].role === 'admin') return 'whale';
+    const expiresAt = rows[0].billing_expires_at ? new Date(rows[0].billing_expires_at) : null;
+    if (expiresAt && Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() <= Date.now()) {
+      return 'free';
+    }
+    return resolved;
   } catch {
     return 'free';
   }
@@ -374,15 +380,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if ((user || trigger === 'update') && token.id) {
         try {
           const db = getSQL();
-          const rows = await db`SELECT image, role, billing_tier FROM users WHERE id = ${token.id as string}`;
+          const rows = await db`SELECT image, role, billing_tier, billing_expires_at FROM users WHERE id = ${token.id as string}`;
           if (rows.length > 0) {
             // Only store image in JWT if it's a short URL (not a base64 data URI)
             // Data URIs can be 100KB+ and blow common 32KB header limits
             const img = rows[0].image as string | null;
             token.image = img && !img.startsWith('data:') ? img : null;
             token.role = rows[0].role || 'user';
-            const tier = rows[0].billing_tier;
-            token.billingTier = (tier === 'trader' || tier === 'pro' || tier === 'whale') ? tier : 'free';
+            const tier = rows[0].billing_tier as 'free' | 'trader' | 'pro' | 'whale' | null;
+            const expiresAt = rows[0].billing_expires_at ? new Date(rows[0].billing_expires_at) : null;
+            const active = !expiresAt || !Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() > Date.now();
+            token.billingTier = rows[0].role === 'admin'
+              ? 'whale'
+              : active && (tier === 'trader' || tier === 'pro' || tier === 'whale')
+                ? tier
+                : 'free';
+            token.billingExpiresAt = expiresAt && Number.isFinite(expiresAt.getTime()) ? expiresAt.toISOString() : null;
           }
         } catch { /* keep existing */ }
       }
@@ -403,6 +416,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       if (token?.billingTier) {
         session.user.billingTier = token.billingTier as 'free' | 'trader' | 'pro' | 'whale';
+      }
+      if (token?.billingExpiresAt !== undefined) {
+        session.user.billingExpiresAt = token.billingExpiresAt as string | null;
       }
       return session;
     },

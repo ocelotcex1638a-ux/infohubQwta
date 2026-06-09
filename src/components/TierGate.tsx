@@ -14,7 +14,7 @@
  * Launch-mode override (May 2026): while the global flag below is true,
  * the gate is DISABLED entirely — children render unmodified for every
  * tier. This matches the /pricing "Free during launch" banner. Flip
- * LAUNCH_GATING_ENABLED to true when NowPayments checkout goes live.
+ * LAUNCH_GATING_ENABLED to true when Paymento checkout goes live.
  *
  * Admin role is grandfathered (resolveUserTier already returns 'whale'),
  * so admins never see the paywall regardless of mode.
@@ -28,7 +28,7 @@ import { resolveUserTier, tierAtLeast, TIER_BRANDING, type Tier } from '@/lib/co
 /**
  * Master switch for tier gating. Stays `false` during the "free during
  * launch" window so every signed-in user has full access. Flip to true
- * the day NowPayments checkout ships.
+ * the day Paymento checkout ships.
  *
  * Even when `false`, the <TierGate> component still renders a visual
  * "Pro tier" / "Whale tier" hint chip so users see which features will

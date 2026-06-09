@@ -5,7 +5,7 @@
  *
  * "Projected" because most paid tiers are comped during launch — the
  * numbers show the upside ceiling assuming every paid-tier user pays.
- * Once NowPayments wires up actual webhook events these flip to real.
+ * Once Paymento wires up actual webhook events these flip to real.
  */
 
 import { useCallback, useEffect, useState } from 'react';

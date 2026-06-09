@@ -394,6 +394,7 @@ async function _doInitDB(): Promise<void> {
   // 'pro' (they auto-bump to the new $29 tier — a generous grandfather
   // since paid is free during launch anyway). 'trader' is a new value.
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_tier TEXT NOT NULL DEFAULT 'free'`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_expires_at TIMESTAMPTZ`;
   // User-to-user referrals (legacy invite system): stores the inviter's
   // invite code (the HMAC string from lib/invite.ts), not a user ID —
   // keeps the link opaque and avoids a self-FK that PostgreSQL would
@@ -423,6 +424,36 @@ async function _doInitDB(): Promise<void> {
   // Both nullable until the affiliate fills in their settings.
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS usdt_payout_wallet TEXT`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS usdt_payout_chain TEXT`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS paymento_checkouts (
+      id BIGSERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      order_id TEXT NOT NULL UNIQUE,
+      token TEXT UNIQUE,
+      payment_id BIGINT,
+      tier TEXT NOT NULL,
+      period TEXT NOT NULL,
+      fiat_amount NUMERIC(12,2) NOT NULL,
+      fiat_currency TEXT NOT NULL DEFAULT 'USD',
+      status TEXT NOT NULL DEFAULT 'created',
+      order_status SMALLINT,
+      return_url TEXT,
+      callback_url TEXT,
+      email TEXT,
+      additional_data JSONB,
+      request_payload JSONB,
+      verify_payload JSONB,
+      callback_payload JSONB,
+      paid_at TIMESTAMPTZ,
+      verified_at TIMESTAMPTZ,
+      expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_paymento_checkouts_user_created ON paymento_checkouts(user_id, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_paymento_checkouts_token ON paymento_checkouts(token) WHERE token IS NOT NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_paymento_checkouts_status ON paymento_checkouts(status, updated_at DESC)`;
 
   // referral_events — event log for the affiliate flywheel. We record:
   //   'click'      — ?ref=CODE landing-page hit (cookie set, no auth)
@@ -2277,6 +2308,15 @@ export async function pruneOldData(keepDays: number = 90): Promise<{ funding: nu
     await sql`DELETE FROM email_verification_codes WHERE expires_at < NOW()`.catch(e => console.warn('[db] email_verification cleanup:', e));
     await sql`DELETE FROM twofa_login_codes WHERE expires_at < NOW()`.catch(e => console.warn('[db] twofa_login cleanup:', e));
     await sql`DELETE FROM rate_limit_events WHERE created_at < NOW() - INTERVAL '1 day'`.catch(e => console.warn('[db] rate_limit cleanup:', e));
+    await sql`
+      UPDATE users
+      SET billing_tier = 'free',
+          billing_expires_at = NULL
+      WHERE billing_tier <> 'free'
+        AND billing_expires_at IS NOT NULL
+        AND billing_expires_at < NOW()
+        AND COALESCE(role, 'user') <> 'admin'
+    `.catch(e => console.warn('[db] billing expiry cleanup:', e));
 
     return {
       funding: fr.count ?? 0,

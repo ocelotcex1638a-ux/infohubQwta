@@ -1,7 +1,7 @@
 /**
  * GET /api/admin/revenue
  *
- * Revenue dashboard data. Until NowPayments wires up actual payment
+ * Revenue dashboard data. Until Paymento wires up actual payment
  * webhooks, "revenue" is computed from:
  *   1. Projected MRR — tier counts × tier monthly price (assumes 100%
  *      of paid tier users pay). Realistic ceiling for the current
@@ -40,6 +40,7 @@ export async function GET() {
       db`SELECT COALESCE(billing_tier, 'free') AS tier, COUNT(*)::int AS count
            FROM users
            WHERE suspended_at IS NULL
+             AND (billing_tier = 'free' OR billing_expires_at IS NULL OR billing_expires_at > NOW())
            GROUP BY billing_tier`.catch(() => []),
       db`SELECT
            COALESCE(SUM(amount_usd), 0)::numeric AS revenue_total,
