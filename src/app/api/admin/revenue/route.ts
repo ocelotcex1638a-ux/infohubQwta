@@ -1,7 +1,7 @@
 /**
  * GET /api/admin/revenue
  *
- * Revenue dashboard data. Until Paymento wires up actual payment
+ * Revenue dashboard data. Until MaxelPay wires up actual payment
  * webhooks, "revenue" is computed from:
  *   1. Projected MRR — tier counts × tier monthly price (assumes 100%
  *      of paid tier users pay). Realistic ceiling for the current

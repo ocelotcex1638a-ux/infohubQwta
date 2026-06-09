@@ -769,7 +769,7 @@ function BillingTab() {
   const billingExpiresAt = (session?.user as { billingExpiresAt?: string | null } | undefined)?.billingExpiresAt ?? null;
   // Admin role auto-resolves to whale regardless of billing_tier.
   // Non-admins read users.billing_tier (now in the JWT). Default 'free'
-  // until the Paymento webhook confirms a paid order.
+  // until the MaxelPay webhook confirms a paid order.
   const tier = resolveUserTier({ role, billingTier });
   const branding = TIER_BRANDING[tier];
   const limits = TIER_LIMITS[tier];
@@ -826,7 +826,7 @@ function BillingTab() {
                 {isAdminGrandfathered
                   ? 'Admin grandfather — no billing applies'
                   : isPaidTier
-                  ? `Paymento billing active (normally $${monthlyPrice}/mo)${paidThroughIso ? ` · paid through ${paidThroughIso}` : ''}`
+                  ? `MaxelPay billing active (normally $${monthlyPrice}/mo)${paidThroughIso ? ` · paid through ${paidThroughIso}` : ''}`
                   : 'No card required — Free tier stays free forever'}
               </div>
             </div>
@@ -898,7 +898,7 @@ function BillingTab() {
         <p className="text-[11px] text-neutral-600 italic mt-4">
         {isAdminGrandfathered
           ? "Admin tier is permanent — you'll never be billed regardless of how the public pricing evolves."
-          : "Crypto checkout runs through Paymento. You can upgrade from /pricing, and we’ll email you before any renewal date approaches."}
+          : "Crypto checkout runs through MaxelPay. You can upgrade from /pricing, and we’ll email you before any renewal date approaches."}
       </p>
     </SectionCard>
   );

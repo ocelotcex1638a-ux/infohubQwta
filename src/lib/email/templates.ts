@@ -329,7 +329,7 @@ export function renderLaunchCutover(data: LaunchCutoverData): { subject: string;
       <ul style="padding-left:20px;margin:12px 0;">
         <li>Free tier stays free — no card required, no time limit, same data terminal.</li>
         <li>Trader / Pro / Whale features (custom dashboards, API archive, priority alerts, etc.) require a subscription.</li>
-        <li>Crypto checkout via Paymento. No card needed.</li>
+        <li>Crypto checkout via MaxelPay. No card needed.</li>
         <li>20% lifetime affiliate program goes live the same day. Get your code at
           <a href="https://info-hub.io/settings/referrals" style="color:#34d399;">your dashboard</a>.</li>
       </ul>

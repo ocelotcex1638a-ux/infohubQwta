@@ -12,7 +12,7 @@
  *
  * Today (May 2026): paid tiers are FREE DURING LAUNCH. Prices visible
  * with strike-through so users see the future cost, but the "Subscribe"
- * CTAs open a Paymento-hosted checkout for signed-in buyers.
+ * CTAs open a MaxelPay-hosted checkout for signed-in buyers.
  */
 
 import { useState, useEffect, useRef, Fragment } from 'react';
@@ -77,7 +77,7 @@ export default function PricingPage() {
     setCheckoutError(null);
     setCheckoutTier(tier);
     try {
-      const res = await fetch('/api/paymento/checkout', {
+      const res = await fetch('/api/maxelpay/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tier, period }),
@@ -87,7 +87,7 @@ export default function PricingPage() {
         throw new Error(json.error || `Checkout failed (HTTP ${res.status})`);
       }
       if (typeof json.paymentUrl !== 'string' || !json.paymentUrl) {
-        throw new Error('Paymento did not return a checkout URL');
+        throw new Error('MaxelPay did not return a checkout URL');
       }
       window.location.assign(json.paymentUrl);
     } catch (error) {
@@ -286,7 +286,7 @@ export default function PricingPage() {
             />
             <FaqItem
               q="How does payment work?"
-              a="Crypto via Paymento — pay in USDT/USDC on Ethereum, Solana, Arbitrum, Base, plus BTC and ETH. Hosted checkout, takes <60s. No card needed, no signup form."
+              a="Crypto via MaxelPay — pay in USDT/USDC on Ethereum, Solana, Arbitrum, Base, plus BTC and ETH. Hosted checkout, takes <60s. No card needed, no signup form."
             />
             <FaqItem
               q="Can I cancel anytime?"
@@ -732,8 +732,8 @@ function CheckoutModal({
           Continue to {b.label} checkout
         </h3>
         <p className="text-[12px] text-neutral-400 mb-4 leading-relaxed">
-          You&apos;ll be redirected to Paymento&apos;s hosted crypto checkout to
-          complete your {period} subscription. Paymento will return you here
+          You&apos;ll be redirected to MaxelPay&apos;s hosted crypto checkout to
+          complete your {period} subscription. MaxelPay will return you here
           once the transaction is submitted, and InfoHub activates access after
           the blockchain confirmation clears.
         </p>
@@ -758,7 +758,7 @@ function CheckoutModal({
             className="px-4 py-2 text-[12px] font-semibold rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400/50 disabled:cursor-not-allowed disabled:opacity-70 inline-flex items-center gap-2"
           >
             {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-            {isLoading ? 'Redirecting' : 'Continue to Paymento'}
+            {isLoading ? 'Redirecting' : 'Continue to MaxelPay'}
           </button>
         </div>
       </div>

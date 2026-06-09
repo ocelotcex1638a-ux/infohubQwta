@@ -13,7 +13,7 @@
  *
  * Today: Pro + Trader + Whale are "FREE DURING LAUNCH" — the prices
  * are visible on /pricing for transparency but no charges happen yet.
- * Paymento crypto checkout powers the live billing flow.
+ * MaxelPay crypto checkout powers the live billing flow.
  *
  * Per-tier limits live HERE. The free path in code reads
  * TIER_LIMITS.free.X; the runtime tier-aware check should do
