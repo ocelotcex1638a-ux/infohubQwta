@@ -10,6 +10,7 @@ import BookmarkStar from '@/components/BookmarkStar';
 import { useTraderBookmarks } from '@/hooks/useTraderBookmarks';
 import { useRecentTraders } from '@/hooks/useRecentTraders';
 import { useTraderAlerts } from '@/hooks/useTraderAlerts';
+import { formatVenueLabel } from '@/lib/trader-alerts';
 import Link from 'next/link';
 import {
   Brain, Trophy, ChevronRight, Search,
@@ -72,6 +73,21 @@ function venuePill(v: string): { label: string; cls: string } {
   if (v === 'gmx-arbitrum') return { label: 'GMX·Arb', cls: 'bg-blue-400/15 text-blue-300' };
   if (v === 'gmx-avalanche') return { label: 'GMX·Avax', cls: 'bg-red-400/15 text-red-300' };
   return { label: v, cls: 'bg-white/5 text-neutral-400' };
+}
+
+function formatAlertTraderType(type: string | null | undefined): string {
+  if (!type) return '';
+  if (type === 'dca-heavy') return 'DCA';
+  if (type === 'hodler') return 'HODL';
+  return type.toUpperCase();
+}
+
+function tierTone(tier: string | null | undefined): string {
+  if (tier === 'A') return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+  if (tier === 'B') return 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30';
+  if (tier === 'C') return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+  if (tier === 'Watch') return 'bg-white/[0.06] text-neutral-300 border-white/[0.12]';
+  return 'bg-white/[0.04] text-neutral-400 border-white/[0.08]';
 }
 
 /* ─── Smart Money Sentiment Gauge ─────────────────────────────────── */
@@ -627,7 +643,7 @@ export default function SmartMoneyPage() {
                 Watching {bookmarks.length} trader{bookmarks.length !== 1 ? 's' : ''}. No position changes yet — baseline snapshot captured.
               </div>
             ) : (
-              <div className="space-y-1 max-h-[200px] overflow-y-auto">
+              <div className="space-y-1 max-h-[240px] overflow-y-auto">
                 {feed.map(a => {
                   const kindColor =
                     a.kind === 'opened' ? 'text-green-400' :
@@ -635,21 +651,48 @@ export default function SmartMoneyPage() {
                     a.kind === 'flipped' ? 'text-orange-400' :
                     a.kind === 'increased' ? 'text-blue-400' :
                     'text-red-400';
-                  const ago = Math.floor((Date.now() - a.timestamp) / 1000);
+                  const ago = Math.floor((nowTick - a.timestamp) / 1000);
                   const agoStr = ago < 60 ? `${ago}s` : ago < 3600 ? `${Math.floor(ago / 60)}m` : `${Math.floor(ago / 3600)}h`;
                   return (
                     <Link
                       key={a.id}
                       href={`/trader/${a.address}`}
-                      className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/[0.03] transition-colors"
+                      className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-white/[0.03] transition-colors"
                     >
                       <span className={`text-[9px] font-bold uppercase tracking-wider ${kindColor} min-w-[56px]`}>
                         {a.kind}
                       </span>
-                      <span className="text-[11px] text-white font-semibold truncate min-w-0">
-                        {a.displayName || `${a.address.slice(0, 6)}…${a.address.slice(-4)}`}
-                      </span>
-                      <span className="text-[10px] text-neutral-400 truncate flex-1">{a.details}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1 flex-wrap min-w-0">
+                          <span className="text-[11px] text-white font-semibold truncate max-w-[220px]">
+                            {a.displayName || `${a.address.slice(0, 6)}…${a.address.slice(-4)}`}
+                          </span>
+                          <span className="inline-flex items-center rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-neutral-300">
+                            {formatVenueLabel(a.venue)}
+                          </span>
+                          {a.tier && (
+                            <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${tierTone(a.tier)}`}>
+                              Tier {a.tier}
+                            </span>
+                          )}
+                          {a.traderType && (
+                            <span className="inline-flex items-center rounded border border-sky-500/20 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-sky-300">
+                              {formatAlertTraderType(a.traderType)}
+                            </span>
+                          )}
+                          {a.specialist && (
+                            <span className="inline-flex items-center rounded border border-hub-yellow/25 bg-hub-yellow/[0.10] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-hub-yellow">
+                              Specialist
+                            </span>
+                          )}
+                          {typeof a.signalScore === 'number' && (
+                            <span className="text-[9px] text-neutral-500 font-mono tabular-nums">
+                              S{a.signalScore}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-neutral-400 truncate flex-1">{a.details}</div>
+                      </div>
                       <span className="text-[9px] text-neutral-600 font-mono tabular-nums flex-shrink-0">{agoStr}</span>
                     </Link>
                   );

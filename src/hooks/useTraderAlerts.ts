@@ -1,47 +1,70 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useCallback, useSyncExternalStore } from 'react';
-import { useTraderBookmarks } from './useTraderBookmarks';
+import { type TraderBookmark, useTraderBookmarks } from './useTraderBookmarks';
+import {
+  diffTrackedPositions,
+  formatVenueLabel,
+  isSpecialistPosition,
+  shouldEmitSmartAlert,
+  type AlertTier,
+  type AlertTraderType,
+  type BrowserAlertKind,
+  type TrackedPosition,
+  type TraderAlertMeta,
+} from '@/lib/trader-alerts';
 
 /**
  * Browser-only copy-trading alerts.
  *
- * Polls the cross-platform dossier (/api/hl-traders/[address]) for every
- * bookmarked trader every POLL_INTERVAL. Compares the current open-position
- * list against a local snapshot. When positions open/close/resize materially,
- * adds an event to a rolling feed and (optionally) fires a browser Notification.
- *
- * No backend required — 100% client-side. Suitable as an MVP; a real
- * production setup would move polling to a cron + fanout to email/TG/Discord.
+ * Polls bookmarked traders across all supported venues, compares their
+ * open positions against a local snapshot, and emits a rolling activity
+ * feed plus optional browser notifications.
  */
 
-export type AlertKind = 'opened' | 'closed' | 'increased' | 'decreased' | 'flipped';
+export type AlertKind = BrowserAlertKind;
+type TrackedVenue = 'hyperliquid' | 'gtrade' | 'gmx-arbitrum' | 'gmx-avalanche';
 
 export interface TraderAlert {
-  id: string;                    // unique: address-coin-timestamp
+  id: string;
   address: string;
   displayName: string | null;
   coin: string;
+  venue: TrackedVenue;
   kind: AlertKind;
-  details: string;               // human-readable blurb
+  details: string;
   sizeUsd: number;
   isLong: boolean;
   timestamp: number;
+  tier?: AlertTier | null;
+  traderType?: AlertTraderType | null;
+  signalScore?: number | null;
+  specialist?: boolean;
 }
 
 interface TraderSnapshot {
   address: string;
   fetchedAt: number;
-  positions: Array<{ coin: string; isLong: boolean; sizeUsd: number }>;
+  positions: TrackedPosition[];
+}
+
+interface SmartMoneyLeaderboardEntry {
+  address: string;
+  tier?: AlertTier | null;
+  traderType?: AlertTraderType | null;
+  signalScore?: number | null;
+  assetBreakdown?: Array<{ symbol?: string | null }>;
 }
 
 const SNAPSHOT_KEY = 'infohub:trader-alerts-snapshots';
 const FEED_KEY = 'infohub:trader-alerts-feed';
 const EVENT = 'infohub:trader-alerts-changed';
-const POLL_INTERVAL = 120_000;   // 2 min — respect HL rate limits
-const SIZE_CHANGE_THRESHOLD = 0.10; // 10% of position size — ignore tiny re-margins
+const POLL_INTERVAL = 120_000;
+const SIZE_CHANGE_THRESHOLD = 0.10;
 const MAX_FEED = 50;
 const SETTINGS_KEY = 'infohub:trader-alerts-enabled';
+const SMART_META_TTL = 10 * 60_000;
+const DEFAULT_VENUES: TrackedVenue[] = ['hyperliquid', 'gmx-arbitrum', 'gmx-avalanche', 'gtrade'];
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
@@ -49,7 +72,9 @@ function readJson<T>(key: string, fallback: T): T {
     const raw = window.localStorage.getItem(key);
     if (!raw) return fallback;
     return JSON.parse(raw) as T;
-  } catch { return fallback; }
+  } catch {
+    return fallback;
+  }
 }
 
 function writeJson(key: string, value: unknown): void {
@@ -57,7 +82,9 @@ function writeJson(key: string, value: unknown): void {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
     window.dispatchEvent(new CustomEvent(EVENT));
-  } catch { /* ignore quota */ }
+  } catch {
+    // Ignore quota errors.
+  }
 }
 
 function subscribe(cb: () => void): () => void {
@@ -75,89 +102,18 @@ function getFeedSnapshot(): string {
   if (typeof window === 'undefined') return '[]';
   return window.localStorage.getItem(FEED_KEY) ?? '[]';
 }
-function getFeedServerSnapshot(): string { return '[]'; }
+
+function getFeedServerSnapshot(): string {
+  return '[]';
+}
 
 function getSettingsSnapshot(): string {
   if (typeof window === 'undefined') return 'false';
   return window.localStorage.getItem(SETTINGS_KEY) ?? 'false';
 }
-function getSettingsServerSnapshot(): string { return 'false'; }
 
-async function fetchPositions(address: string): Promise<TraderSnapshot['positions']> {
-  try {
-    const res = await fetch(`/api/hl-traders/${address}`, { signal: AbortSignal.timeout(8_000) });
-    if (!res.ok) return [];
-    const json = await res.json();
-    const positions: any[] = json?.openPositions ?? [];
-    return positions.map(p => ({
-      coin: p.coin,
-      isLong: !!p.isLong,
-      sizeUsd: Number(p.sizeUsd) || 0,
-    }));
-  } catch { return []; }
-}
-
-function diffPositions(
-  prev: TraderSnapshot['positions'],
-  curr: TraderSnapshot['positions'],
-): Array<{ kind: AlertKind; coin: string; isLong: boolean; sizeUsd: number; details: string }> {
-  const changes: Array<{ kind: AlertKind; coin: string; isLong: boolean; sizeUsd: number; details: string }> = [];
-  const prevByCoin = new Map(prev.map(p => [p.coin, p]));
-  const currByCoin = new Map(curr.map(p => [p.coin, p]));
-
-  // Coins in curr but not prev → opened
-  currByCoin.forEach((p, coin) => {
-    const before = prevByCoin.get(coin);
-    if (!before) {
-      changes.push({
-        kind: 'opened',
-        coin,
-        isLong: p.isLong,
-        sizeUsd: p.sizeUsd,
-        details: `opened ${p.isLong ? 'LONG' : 'SHORT'} ${coin} · ${fmtCompact(p.sizeUsd)}`,
-      });
-      return;
-    }
-    // Side flipped?
-    if (before.isLong !== p.isLong) {
-      changes.push({
-        kind: 'flipped',
-        coin,
-        isLong: p.isLong,
-        sizeUsd: p.sizeUsd,
-        details: `flipped ${p.isLong ? 'LONG' : 'SHORT'} on ${coin} · ${fmtCompact(p.sizeUsd)}`,
-      });
-      return;
-    }
-    // Size changed materially?
-    const delta = p.sizeUsd - before.sizeUsd;
-    const pctChange = before.sizeUsd > 0 ? Math.abs(delta) / before.sizeUsd : 1;
-    if (pctChange >= SIZE_CHANGE_THRESHOLD) {
-      const kind: AlertKind = delta > 0 ? 'increased' : 'decreased';
-      changes.push({
-        kind,
-        coin,
-        isLong: p.isLong,
-        sizeUsd: p.sizeUsd,
-        details: `${kind} ${coin} by ${fmtCompact(Math.abs(delta))} (now ${fmtCompact(p.sizeUsd)})`,
-      });
-    }
-  });
-
-  // Coins in prev but not curr → closed
-  prevByCoin.forEach((p, coin) => {
-    if (!currByCoin.has(coin)) {
-      changes.push({
-        kind: 'closed',
-        coin,
-        isLong: p.isLong,
-        sizeUsd: p.sizeUsd,
-        details: `closed ${p.isLong ? 'LONG' : 'SHORT'} ${coin} · was ${fmtCompact(p.sizeUsd)}`,
-      });
-    }
-  });
-
-  return changes;
+function getSettingsServerSnapshot(): string {
+  return 'false';
 }
 
 function fmtCompact(n: number): string {
@@ -169,24 +125,178 @@ function fmtCompact(n: number): string {
   return `$${abs.toFixed(0)}`;
 }
 
+function normalizeCoin(raw: unknown): string {
+  const text = typeof raw === 'string' ? raw.trim().toUpperCase() : '';
+  if (!text) return 'UNKNOWN';
+  const match = text.match(/^[A-Z0-9]+/);
+  return match?.[0] ?? text;
+}
+
+function makeTrackedPosition(
+  venue: TrackedVenue,
+  coin: unknown,
+  isLong: unknown,
+  sizeUsd: unknown,
+): TrackedPosition {
+  const normalizedCoin = normalizeCoin(coin);
+  return {
+    key: `${venue}:${normalizedCoin}`,
+    venue,
+    coin: normalizedCoin,
+    isLong: !!isLong,
+    sizeUsd: Number(sizeUsd) || 0,
+  };
+}
+
+function normalizeSnapshot(address: string, value: unknown): TraderSnapshot | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as {
+    address?: unknown;
+    fetchedAt?: unknown;
+    positions?: Array<{
+      key?: unknown;
+      venue?: unknown;
+      coin?: unknown;
+      isLong?: unknown;
+      sizeUsd?: unknown;
+    }>;
+  };
+  if (!Array.isArray(raw.positions)) return null;
+
+  const positions = raw.positions
+    .map((position) => {
+      if (typeof position?.key === 'string' && typeof position?.venue === 'string' && typeof position?.coin === 'string') {
+        const venue = position.venue as TrackedVenue;
+        return makeTrackedPosition(venue, position.coin, position.isLong, position.sizeUsd);
+      }
+      if (position && typeof position.coin === 'string') {
+        // Older snapshots were HL-only and keyed by coin alone.
+        return makeTrackedPosition('hyperliquid', position.coin, position.isLong, position.sizeUsd);
+      }
+      return null;
+    })
+    .filter((position): position is TrackedPosition => position != null);
+
+  return {
+    address: typeof raw.address === 'string' ? raw.address.toLowerCase() : address.toLowerCase(),
+    fetchedAt: typeof raw.fetchedAt === 'number' ? raw.fetchedAt : 0,
+    positions,
+  };
+}
+
+function readSnapshots(): Record<string, TraderSnapshot> {
+  const raw = readJson<Record<string, unknown>>(SNAPSHOT_KEY, {});
+  const out: Record<string, TraderSnapshot> = {};
+  for (const [address, snapshot] of Object.entries(raw)) {
+    const normalized = normalizeSnapshot(address, snapshot);
+    if (normalized) out[address.toLowerCase()] = normalized;
+  }
+  return out;
+}
+
+async function fetchHyperliquidPositions(address: string): Promise<TrackedPosition[]> {
+  try {
+    const res = await fetch(`/api/hl-traders/${address}`, { signal: AbortSignal.timeout(8_000) });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const positions: any[] = json?.openPositions ?? [];
+    return positions.map((position) =>
+      makeTrackedPosition('hyperliquid', position.coin, position.isLong, position.sizeUsd),
+    );
+  } catch {
+    return [];
+  }
+}
+
+async function fetchGmxPositions(address: string, chain: 'arbitrum' | 'avalanche'): Promise<TrackedPosition[]> {
+  const venue: TrackedVenue = chain === 'arbitrum' ? 'gmx-arbitrum' : 'gmx-avalanche';
+  try {
+    const res = await fetch(`/api/gmx-traders/${address}?chain=${chain}`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const positions: any[] = json?.openPositions ?? [];
+    return positions.map((position) =>
+      makeTrackedPosition(venue, position.marketSymbol, position.isLong, position.sizeUsd),
+    );
+  } catch {
+    return [];
+  }
+}
+
+async function fetchGTradePositions(address: string): Promise<TrackedPosition[]> {
+  try {
+    const res = await fetch(`/api/gtrade-traders/${address}`, {
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const positions: any[] = json?.openPositions ?? [];
+    return positions.map((position) =>
+      makeTrackedPosition('gtrade', position.symbol, position.isLong, position.sizeUsd),
+    );
+  } catch {
+    return [];
+  }
+}
+
+async function fetchTrackedPositions(bookmark: TraderBookmark): Promise<TrackedPosition[]> {
+  const venues = Array.from(new Set((bookmark.venues?.length ? bookmark.venues : DEFAULT_VENUES) as TrackedVenue[]));
+  const batches = await Promise.all(
+    venues.map((venue) => {
+      if (venue === 'hyperliquid') return fetchHyperliquidPositions(bookmark.address);
+      if (venue === 'gtrade') return fetchGTradePositions(bookmark.address);
+      if (venue === 'gmx-arbitrum') return fetchGmxPositions(bookmark.address, 'arbitrum');
+      return fetchGmxPositions(bookmark.address, 'avalanche');
+    }),
+  );
+  return batches.flat();
+}
+
+function formatAlertDetails(
+  kind: AlertKind,
+  venue: TrackedVenue,
+  coin: string,
+  isLong: boolean,
+  sizeUsd: number,
+  previousSizeUsd: number | undefined,
+  specialist: boolean,
+): string {
+  const side = isLong ? 'LONG' : 'SHORT';
+  const venueLabel = formatVenueLabel(venue);
+  const specialistSuffix = specialist ? ' · specialist' : '';
+
+  if (kind === 'opened') return `opened ${side} ${coin} on ${venueLabel} · ${fmtCompact(sizeUsd)}${specialistSuffix}`;
+  if (kind === 'closed') return `closed ${side} ${coin} on ${venueLabel} · was ${fmtCompact(sizeUsd)}${specialistSuffix}`;
+  if (kind === 'flipped') return `flipped to ${side} ${coin} on ${venueLabel} · ${fmtCompact(sizeUsd)}${specialistSuffix}`;
+
+  const delta = Math.abs(sizeUsd - (previousSizeUsd ?? 0));
+  return `${kind} ${side} ${coin} on ${venueLabel} by ${fmtCompact(delta)} (now ${fmtCompact(sizeUsd)})${specialistSuffix}`;
+}
+
 export function useTraderAlerts() {
   const { bookmarks } = useTraderBookmarks();
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const metadataRef = useRef<{
+    fetchedAt: number;
+    byAddress: Map<string, TraderAlertMeta>;
+  }>({
+    fetchedAt: 0,
+    byAddress: new Map(),
+  });
   const [lastCheck, setLastCheck] = useState<number | null>(null);
 
   const storedFeed = useSyncExternalStore(subscribe, getFeedSnapshot, getFeedServerSnapshot);
   const storedEnabled = useSyncExternalStore(subscribe, getSettingsSnapshot, getSettingsServerSnapshot);
 
-  // useMemo keyed on storedFeed so consumers (smart-money page) get a
-  // stable array reference across renders. Same fix as useTraderBookmarks
-  // and useRecentTraders — the IIFE was producing a fresh array per call,
-  // which broke any downstream useMemo/useEffect deps that compared by
-  // reference.
   const feed: TraderAlert[] = useMemo(() => {
     try {
       const parsed = JSON.parse(storedFeed);
       return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   }, [storedFeed]);
 
   const enabled = storedEnabled === 'true';
@@ -198,30 +308,55 @@ export function useTraderAlerts() {
   const toggleEnabled = useCallback(async () => {
     const next = !enabled;
     if (next && typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      // Ask for permission when user opts in. User may deny — we still flip
-      // the flag on; detection still runs, just no browser notif.
-      try { await Notification.requestPermission(); } catch { /* ignore */ }
+      try {
+        await Notification.requestPermission();
+      } catch {
+        // Ignore denied/unsupported paths.
+      }
     }
     window.localStorage.setItem(SETTINGS_KEY, String(next));
     window.dispatchEvent(new CustomEvent(EVENT));
   }, [enabled]);
 
-  // Poll every POLL_INTERVAL when enabled AND there are bookmarks.
-  //
-  // Two race-condition guards added vs the original:
-  //   1. `active` flag — cancels pending setState after unmount /
-  //      effect re-run (was triggering React's "state update on
-  //      unmounted component" warning on navigation).
-  //   2. `running` mutex — prevents two `pollOnce` calls from racing
-  //      on the snapshot localStorage write. The original effect fired
-  //      `pollOnce()` immediately PLUS started a setInterval, so on
-  //      a fresh mount of a many-bookmark watchlist both calls could
-  //      execute in parallel — both read the same snapshot baseline,
-  //      both mutate the local object, and the slower writer clobbered
-  //      the faster one. That silently dropped diff-detected alerts.
+  const getSmartMoneyMetadata = useCallback(async (): Promise<Map<string, TraderAlertMeta>> => {
+    const cached = metadataRef.current;
+    if (cached.byAddress.size > 0 && Date.now() - cached.fetchedAt < SMART_META_TTL) {
+      return cached.byAddress;
+    }
+
+    try {
+      const res = await fetch('/api/smart-money/leaderboard?topN=100&lookbackDays=90', {
+        signal: AbortSignal.timeout(12_000),
+      });
+      if (!res.ok) return cached.byAddress;
+
+      const json = await res.json() as { entries?: SmartMoneyLeaderboardEntry[] };
+      const next = new Map<string, TraderAlertMeta>();
+      for (const entry of json.entries ?? []) {
+        if (!entry?.address) continue;
+        next.set(entry.address.toLowerCase(), {
+          tier: entry.tier ?? null,
+          traderType: entry.traderType ?? null,
+          signalScore: entry.signalScore ?? null,
+          bestAsset: entry.assetBreakdown?.[0]?.symbol?.toUpperCase() ?? null,
+        });
+      }
+      metadataRef.current = {
+        fetchedAt: Date.now(),
+        byAddress: next,
+      };
+      return next;
+    } catch {
+      return cached.byAddress;
+    }
+  }, []);
+
   useEffect(() => {
     if (!enabled || bookmarks.length === 0) {
-      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
       return;
     }
 
@@ -229,34 +364,68 @@ export function useTraderAlerts() {
     let running = false;
 
     async function pollOnce() {
-      if (running) return;        // mutex — skip if previous tick still in flight
+      if (running) return;
       running = true;
       try {
-        const snapshots: Record<string, TraderSnapshot> = readJson(SNAPSHOT_KEY, {});
+        const [metaByAddress, positionBatches] = await Promise.all([
+          getSmartMoneyMetadata(),
+          Promise.all(
+            bookmarks.map(async (bookmark) => ({
+              bookmark,
+              positions: await fetchTrackedPositions(bookmark),
+            })),
+          ),
+        ]);
+        if (!active) return;
+
+        const snapshots = readSnapshots();
         const freshAlerts: TraderAlert[] = [];
-        for (const b of bookmarks) {
-          if (!active) return;
-          const positions = await fetchPositions(b.address);
-          if (!active) return;
-          const prev = snapshots[b.address];
-          if (prev) {
-            const changes = diffPositions(prev.positions, positions);
-            for (const c of changes) {
+
+        for (const batch of positionBatches) {
+          const address = batch.bookmark.address.toLowerCase();
+          const previous = snapshots[address];
+          const meta = metaByAddress.get(address);
+
+          if (previous) {
+            const changes = diffTrackedPositions(previous.positions, batch.positions, SIZE_CHANGE_THRESHOLD);
+            for (const change of changes) {
+              if (!shouldEmitSmartAlert(change, meta)) continue;
+              const specialist = isSpecialistPosition(meta, change.coin);
+              const timestamp = Date.now();
               freshAlerts.push({
-                id: `${b.address}-${c.coin}-${Date.now()}`,
-                address: b.address,
-                displayName: b.displayName ?? null,
-                coin: c.coin,
-                kind: c.kind,
-                details: c.details,
-                sizeUsd: c.sizeUsd,
-                isLong: c.isLong,
-                timestamp: Date.now(),
+                id: `${address}-${change.venue}-${change.coin}-${timestamp}-${freshAlerts.length}`,
+                address,
+                displayName: batch.bookmark.displayName ?? null,
+                coin: change.coin,
+                venue: change.venue as TrackedVenue,
+                kind: change.kind,
+                details: formatAlertDetails(
+                  change.kind,
+                  change.venue as TrackedVenue,
+                  change.coin,
+                  change.isLong,
+                  change.sizeUsd,
+                  change.prevSizeUsd,
+                  specialist,
+                ),
+                sizeUsd: change.sizeUsd,
+                isLong: change.isLong,
+                timestamp,
+                tier: meta?.tier ?? null,
+                traderType: meta?.traderType ?? null,
+                signalScore: meta?.signalScore ?? null,
+                specialist,
               });
             }
           }
-          snapshots[b.address] = { address: b.address, fetchedAt: Date.now(), positions };
+
+          snapshots[address] = {
+            address,
+            fetchedAt: Date.now(),
+            positions: batch.positions,
+          };
         }
+
         if (!active) return;
         writeJson(SNAPSHOT_KEY, snapshots);
 
@@ -265,33 +434,37 @@ export function useTraderAlerts() {
           const combined = [...freshAlerts, ...existing].slice(0, MAX_FEED);
           writeJson(FEED_KEY, combined);
 
-          // Fire browser notification if permitted — one per alert, throttled
           if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-            // Cap notifications to 3 per poll to avoid spam
-            for (const a of freshAlerts.slice(0, 3)) {
+            for (const alert of freshAlerts.slice(0, 3)) {
               try {
-                new Notification(`${a.displayName || a.address.slice(0, 10)}...`, {
-                  body: a.details,
-                  tag: `${a.address}-${a.coin}`, // dedupe rapid repeats on same coin
+                new Notification(`${alert.displayName || alert.address.slice(0, 10)}...`, {
+                  body: alert.details,
+                  tag: `${alert.address}-${alert.venue}-${alert.coin}`,
                 });
-              } catch { /* browsers may limit — ignore */ }
+              } catch {
+                // Browser may reject or throttle notifications.
+              }
             }
           }
         }
+
         if (active) setLastCheck(Date.now());
       } finally {
         running = false;
       }
     }
 
-    // Fire immediately (seed snapshots), then interval
     pollOnce();
     pollingRef.current = setInterval(pollOnce, POLL_INTERVAL);
+
     return () => {
       active = false;
-      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
     };
-  }, [enabled, bookmarks]);
+  }, [enabled, bookmarks, getSmartMoneyMetadata]);
 
   return { feed, clearFeed, enabled, toggleEnabled, lastCheck };
 }
