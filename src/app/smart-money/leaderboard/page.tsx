@@ -154,13 +154,18 @@ export default function SmartMoneyLeaderboardPage() {
             </>
           }
           actions={
-            <button
-              onClick={load}
-              disabled={loading}
-              className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-hub-yellow disabled:opacity-40"
-            >
-              <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> refresh
-            </button>
+            <>
+              <Link href="/smart-money/confluence" className="text-xs text-neutral-500 hover:text-hub-yellow">
+                confluence
+              </Link>
+              <button
+                onClick={load}
+                disabled={loading}
+                className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-hub-yellow disabled:opacity-40"
+              >
+                <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> refresh
+              </button>
+            </>
           }
         />
 
