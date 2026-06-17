@@ -9,6 +9,8 @@ import BookmarkStar from '@/components/BookmarkStar';
 import TraderHistoryChart, { type PnlSeries } from '@/components/TraderHistoryChart';
 import { useRecordTraderVisit } from '@/hooks/useRecentTraders';
 import { copyToClipboard } from '@/lib/copyToClipboard';
+import { formatCoverageLabel, formatVenueCoverageDetails } from '@/lib/trader-coverage';
+import { computeOpenRiskPct, computeTruePnlUsd, summariseLiveRisk } from '@/lib/trader-risk';
 import Link from 'next/link';
 import {
   Activity, ExternalLink, Copy, ChevronLeft, Layers,
@@ -114,6 +116,14 @@ function fmtPct(n: number): string {
 
 function shortAddr(a: string): string {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
+}
+
+function coverageTone(label: string): string {
+  if (label === 'Cross-platform') return 'bg-emerald-500/12 text-emerald-300 border-emerald-500/25';
+  if (label === 'HL only') return 'bg-purple-500/12 text-purple-300 border-purple-500/25';
+  if (label === 'GMX only') return 'bg-blue-500/12 text-blue-300 border-blue-500/25';
+  if (label === 'gTrade only') return 'bg-cyan-500/12 text-cyan-300 border-cyan-500/25';
+  return 'bg-white/[0.04] text-neutral-300 border-white/[0.08]';
 }
 
 /* ─── Venue section ───────────────────────────────────────────────── */
@@ -455,17 +465,28 @@ export default function TraderUnifiedPage() {
 
   // Aggregate rollup across all venues
   const rollup = useMemo(() => {
-    const openUnrealized =
-      (gmxArb.data?.openPositions ?? []).reduce((s, p) => s + p.unrealizedPnl, 0) +
-      (gmxAvax.data?.openPositions ?? []).reduce((s, p) => s + p.unrealizedPnl, 0) +
-      (hl.data?.openPositions ?? []).reduce((s, p) => s + p.unrealizedPnl, 0) +
-      (gtrade.data?.openPositions ?? []).reduce((s, p) => s + p.unrealizedPnl, 0);
-
-    const openNotional =
-      (gmxArb.data?.openPositions ?? []).reduce((s, p) => s + p.sizeUsd, 0) +
-      (gmxAvax.data?.openPositions ?? []).reduce((s, p) => s + p.sizeUsd, 0) +
-      (hl.data?.openPositions ?? []).reduce((s, p) => s + p.sizeUsd, 0) +
-      (gtrade.data?.openPositions ?? []).reduce((s, p) => s + p.sizeUsd, 0);
+    const risk = summariseLiveRisk([
+      ...(gmxArb.data?.openPositions ?? []).map((position) => ({
+        symbol: position.marketSymbol,
+        sizeUsd: position.sizeUsd,
+        unrealizedPnl: position.unrealizedPnl,
+      })),
+      ...(gmxAvax.data?.openPositions ?? []).map((position) => ({
+        symbol: position.marketSymbol,
+        sizeUsd: position.sizeUsd,
+        unrealizedPnl: position.unrealizedPnl,
+      })),
+      ...(hl.data?.openPositions ?? []).map((position) => ({
+        symbol: position.coin,
+        sizeUsd: position.sizeUsd,
+        unrealizedPnl: position.unrealizedPnl,
+      })),
+      ...(gtrade.data?.openPositions ?? []).map((position) => ({
+        symbol: position.symbol,
+        sizeUsd: position.sizeUsd,
+        unrealizedPnl: position.unrealizedPnl,
+      })),
+    ]);
 
     const lifetimeRealized =
       (gmxArb.data?.summary?.realizedPnl ?? 0) +
@@ -474,6 +495,9 @@ export default function TraderUnifiedPage() {
       (hl.data?.summary?.performance?.allTime?.pnl ?? 0);
 
     const accountValue = (hl.data?.summary?.accountValue ?? 0);
+    const withdrawable = (hl.data?.summary?.withdrawable ?? 0);
+    const truePnl = computeTruePnlUsd(lifetimeRealized, risk.liveUnrealizedPnlUsd);
+    const openRiskPct = computeOpenRiskPct(risk.openNotionalUsd, accountValue);
 
     const openPositionCount =
       (gmxArb.data?.openPositions?.length ?? 0) +
@@ -482,13 +506,37 @@ export default function TraderUnifiedPage() {
       (gtrade.data?.openPositions?.length ?? 0);
 
     const venuesActive = [
-      (gmxArb.data?.openPositions?.length ?? 0) > 0,
-      (gmxAvax.data?.openPositions?.length ?? 0) > 0,
-      (hl.data?.openPositions?.length ?? 0) > 0,
-      (gtrade.data?.openPositions?.length ?? 0) > 0,
-    ].filter(Boolean).length;
+      !!gmxArb.data && ((gmxArb.data.openPositions?.length ?? 0) > 0 || (gmxArb.data.summary?.totalTrades ?? 0) > 0),
+      !!gmxAvax.data && ((gmxAvax.data.openPositions?.length ?? 0) > 0 || (gmxAvax.data.summary?.totalTrades ?? 0) > 0),
+      !!hl.data && ((hl.data.openPositions?.length ?? 0) > 0 || Object.keys(hl.data.summary?.performance ?? {}).length > 0),
+      !!gtrade.data && ((gtrade.data.openPositions?.length ?? 0) > 0 || (gtrade.data.summary?.openCount ?? 0) > 0),
+    ];
+    const venues = [
+      ...(venuesActive[0] ? ['gmx-arbitrum'] : []),
+      ...(venuesActive[1] ? ['gmx-avalanche'] : []),
+      ...(venuesActive[2] ? ['hyperliquid'] : []),
+      ...(venuesActive[3] ? ['gtrade'] : []),
+    ];
+    const coverageLabel = formatCoverageLabel(venues);
+    const coverageDetails = formatVenueCoverageDetails(venues);
 
-    return { openUnrealized, openNotional, lifetimeRealized, accountValue, openPositionCount, venuesActive };
+    return {
+      openUnrealized: risk.liveUnrealizedPnlUsd,
+      openPositiveUnrealized: risk.livePositiveUnrealizedPnlUsd,
+      openNegativeUnrealized: risk.liveNegativeUnrealizedPnlUsd,
+      openNotional: risk.openNotionalUsd,
+      lifetimeRealized,
+      accountValue,
+      withdrawable,
+      truePnl,
+      openRiskPct,
+      openPositionCount,
+      venuesActive: venues.length,
+      coverageLabel,
+      coverageDetails,
+      activeAssets: risk.activeAssets,
+      venues,
+    };
   }, [gmxArb.data, gmxAvax.data, hl.data, gtrade.data]);
 
   if (!address) {
@@ -543,7 +591,9 @@ export default function TraderUnifiedPage() {
                 <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-hub-yellow/25 to-hub-yellow/[0.06] border border-hub-yellow/25 flex items-center justify-center">
                   <Layers className="w-4 h-4 text-hub-yellow" />
                 </div>
-                <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-500 font-bold">Cross-platform trader</span>
+                <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-500 font-bold">
+                  Coverage · {rollup.coverageLabel}
+                </span>
               </div>
               <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-white leading-[1.1]">
                 {hl.data?.displayName ?? (
@@ -554,15 +604,13 @@ export default function TraderUnifiedPage() {
                 <BookmarkStar
                   address={address}
                   displayName={hl.data?.displayName}
-                  venues={[
-                    ...(gmxArb.data?.openPositions?.length || gmxArb.data?.summary?.totalTrades ? ['gmx-arbitrum'] : []),
-                    ...(gmxAvax.data?.openPositions?.length || gmxAvax.data?.summary?.totalTrades ? ['gmx-avalanche'] : []),
-                    ...(hl.data?.openPositions?.length || Object.keys(hl.data?.summary?.performance ?? {}).length ? ['hyperliquid'] : []),
-                    ...(gtrade.data?.openPositions?.length ? ['gtrade'] : []),
-                  ]}
+                  venues={rollup.venues}
                   size={16}
                   className="!p-1.5 !rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]"
                 />
+                <span className={`inline-flex items-center rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${coverageTone(rollup.coverageLabel)}`}>
+                  {rollup.coverageLabel}
+                </span>
                 <span className="font-mono text-[11px] text-neutral-300 px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.06]">{address}</span>
                 <button
                   onClick={copyAddr}
@@ -574,6 +622,10 @@ export default function TraderUnifiedPage() {
                 </button>
               </div>
               <div className="flex items-center gap-3 mt-2 text-[11px] flex-wrap">
+                <span className="text-neutral-500">
+                  {rollup.coverageDetails}{rollup.activeAssets.length > 0 ? ` · live ${rollup.activeAssets.join(' · ')}` : ''}
+                </span>
+                <span className="text-neutral-700">·</span>
                 <a href={`https://debank.com/profile/${address}`} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white inline-flex items-center gap-1">
                   DeBank <ExternalLink className="w-2.5 h-2.5" />
                 </a>
@@ -603,14 +655,16 @@ export default function TraderUnifiedPage() {
             {/* Rollup strip */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto">
               <div className="bg-white/[0.02] rounded-lg p-2 min-w-[110px]">
-                <div className="text-[9px] text-neutral-500 uppercase tracking-wider">Account Value</div>
+                <div className="text-[9px] text-neutral-500 uppercase tracking-wider">HL NAV</div>
                 <div className="font-mono text-sm tabular-nums text-white font-semibold">{fmtUSD(rollup.accountValue)}</div>
-                <div className="text-[9px] text-neutral-600 mt-0.5">HL only</div>
+                <div className="text-[9px] text-neutral-600 mt-0.5">withdrawable {fmtUSD(rollup.withdrawable)}</div>
               </div>
               <div className="bg-white/[0.02] rounded-lg p-2 min-w-[110px]">
                 <div className="text-[9px] text-neutral-500 uppercase tracking-wider">Open Notional</div>
                 <div className="font-mono text-sm tabular-nums text-white font-semibold">{fmtUSD(rollup.openNotional)}</div>
-                <div className="text-[9px] text-neutral-600 mt-0.5">{rollup.openPositionCount} positions</div>
+                <div className="text-[9px] text-neutral-600 mt-0.5">
+                  {rollup.openRiskPct == null ? `${rollup.openPositionCount} positions` : `${fmtPct(rollup.openRiskPct)} risk · ${rollup.openPositionCount} pos`}
+                </div>
               </div>
               <div className="bg-white/[0.02] rounded-lg p-2 min-w-[110px]">
                 <div className="text-[9px] text-neutral-500 uppercase tracking-wider">Unrealized</div>
@@ -618,15 +672,17 @@ export default function TraderUnifiedPage() {
                   {rollup.openUnrealized >= 0 ? '+' : ''}{fmtUSD(rollup.openUnrealized)}
                 </div>
                 <div className="text-[9px] text-neutral-600 mt-0.5">
-                  {rollup.venuesActive} {rollup.venuesActive === 1 ? 'venue' : 'venues'} active
+                  +{fmtUSD(rollup.openPositiveUnrealized)} / {fmtUSD(rollup.openNegativeUnrealized)}
                 </div>
               </div>
               <div className="bg-white/[0.02] rounded-lg p-2 min-w-[110px]">
-                <div className="text-[9px] text-neutral-500 uppercase tracking-wider">Lifetime Realized</div>
-                <div className={`font-mono text-sm tabular-nums font-semibold ${rollup.lifetimeRealized >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {rollup.lifetimeRealized >= 0 ? '+' : ''}{fmtUSD(rollup.lifetimeRealized)}
+                <div className="text-[9px] text-neutral-500 uppercase tracking-wider">True P&amp;L</div>
+                <div className={`font-mono text-sm tabular-nums font-semibold ${rollup.truePnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {rollup.truePnl >= 0 ? '+' : ''}{fmtUSD(rollup.truePnl)}
                 </div>
-                <div className="text-[9px] text-neutral-600 mt-0.5">4-venue sum</div>
+                <div className="text-[9px] text-neutral-600 mt-0.5">
+                  {rollup.lifetimeRealized >= 0 ? '+' : ''}{fmtUSD(rollup.lifetimeRealized)} realized
+                </div>
               </div>
             </div>
           </div>

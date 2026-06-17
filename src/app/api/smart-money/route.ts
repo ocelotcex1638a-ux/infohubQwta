@@ -20,6 +20,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { formatCoverageLabel } from '@/lib/trader-coverage';
+import { computeTruePnlUsd, summariseLiveRisk } from '@/lib/trader-risk';
 
 export const runtime = 'nodejs';
 export const preferredRegion = 'bom1';
@@ -40,8 +42,13 @@ interface SmartWallet {
   // Current open positions on ANY tracked venue (summed)
   liveNotional: number;
   liveUnrealizedPnl: number;
+  livePositiveUnrealizedPnl: number;
+  liveNegativeUnrealizedPnl: number;
   openPositionsCount: number;
   directionalBias: number;      // -1 (all short) → +1 (all long), notional-weighted
+  activeAssets: string[];
+  truePnl: number;
+  coverageLabel: string;
 }
 
 const cache = new Map<string, { body: any; ts: number }>();
@@ -137,6 +144,7 @@ export async function GET(request: NextRequest) {
       existing.maxCapital = Math.max(existing.maxCapital, t.maxCapital);
       const totalTrades = existing.wins + existing.losses;
       existing.winRate = totalTrades > 0 ? (existing.wins / totalTrades) * 100 : existing.winRate;
+      existing.coverageLabel = formatCoverageLabel(existing.venues);
     } else {
       byAddr.set(key, {
         address: t.address,
@@ -151,8 +159,13 @@ export async function GET(request: NextRequest) {
         maxCapital: t.maxCapital,
         liveNotional: 0,
         liveUnrealizedPnl: 0,
+        livePositiveUnrealizedPnl: 0,
+        liveNegativeUnrealizedPnl: 0,
         openPositionsCount: 0,
         directionalBias: 0,
+        activeAssets: [],
+        truePnl: t.realizedPnl,
+        coverageLabel: formatCoverageLabel([venueTag]),
       });
     }
   };
@@ -176,6 +189,7 @@ export async function GET(request: NextRequest) {
       // keep the larger value as the "headline" and track venues separately.
       existing.realizedPnl = Math.max(existing.realizedPnl, t.pnl);
       existing.volume = Math.max(existing.volume, t.volume);
+      existing.coverageLabel = formatCoverageLabel(existing.venues);
     } else {
       byAddr.set(key, {
         address: t.address,
@@ -190,8 +204,13 @@ export async function GET(request: NextRequest) {
         maxCapital: 0,
         liveNotional: 0,
         liveUnrealizedPnl: 0,
+        livePositiveUnrealizedPnl: 0,
+        liveNegativeUnrealizedPnl: 0,
         openPositionsCount: 0,
         directionalBias: 0,
+        activeAssets: [],
+        truePnl: t.pnl,
+        coverageLabel: formatCoverageLabel(['hyperliquid']),
       });
     }
   }
@@ -245,22 +264,32 @@ export async function GET(request: NextRequest) {
       const positions: any[] = json?.openPositions || [];
       let longNotional = 0;
       let shortNotional = 0;
-      let unrealized = 0;
       for (const p of positions) {
         const size = Number(p.sizeUsd) || 0;
         const u = Number(p.unrealizedPnl) || 0;
         if (p.isLong) longNotional += size; else shortNotional += size;
-        unrealized += u;
         // Per-coin breakdown for /smart-money-composite. Symbol can come in
         // as `coin`, `symbol`, `market`, or `pair` depending on venue.
         const sym = (p.coin ?? p.symbol ?? p.market ?? p.pair ?? '').toString();
         if (sym && size > 0) pushCoin(sym, size, !!p.isLong, u);
       }
+      const liveRisk = summariseLiveRisk(
+        positions.map((p) => ({
+          symbol: (p.coin ?? p.symbol ?? p.market ?? p.pair ?? '').toString(),
+          sizeUsd: Number(p.sizeUsd) || 0,
+          unrealizedPnl: Number(p.unrealizedPnl) || 0,
+        })),
+      );
       const total = longNotional + shortNotional;
       w.liveNotional = total;
-      w.liveUnrealizedPnl = unrealized;
+      w.liveUnrealizedPnl = liveRisk.liveUnrealizedPnlUsd;
+      w.livePositiveUnrealizedPnl = liveRisk.livePositiveUnrealizedPnlUsd;
+      w.liveNegativeUnrealizedPnl = liveRisk.liveNegativeUnrealizedPnlUsd;
       w.openPositionsCount = positions.length;
       w.directionalBias = total > 0 ? (longNotional - shortNotional) / total : 0;
+      w.activeAssets = liveRisk.activeAssets;
+      w.truePnl = computeTruePnlUsd(w.realizedPnl, liveRisk.liveUnrealizedPnlUsd);
+      w.coverageLabel = formatCoverageLabel(w.venues);
     } catch { /* swallow — enrichment is best-effort */ }
   }
 

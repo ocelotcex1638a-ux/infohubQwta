@@ -14,6 +14,7 @@
  */
 import { hyperliquidWalletClient } from './wallet-clients/hyperliquid';
 import type { NormalizedTrade } from './wallet-clients/types';
+import { computeOpenRiskPct, computeRoiPct, computeTruePnlUsd, summariseLiveRisk } from './trader-risk';
 
 // Hyperliquid leaderboard lives on the stats-data subdomain, NOT api.
 // The api.hyperliquid.xyz path returns 200 with an EMPTY body — silent
@@ -61,6 +62,26 @@ export interface SmartMoneyEntry {
   maxDrawdownPct: number | null;
   /** Top assets by realised contribution in the lookback. */
   assetBreakdown: AssetPerformance[];
+  /** Current account NAV (includes spot + perp when available). */
+  accountNavUsd: number;
+  /** Free balance / withdrawable cash where the venue exposes it. */
+  withdrawableUsd: number | null;
+  /** Current open notional across live positions. */
+  liveOpenNotionalUsd: number;
+  /** Current live PnL across open positions. */
+  liveUnrealizedPnlUsd: number;
+  /** Profitable open exposure only. */
+  livePositiveUnrealizedPnlUsd: number;
+  /** Underwater open exposure only (negative number). */
+  liveNegativeUnrealizedPnlUsd: number;
+  /** Realized lookback pnl plus current unrealized. */
+  truePnlUsd: number;
+  /** Current true pnl as a percent of current NAV. */
+  trueRoiPct: number | null;
+  /** Open notional relative to NAV. */
+  openRiskPct: number | null;
+  /** Assets currently open right now. */
+  activeAssets: string[];
 }
 
 export interface SmartMoneyFeed {
@@ -325,12 +346,11 @@ export async function buildSmartMoneyFeed(opts: { topN?: number; lookbackDays?: 
     const allTimeRoi = allTime ? (parseFloat(allTime.roi) || 0) * 100 : 0;
     const accountValue = parseFloat(row.accountValue) || 0;
 
-    let fills: NormalizedTrade[] = [];
-    try {
-      fills = await hyperliquidWalletClient.fetchTradeHistory!(address, ts - lookbackMs);
-    } catch {
-      // Skip wallets we can't fetch; fall through with empty fills.
-    }
+    const [fills, livePositions, liveBalance] = await Promise.all([
+      hyperliquidWalletClient.fetchTradeHistory!(address, ts - lookbackMs).catch(() => [] as NormalizedTrade[]),
+      hyperliquidWalletClient.fetchPositions(address).catch(() => []),
+      hyperliquidWalletClient.fetchAccountBalance?.(address).catch(() => null) ?? Promise.resolve(null),
+    ]);
 
     const summ = summariseFills(fills, lookbackMs);
     const realised30 = summariseFills(fills, 30 * 86_400_000).realised;
@@ -340,6 +360,19 @@ export async function buildSmartMoneyFeed(opts: { topN?: number; lookbackDays?: 
     const tier = classifySignalTier(winRate, summ.closing);
     const traderType = classifyTraderType(summ);
     const maxDrawdownPct = accountValue > 0 ? (summ.maxDrawdownUsd / accountValue) * 100 : null;
+    const liveRisk = summariseLiveRisk(
+      livePositions.map((position) => ({
+        symbol: position.symbol,
+        sizeUsd: Math.abs(position.positionValue ?? 0),
+        unrealizedPnl: position.unrealizedPnl ?? 0,
+      })),
+    );
+    const accountNavUsd = liveBalance?.equityUsd && liveBalance.equityUsd > 0
+      ? liveBalance.equityUsd
+      : accountValue;
+    const truePnlUsd = computeTruePnlUsd(summ.realised, liveRisk.liveUnrealizedPnlUsd);
+    const trueRoiPct = computeRoiPct(truePnlUsd, accountNavUsd);
+    const openRiskPct = computeOpenRiskPct(liveRisk.openNotionalUsd, accountNavUsd);
     const signalScore = computeSignalScore({
       winRatePct: winRate,
       sampleSize: summ.closing,
@@ -371,6 +404,16 @@ export async function buildSmartMoneyFeed(opts: { topN?: number; lookbackDays?: 
       maxDrawdownUsd: summ.maxDrawdownUsd,
       maxDrawdownPct,
       assetBreakdown: summ.assetBreakdown,
+      accountNavUsd,
+      withdrawableUsd: liveBalance?.availableUsd ?? null,
+      liveOpenNotionalUsd: liveRisk.openNotionalUsd,
+      liveUnrealizedPnlUsd: liveRisk.liveUnrealizedPnlUsd,
+      livePositiveUnrealizedPnlUsd: liveRisk.livePositiveUnrealizedPnlUsd,
+      liveNegativeUnrealizedPnlUsd: liveRisk.liveNegativeUnrealizedPnlUsd,
+      truePnlUsd,
+      trueRoiPct,
+      openRiskPct,
+      activeAssets: liveRisk.activeAssets,
     };
     return entry;
   });

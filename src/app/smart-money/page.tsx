@@ -32,12 +32,30 @@ interface SmartWallet {
   maxCapital: number;
   liveNotional: number;
   liveUnrealizedPnl: number;
+  livePositiveUnrealizedPnl: number;
+  liveNegativeUnrealizedPnl: number;
   openPositionsCount: number;
   directionalBias: number; // -1..+1
+  activeAssets: string[];
+  truePnl: number;
+  coverageLabel: string;
+}
+
+interface SmartMoneyCoin {
+  symbol: string;
+  longNotional: number;
+  shortNotional: number;
+  totalNotional: number;
+  longWallets: number;
+  shortWallets: number;
+  netBias: number;
+  longPct: number;
+  unrealizedPnl: number;
 }
 
 interface SmartMoneyResponse {
   data: SmartWallet[];
+  byCoin: SmartMoneyCoin[];
   summary: {
     walletCount: number;
     enrichedCount: number;
@@ -90,6 +108,14 @@ function tierTone(tier: string | null | undefined): string {
   return 'bg-white/[0.04] text-neutral-400 border-white/[0.08]';
 }
 
+function coverageTone(label: string): string {
+  if (label === 'Cross-platform') return 'bg-emerald-500/12 text-emerald-300 border-emerald-500/25';
+  if (label === 'HL only') return 'bg-purple-500/12 text-purple-300 border-purple-500/25';
+  if (label === 'GMX only') return 'bg-blue-500/12 text-blue-300 border-blue-500/25';
+  if (label === 'gTrade only') return 'bg-cyan-500/12 text-cyan-300 border-cyan-500/25';
+  return 'bg-white/[0.04] text-neutral-300 border-white/[0.08]';
+}
+
 /* ─── Smart Money Sentiment Gauge ─────────────────────────────────── */
 
 function SentimentGauge({ longPct, hasActivity }: { longPct: number; hasActivity: boolean }) {
@@ -138,7 +164,7 @@ function SentimentGauge({ longPct, hasActivity }: { longPct: number; hasActivity
 /* ─── Wallet row ─────────────────────────────────────────────────── */
 
 function WalletRow({ w, rank }: { w: SmartWallet; rank: number }) {
-  const pnlColor = w.realizedPnl > 0 ? 'text-green-400' : w.realizedPnl < 0 ? 'text-red-400' : 'text-neutral-400';
+  const pnlColor = w.truePnl > 0 ? 'text-green-400' : w.truePnl < 0 ? 'text-red-400' : 'text-neutral-400';
   const biasPct = ((w.directionalBias + 1) / 2) * 100;
   const biasColor = w.directionalBias > 0.33 ? 'text-green-400/90' :
                     w.directionalBias < -0.33 ? 'text-red-400/90' :
@@ -170,11 +196,9 @@ function WalletRow({ w, rank }: { w: SmartWallet; rank: number }) {
           {rank === 1 && <Trophy className="w-3 h-3 text-hub-yellow flex-shrink-0" />}
           {w.realizedPnl >= 5_000_000 && <Flame className="w-3 h-3 text-orange-400 flex-shrink-0" />}
           {w.winRate >= 80 && w.closedCount >= 50 && <Target className="w-3 h-3 text-green-400 flex-shrink-0" aria-label="Sniper" />}
-          {w.venues.length > 1 && (
-            <span className="text-[8px] text-hub-yellow/80 uppercase tracking-wider font-semibold bg-hub-yellow/[0.08] px-1 rounded">
-              {w.venues.length}v
-            </span>
-          )}
+          <span className={`text-[8px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded border ${coverageTone(w.coverageLabel)}`}>
+            {w.coverageLabel}
+          </span>
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
           {w.venues.map(v => {
@@ -185,6 +209,11 @@ function WalletRow({ w, rank }: { w: SmartWallet; rank: number }) {
               </span>
             );
           })}
+          {w.activeAssets.length > 0 && (
+            <span className="text-[9px] text-neutral-500 font-mono tabular-nums">
+              {w.activeAssets.slice(0, 3).join(' · ')}
+            </span>
+          )}
           {w.closedCount > 0 ? (
             <span className="text-[9px] text-neutral-600 font-mono tabular-nums">
               {w.wins}W/{w.losses}L · {w.winRate.toFixed(0)}%
@@ -195,12 +224,14 @@ function WalletRow({ w, rank }: { w: SmartWallet; rank: number }) {
         </div>
       </div>
 
-      {/* Lifetime PnL */}
+      {/* True PnL */}
       <div className="text-right w-[100px]">
         <div className={`font-mono tabular-nums font-bold text-sm tabular-nums ${pnlColor}`}>
-          {fmtUSD(w.realizedPnl)}
+          {fmtUSD(w.truePnl)}
         </div>
-        <div className="text-[9px] text-neutral-600 font-mono tabular-nums">lifetime PnL</div>
+        <div className="text-[9px] text-neutral-600 font-mono tabular-nums">
+          {fmtUSD(w.realizedPnl)} realized
+        </div>
       </div>
 
       {/* Live positioning */}
@@ -220,7 +251,9 @@ function WalletRow({ w, rank }: { w: SmartWallet; rank: number }) {
             <div className={`font-mono tabular-nums font-bold text-xs tabular-nums ${w.liveUnrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {w.liveUnrealizedPnl >= 0 ? '+' : ''}{fmtUSD(w.liveUnrealizedPnl)}
             </div>
-            <div className="text-[9px] text-neutral-600 font-mono tabular-nums">unrealized</div>
+            <div className="text-[9px] text-neutral-600 font-mono tabular-nums">
+              +{fmtUSD(w.livePositiveUnrealizedPnl)} / {fmtUSD(w.liveNegativeUnrealizedPnl)}
+            </div>
           </>
         ) : (
           <div className="text-[9px] text-neutral-700 font-mono tabular-nums">—</div>
@@ -253,6 +286,7 @@ export default function SmartMoneyPage() {
   const [minWr, setMinWr] = useState(55);
   const [include, setInclude] = useState<'gmx' | 'hl' | 'both'>('both');
   const [search, setSearch] = useState('');
+  const [selectedAsset, setSelectedAsset] = useState('all');
   // Consensus mode: filter the visible list to the top 10 by lifetime
   // PnL — "what are the elite traders actually doing right now" rather
   // than "what does the aggregate of 40 wallets look like". Loud signal
@@ -339,6 +373,14 @@ export default function SmartMoneyPage() {
     refreshInterval: 120_000,
   });
 
+  const assetOptions = useMemo(() => {
+    if (!data?.byCoin) return [];
+    return data.byCoin
+      .filter((coin) => coin.totalNotional > 0)
+      .slice(0, 10)
+      .map((coin) => coin.symbol);
+  }, [data]);
+
   const filtered = useMemo(() => {
     if (!data?.data) return [];
     const q = search.toLowerCase().trim();
@@ -356,13 +398,18 @@ export default function SmartMoneyPage() {
     );
   }, [data, search, consensusMode]);
 
+  const visibleWallets = useMemo(() => {
+    if (selectedAsset === 'all') return filtered;
+    return filtered.filter((wallet) => wallet.activeAssets.includes(selectedAsset));
+  }, [filtered, selectedAsset]);
+
   // Consensus sentiment: aggregate directional bias of just the elite
   // top-10. Surfaces "the people who actually print money are leaning
   // bullish" vs the broader pool's noisy 50/50. Only computed when in
   // consensus mode + we have data.
   const consensusSentiment = useMemo(() => {
-    if (!consensusMode || filtered.length === 0) return null;
-    const withNotional = filtered.filter(w => w.liveNotional > 0);
+    if (!consensusMode || visibleWallets.length === 0) return null;
+    const withNotional = visibleWallets.filter(w => w.liveNotional > 0);
     if (withNotional.length === 0) return null;
     // Notional-weighted average bias (-1..+1). Big wallets weigh more.
     const totalNotional = withNotional.reduce((a, w) => a + w.liveNotional, 0);
@@ -371,7 +418,7 @@ export default function SmartMoneyPage() {
     // Map -1..+1 → 0..100 (long pct). +1 = 100% long, -1 = 0% long.
     const longPct = Math.round((weightedBias + 1) * 50);
     return { longPct, eliteCount: withNotional.length };
-  }, [consensusMode, filtered]);
+  }, [consensusMode, visibleWallets]);
 
   return (
     <div className="min-h-screen bg-hub-black">
@@ -392,6 +439,7 @@ export default function SmartMoneyPage() {
               <p className="text-[13px] text-neutral-400 mt-2 max-w-xl leading-relaxed">
                 Wallets with proven alpha — significant lifetime PnL, real trading volume,
                 consistent win rate. Aggregated across GMX V2 (Arb + Avax) and Hyperliquid;
+                every row below now calls out whether it is HL-only, GMX-only, or truly cross-platform;
                 bookmark to follow via{' '}
                 <Link href="/trader-watch" className="text-hub-yellow hover:underline font-medium">/trader-watch</Link>
                 {' '}or get Telegram pings via{' '}
@@ -438,10 +486,14 @@ export default function SmartMoneyPage() {
             </div>
 
             <div className="card-premium p-3">
-              <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1 font-semibold">Combined Lifetime</div>
-              <div className="text-lg font-bold text-green-400 font-mono tabular-nums">{fmtUSD(data.summary.totalLifetimePnl)}</div>
+              <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1 font-semibold">True P&amp;L</div>
+              <div className={`text-lg font-bold font-mono tabular-nums ${
+                data.summary.totalLifetimePnl + data.summary.totalLiveUnrealized >= 0 ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {fmtUSD(data.summary.totalLifetimePnl + data.summary.totalLiveUnrealized)}
+              </div>
               <div className="text-[10px] text-neutral-500 mt-0.5">
-                on {fmtUSD(data.summary.totalVolume)} volume
+                {fmtUSD(data.summary.totalLifetimePnl)} realized · {fmtUSD(data.summary.totalVolume)} volume
               </div>
             </div>
           </div>
@@ -847,6 +899,29 @@ export default function SmartMoneyPage() {
             </label>
           </div>
 
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-medium">Asset</span>
+            <button
+              onClick={() => setSelectedAsset('all')}
+              className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
+                selectedAsset === 'all' ? 'bg-hub-yellow text-black' : 'bg-white/[0.04] text-neutral-400 hover:text-white'
+              }`}
+            >
+              All
+            </button>
+            {assetOptions.map((asset) => (
+              <button
+                key={asset}
+                onClick={() => setSelectedAsset(asset)}
+                className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
+                  selectedAsset === asset ? 'bg-hub-yellow text-black' : 'bg-white/[0.04] text-neutral-400 hover:text-white'
+                }`}
+              >
+                {asset}
+              </button>
+            ))}
+          </div>
+
           <div className="lg:ml-auto relative flex-1 lg:flex-initial lg:w-64">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-600 pointer-events-none" />
             <input
@@ -881,14 +956,14 @@ export default function SmartMoneyPage() {
             <div className="text-center py-12 text-red-400 text-sm">Failed to load · {String(error)}</div>
           )}
 
-          {!isLoading && !error && filtered.length === 0 && (
+          {!isLoading && !error && visibleWallets.length === 0 && (
             <div className="text-center py-12 text-neutral-500 text-sm">
               No wallets match the filters. Try loosening thresholds.
             </div>
           )}
 
           <div className="ranked-list">
-            {filtered.map((w, i) => (
+            {visibleWallets.map((w, i) => (
               <WalletRow key={w.address} w={w} rank={i + 1} />
             ))}
           </div>
