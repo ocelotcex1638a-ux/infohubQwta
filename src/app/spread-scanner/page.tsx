@@ -45,6 +45,24 @@ interface SpreadRow {
 
 type SortKey = 'symbol' | 'spreadUsd' | 'spreadPct' | 'netPct' | 'minSideVolume' | 'exchangeCount';
 
+const VOLUME_PRESETS = [
+  { label: '$500K+', value: 500_000 },
+  { label: '$2M+', value: 2_000_000 },
+  { label: '$10M+', value: 10_000_000 },
+];
+
+const NET_PRESETS = [
+  { label: '0.02%+', value: 0.02 },
+  { label: '0.10%+', value: 0.10 },
+  { label: '0.25%+', value: 0.25 },
+];
+
+const SPREAD_CAP_PRESETS = [
+  { label: '<3%', value: 3 },
+  { label: '<5%', value: 5 },
+  { label: '<10%', value: 10 },
+];
+
 function fp(v: number) {
   if (!isFinite(v)) return '—';
   if (v >= 10000) return v.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -79,16 +97,24 @@ export default function SpreadScannerPage() {
   const [filter, setFilter] = useState(prefilledSymbol);
   const [cexOnly, setCexOnly] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [minVolumeUsd, setMinVolumeUsd] = useState(500_000);
+  const [minNetSpreadPct, setMinNetSpreadPct] = useState(0.02);
+  const [maxSpreadPct, setMaxSpreadPct] = useState(5);
 
   const fetcher = useCallback(async () => {
-    const res = await fetch('/api/spreads/current');
+    const params = new URLSearchParams({
+      minVolumeUsd: String(minVolumeUsd),
+      minNetSpreadPct: String(minNetSpreadPct),
+      maxSpreadPct: String(maxSpreadPct),
+    });
+    const res = await fetch(`/api/spreads/current?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     return (json?.data ?? []) as SpreadRow[];
-  }, []);
+  }, [minVolumeUsd, minNetSpreadPct, maxSpreadPct]);
 
   const { data: rawRows, error, isLoading: loading, lastUpdate, refresh: fetchData } = useApi({
-    key: 'spread-scanner',
+    key: ['spread-scanner', minVolumeUsd, minNetSpreadPct, maxSpreadPct],
     fetcher,
     refreshInterval: 30000,
   });
@@ -165,9 +191,9 @@ export default function SpreadScannerPage() {
         />
 
         <section className="mb-4 grid gap-3 md:grid-cols-4">
-          <QualityTile label="Default gate" value="$500K+" hint="24h volume on both sides" />
+          <QualityTile label="Volume gate" value={usdCompact(minVolumeUsd)} hint="24h volume on both sides" />
           <QualityTile label="Ranking" value="Net spread" hint="gross minus exchange fees" />
-          <QualityTile label="Noise cap" value="<5%" hint="filters stale or mismatched markets" />
+          <QualityTile label="Noise cap" value={`<${maxSpreadPct}%`} hint="filters stale or mismatched markets" />
           <button
             type="button"
             onClick={copyShareSummary}
@@ -199,6 +225,27 @@ export default function SpreadScannerPage() {
             <ShieldCheck className="h-3.5 w-3.5" />
             Junk spreads hidden by default
           </div>
+        </div>
+
+        <div className="mb-4 grid gap-3 lg:grid-cols-3">
+          <PresetGroup
+            label="Min liquidity"
+            value={minVolumeUsd}
+            options={VOLUME_PRESETS}
+            onChange={setMinVolumeUsd}
+          />
+          <PresetGroup
+            label="Min net spread"
+            value={minNetSpreadPct}
+            options={NET_PRESETS}
+            onChange={setMinNetSpreadPct}
+          />
+          <PresetGroup
+            label="Gross sanity cap"
+            value={maxSpreadPct}
+            options={SPREAD_CAP_PRESETS}
+            onChange={setMaxSpreadPct}
+          />
         </div>
 
         {error && !rows.length && (
@@ -328,6 +375,40 @@ function QualityTile({ label, value, hint }: { label: string; value: string; hin
       <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500">{label}</div>
       <div className="mt-1 text-sm font-semibold text-white">{value}</div>
       <div className="mt-0.5 text-[11px] text-neutral-500">{hint}</div>
+    </div>
+  );
+}
+
+function PresetGroup<T extends number>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: Array<{ label: string; value: T }>;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
+      <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500">{label}</div>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((option) => (
+          <button
+            key={option.label}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+              value === option.value
+                ? 'border-hub-yellow/40 bg-hub-yellow/10 text-hub-yellow'
+                : 'border-white/[0.06] bg-white/[0.03] text-neutral-500 hover:text-neutral-300'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

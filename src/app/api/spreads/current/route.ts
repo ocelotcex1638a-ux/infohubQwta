@@ -9,13 +9,26 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 export const preferredRegion = 'bom1';
 
-// Cache in memory for 30s
-let cache: { data: any; ts: number } | null = null;
+// Cache in memory for 30s, separated by filter settings.
+const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_MS = 30_000;
 
-export async function GET() {
-  if (cache && Date.now() - cache.ts < CACHE_MS) {
-    return NextResponse.json(cache.data, { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=60' } });
+function clampNumber(raw: string | null, fallback: number, min: number, max: number) {
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const minVolumeUsd = clampNumber(url.searchParams.get('minVolumeUsd'), 500_000, 0, 100_000_000);
+  const minNetSpreadPct = clampNumber(url.searchParams.get('minNetSpreadPct'), 0.02, 0, 5);
+  const maxSpreadPct = clampNumber(url.searchParams.get('maxSpreadPct'), 5, 0.1, 25);
+  const cacheKey = `${minVolumeUsd}:${minNetSpreadPct}:${maxSpreadPct}`;
+  const cached = cache.get(cacheKey);
+
+  if (cached && Date.now() - cached.ts < CACHE_MS) {
+    return NextResponse.json(cached.data, { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=60' } });
   }
 
   try {
@@ -38,7 +51,11 @@ export async function GET() {
     // Christian's feedback: largest raw spread is often not tradable.
     // Default to the existing volume-aware detector so the scanner opens on
     // liquid, fee-adjusted, denomination-sane opportunities.
-    const data = detectPriceArbitrage(tickers, 0.02).map((row) => ({
+    const data = detectPriceArbitrage(tickers, {
+      threshold: minNetSpreadPct,
+      minVolumeUsd,
+      maxSpreadPct,
+    }).map((row) => ({
       ...row,
       exchangeCount: exchangeCounts.get(row.symbol) ?? 2,
       minSideVolume: Math.min(row.lowVolume, row.highVolume),
@@ -50,13 +67,13 @@ export async function GET() {
       count: data.length,
       ts: Date.now(),
       meta: {
-        minSideVolumeUsd: 500_000,
-        minNetSpreadPct: 0.02,
-        maxSpreadPct: 5,
+        minSideVolumeUsd: minVolumeUsd,
+        minNetSpreadPct,
+        maxSpreadPct,
         rankedBy: 'netPct',
       },
     };
-    cache = { data: resp, ts: Date.now() };
+    cache.set(cacheKey, { data: resp, ts: Date.now() });
     return NextResponse.json(resp, { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=60' } });
   } catch (err: any) {
     console.error('[spreads/current]', err);

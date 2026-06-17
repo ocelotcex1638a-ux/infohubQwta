@@ -51,6 +51,16 @@ describe('detectPriceArbitrage', () => {
     expect(detectPriceArbitrage(tickers, 0.1)).toEqual([]);
   });
 
+  it('honors a custom minimum volume gate', () => {
+    const tickers: TickerEntry[] = [
+      { symbol: 'BTC', exchange: 'Binance', lastPrice: 60000, quoteVolume24h: 1_000_000 },
+      { symbol: 'BTC', exchange: 'Bybit', lastPrice: 60600, quoteVolume24h: 1_000_000 },
+    ];
+
+    expect(detectPriceArbitrage(tickers, { threshold: 0.1, minVolumeUsd: 2_000_000 })).toEqual([]);
+    expect(detectPriceArbitrage(tickers, { threshold: 0.1, minVolumeUsd: 500_000 })).toHaveLength(1);
+  });
+
   it('filters out denomination mismatches (>3x price deviation)', () => {
     const tickers: TickerEntry[] = [
       { symbol: 'PEPE', exchange: 'Binance', lastPrice: 0.00001, quoteVolume24h: 1_000_000 },
@@ -72,6 +82,16 @@ describe('detectPriceArbitrage', () => {
     ];
     // 6.67% spread > 5% cap
     expect(detectPriceArbitrage(tickers, 0)).toEqual([]);
+  });
+
+  it('honors a custom max spread sanity cap', () => {
+    const tickers: TickerEntry[] = [
+      { symbol: 'ETH', exchange: 'Binance', lastPrice: 3000, quoteVolume24h: 5_000_000 },
+      { symbol: 'ETH', exchange: 'Bybit', lastPrice: 3090, quoteVolume24h: 5_000_000 },
+    ];
+
+    expect(detectPriceArbitrage(tickers, { threshold: 0, maxSpreadPct: 2 })).toEqual([]);
+    expect(detectPriceArbitrage(tickers, { threshold: 0, maxSpreadPct: 5 })).toHaveLength(1);
   });
 
   it('ignores invalid prices (0 or null)', () => {

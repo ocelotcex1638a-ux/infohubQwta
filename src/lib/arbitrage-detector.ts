@@ -14,15 +14,15 @@ import { getArbRoundTripFee } from '@/lib/constants/exchanges';
 /** Fallback round-trip fee when per-exchange data is unavailable (%). */
 const DEFAULT_ROUND_TRIP_FEE_PCT = 0.10;
 
-/** Minimum 24h quote volume (USD) required on BOTH sides of a price arb. */
-const MIN_VOLUME_USD = 500_000;
+/** Default minimum 24h quote volume (USD) required on BOTH sides of a price arb. */
+const DEFAULT_MIN_VOLUME_USD = 500_000;
 
 /**
  * Maximum allowed spread (%) for price arbs.
  * Anything above this is almost certainly a denomination mismatch or stale data
  * (e.g., Drift 1MPEPE vs Bitfinex PEPE, or dYdX GME-token vs Bitget GME-stock).
  */
-const MAX_PRICE_SPREAD_PCT = 5;
+const DEFAULT_MAX_PRICE_SPREAD_PCT = 5;
 
 /**
  * Maximum ratio between high and median price within a symbol group.
@@ -56,6 +56,15 @@ export interface FundingArb {
   highExchange: string;
   highRate: number; // 8h-normalised
   spread8h: number;
+}
+
+export interface PriceArbOptions {
+  /** Minimum net spread (%) after exchange fees. */
+  threshold?: number;
+  /** Minimum 24h quote volume (USD) required on both sides. */
+  minVolumeUsd?: number;
+  /** Maximum gross price spread (%) before treating it as stale/mismatched. */
+  maxSpreadPct?: number;
 }
 
 /** Shape expected from the tickers API (only fields we use). */
@@ -127,8 +136,15 @@ function normaliseTo8h(rate: number, interval: string, precisHours?: number): nu
  */
 export function detectPriceArbitrage(
   tickers: TickerEntry[],
-  threshold = 0.5,
+  thresholdOrOptions: number | PriceArbOptions = 0.5,
 ): PriceArb[] {
+  const options = typeof thresholdOrOptions === 'number'
+    ? { threshold: thresholdOrOptions }
+    : thresholdOrOptions;
+  const threshold = options.threshold ?? 0.5;
+  const minVolumeUsd = options.minVolumeUsd ?? DEFAULT_MIN_VOLUME_USD;
+  const maxSpreadPct = options.maxSpreadPct ?? DEFAULT_MAX_PRICE_SPREAD_PCT;
+
   // Filter invalid prices up front
   const valid = tickers.filter((t) => t.lastPrice != null && t.lastPrice > 0);
 
@@ -164,13 +180,13 @@ export function detectPriceArbitrage(
     if (low.exchange === high.exchange) return;
 
     // Both sides must meet minimum volume
-    if (low.quoteVolume24h < MIN_VOLUME_USD) return;
-    if (high.quoteVolume24h < MIN_VOLUME_USD) return;
+    if (low.quoteVolume24h < minVolumeUsd) return;
+    if (high.quoteVolume24h < minVolumeUsd) return;
 
     const spreadPct = ((high.lastPrice - low.lastPrice) / low.lastPrice) * 100;
 
-    // Hard cap: anything above MAX_PRICE_SPREAD_PCT is not a real arb
-    if (spreadPct > MAX_PRICE_SPREAD_PCT) return;
+    // Hard cap: anything above the sanity cap is usually not a real arb
+    if (spreadPct > maxSpreadPct) return;
 
     // Use actual per-exchange fees (getArbRoundTripFee already falls back to 0.10 per unknown exchange)
     const feePct = getArbRoundTripFee(low.exchange, high.exchange);
