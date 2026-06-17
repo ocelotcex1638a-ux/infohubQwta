@@ -47,6 +47,20 @@ export interface SmartMoneyEntry {
   lastTradeTs: number | null;
   /** Days since last trade. */
   daysSinceLastTrade: number | null;
+  /** Signal tier based on WR + sample size. */
+  tier: TraderSignalTier;
+  /** Human trading-style bucket derived from fill cadence. */
+  traderType: TraderType;
+  /** Composite score for sorting/filtering by usefulness, not raw PnL. */
+  signalScore: number;
+  /** Average win / average loss. Null when one side is missing. */
+  rr: number | null;
+  /** Max realised drawdown across the lookback, USD. */
+  maxDrawdownUsd: number;
+  /** Max realised drawdown as % of account NAV. */
+  maxDrawdownPct: number | null;
+  /** Top assets by realised contribution in the lookback. */
+  assetBreakdown: AssetPerformance[];
 }
 
 export interface SmartMoneyFeed {
@@ -63,6 +77,36 @@ interface LeaderboardRow {
   accountValue: string;
   displayName: string | null;
   windowPerformances: Array<[string, { pnl: string; roi: string; vlm: string }]>;
+}
+
+export type TraderSignalTier = 'A' | 'B' | 'C' | 'Watch';
+export type TraderType = 'scalper' | 'day' | 'swing' | 'hodler' | 'algo' | 'dca-heavy';
+
+export interface AssetPerformance {
+  symbol: string;
+  realizedPnlUsd: number;
+  volumeUsd: number;
+  closingTrades: number;
+  wins: number;
+  winRatePct: number | null;
+}
+
+export interface FillSummary {
+  realised: number;
+  closing: number;
+  wins: number;
+  biggestWin: number;
+  biggestLoss: number;
+  topSymbols: string[];
+  lastTs: number | null;
+  losses: number;
+  avgWinUsd: number;
+  avgLossUsd: number;
+  rr: number | null;
+  maxDrawdownUsd: number;
+  medianHoursBetweenFills: number | null;
+  dcaOpenRatio: number;
+  assetBreakdown: AssetPerformance[];
 }
 
 // timeWindow is consumed downstream by extractPerformance() reading
@@ -97,28 +141,45 @@ async function fetchLeaderboard(_timeWindow: 'allTime' | 'month' | 'week' | 'day
  *   "what does this wallet trade".
  * - `lastTs` is the max ts of any fill in the window (open or close).
  */
-export function summariseFills(fills: NormalizedTrade[], lookbackMs: number, nowMs: number = Date.now()): {
-  realised: number; closing: number; wins: number;
-  biggestWin: number; biggestLoss: number; topSymbols: string[]; lastTs: number | null;
-} {
+export function summariseFills(fills: NormalizedTrade[], lookbackMs: number, nowMs: number = Date.now()): FillSummary {
   const cutoff = nowMs - lookbackMs;
   let realised = 0, closing = 0, wins = 0;
+  let losses = 0, winSum = 0, lossSumAbs = 0, openLike = 0;
   let biggestWin = 0, biggestLoss = 0;
   let lastTs: number | null = null;
   const symbolVolumes = new Map<string, number>();
+  const byAsset = new Map<string, { realizedPnlUsd: number; volumeUsd: number; closingTrades: number; wins: number }>();
+  const fillsInWindow: NormalizedTrade[] = [];
+  const closes: NormalizedTrade[] = [];
 
   for (const f of fills) {
     const t = f.ts.getTime();
     if (t < cutoff) continue;
+    fillsInWindow.push(f);
     if (lastTs == null || t > lastTs) lastTs = t;
+    const symbol = f.symbol.toUpperCase();
+    const asset = byAsset.get(symbol) ?? { realizedPnlUsd: 0, volumeUsd: 0, closingTrades: 0, wins: 0 };
+    asset.volumeUsd += f.valueUsd;
     if (f.realizedPnlUsd != null) {
       realised += f.realizedPnlUsd;
       closing++;
+      closes.push(f);
       if (f.realizedPnlUsd > 0) wins++;
+      if (f.realizedPnlUsd > 0) winSum += f.realizedPnlUsd;
+      if (f.realizedPnlUsd < 0) {
+        losses++;
+        lossSumAbs += Math.abs(f.realizedPnlUsd);
+      }
       if (f.realizedPnlUsd > biggestWin) biggestWin = f.realizedPnlUsd;
       if (f.realizedPnlUsd < biggestLoss) biggestLoss = f.realizedPnlUsd;
+      asset.realizedPnlUsd += f.realizedPnlUsd;
+      asset.closingTrades++;
+      if (f.realizedPnlUsd > 0) asset.wins++;
+    } else if (f.direction === 'open' || f.direction === 'add' || f.direction == null) {
+      openLike++;
     }
-    symbolVolumes.set(f.symbol, (symbolVolumes.get(f.symbol) ?? 0) + f.valueUsd);
+    byAsset.set(symbol, asset);
+    symbolVolumes.set(symbol, (symbolVolumes.get(symbol) ?? 0) + f.valueUsd);
   }
 
   const topSymbols = Array.from(symbolVolumes.entries())
@@ -126,7 +187,90 @@ export function summariseFills(fills: NormalizedTrade[], lookbackMs: number, now
     .slice(0, 5)
     .map(([s]) => s);
 
-  return { realised, closing, wins, biggestWin, biggestLoss, topSymbols, lastTs };
+  const avgWinUsd = wins > 0 ? winSum / wins : 0;
+  const avgLossUsd = losses > 0 ? lossSumAbs / losses : 0;
+  const rr = avgWinUsd > 0 && avgLossUsd > 0 ? avgWinUsd / avgLossUsd : null;
+
+  let equity = 0;
+  let peak = 0;
+  let maxDrawdownUsd = 0;
+  for (const f of closes.sort((a, b) => a.ts.getTime() - b.ts.getTime())) {
+    equity += f.realizedPnlUsd ?? 0;
+    if (equity > peak) peak = equity;
+    maxDrawdownUsd = Math.max(maxDrawdownUsd, peak - equity);
+  }
+
+  const sortedFills = fillsInWindow.map(f => f.ts.getTime()).sort((a, b) => a - b);
+  const gaps: number[] = [];
+  for (let i = 1; i < sortedFills.length; i++) gaps.push((sortedFills[i] - sortedFills[i - 1]) / 3_600_000);
+  gaps.sort((a, b) => a - b);
+  const medianHoursBetweenFills = gaps.length === 0 ? null : gaps[Math.floor(gaps.length / 2)];
+  const dcaOpenRatio = fillsInWindow.length > 0 ? openLike / fillsInWindow.length : 0;
+
+  const assetBreakdown = Array.from(byAsset.entries())
+    .map(([symbol, a]) => ({
+      symbol,
+      realizedPnlUsd: a.realizedPnlUsd,
+      volumeUsd: a.volumeUsd,
+      closingTrades: a.closingTrades,
+      wins: a.wins,
+      winRatePct: a.closingTrades > 0 ? (a.wins / a.closingTrades) * 100 : null,
+    }))
+    .sort((a, b) => Math.abs(b.realizedPnlUsd) - Math.abs(a.realizedPnlUsd))
+    .slice(0, 8);
+
+  return {
+    realised,
+    closing,
+    wins,
+    biggestWin,
+    biggestLoss,
+    topSymbols,
+    lastTs,
+    losses,
+    avgWinUsd,
+    avgLossUsd,
+    rr,
+    maxDrawdownUsd,
+    medianHoursBetweenFills,
+    dcaOpenRatio,
+    assetBreakdown,
+  };
+}
+
+export function classifySignalTier(winRatePct: number | null, sampleSize: number): TraderSignalTier {
+  if (winRatePct == null || sampleSize < 10) return 'Watch';
+  if (winRatePct >= 85 && sampleSize >= 20) return 'A';
+  if (winRatePct >= 75 && sampleSize >= 15) return 'B';
+  if (winRatePct >= 60) return 'C';
+  return 'Watch';
+}
+
+export function classifyTraderType(summary: Pick<FillSummary, 'closing' | 'medianHoursBetweenFills' | 'dcaOpenRatio'>): TraderType {
+  if (summary.dcaOpenRatio >= 0.7 && summary.closing < 20) return 'dca-heavy';
+  if (summary.closing < 5) return 'hodler';
+  const median = summary.medianHoursBetweenFills ?? Infinity;
+  if (summary.closing >= 120 && median <= 3) return 'algo';
+  if (median <= 6) return 'scalper';
+  if (median <= 36) return 'day';
+  return 'swing';
+}
+
+export function computeSignalScore(args: {
+  winRatePct: number | null;
+  sampleSize: number;
+  rr: number | null;
+  realisedUsd: number;
+  maxDrawdownUsd: number;
+}): number {
+  const wr = args.winRatePct ?? 0;
+  const sampleScore = Math.min(25, Math.log10(Math.max(args.sampleSize, 1)) * 12);
+  const rrScore = Math.min(20, Math.max(0, (args.rr ?? 0) * 8));
+  const pnlScore = Math.min(15, Math.max(0, Math.log10(Math.max(args.realisedUsd, 1)) - 3) * 5);
+  const drawdownPenalty = args.maxDrawdownUsd > 0 && args.realisedUsd > 0
+    ? Math.min(20, (args.maxDrawdownUsd / args.realisedUsd) * 15)
+    : 0;
+  return Math.round(Math.max(0, Math.min(100, wr * 0.4 + sampleScore + rrScore + pnlScore - drawdownPenalty)));
 }
 
 /**
@@ -193,6 +337,16 @@ export async function buildSmartMoneyFeed(opts: { topN?: number; lookbackDays?: 
     const winRate = summ.closing > 0 ? (summ.wins / summ.closing) * 100 : null;
     const lastTs = summ.lastTs;
     const days = lastTs ? (Date.now() - lastTs) / 86_400_000 : null;
+    const tier = classifySignalTier(winRate, summ.closing);
+    const traderType = classifyTraderType(summ);
+    const maxDrawdownPct = accountValue > 0 ? (summ.maxDrawdownUsd / accountValue) * 100 : null;
+    const signalScore = computeSignalScore({
+      winRatePct: winRate,
+      sampleSize: summ.closing,
+      rr: summ.rr,
+      realisedUsd: summ.realised,
+      maxDrawdownUsd: summ.maxDrawdownUsd,
+    });
 
     const entry: SmartMoneyEntry = {
       rank: 0, // assigned post-sort
@@ -210,6 +364,13 @@ export async function buildSmartMoneyFeed(opts: { topN?: number; lookbackDays?: 
       topSymbols: summ.topSymbols,
       lastTradeTs: lastTs,
       daysSinceLastTrade: days != null ? Math.round(days * 10) / 10 : null,
+      tier,
+      traderType,
+      signalScore,
+      rr: summ.rr,
+      maxDrawdownUsd: summ.maxDrawdownUsd,
+      maxDrawdownPct,
+      assetBreakdown: summ.assetBreakdown,
     };
     return entry;
   });

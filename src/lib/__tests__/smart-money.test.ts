@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { summariseFills } from '../smart-money';
+import { classifySignalTier, classifyTraderType, summariseFills } from '../smart-money';
 import type { NormalizedTrade } from '../wallet-clients/types';
 
 const NOW = new Date('2026-05-17T12:00:00Z').getTime();
@@ -26,8 +26,10 @@ describe('summariseFills', () => {
   it('returns zero-state for empty input', () => {
     expect(summariseFills([], LOOKBACK, NOW)).toEqual({
       realised: 0, closing: 0, wins: 0,
-      biggestWin: 0, biggestLoss: 0,
-      topSymbols: [], lastTs: null,
+      biggestWin: 0, biggestLoss: 0, topSymbols: [], lastTs: null,
+      losses: 0, avgWinUsd: 0, avgLossUsd: 0, rr: null,
+      maxDrawdownUsd: 0, medianHoursBetweenFills: null, dcaOpenRatio: 0,
+      assetBreakdown: [],
     });
   });
 
@@ -130,6 +132,42 @@ describe('summariseFills', () => {
   it('does not crash on a fill with valueUsd = 0', () => {
     const out = summariseFills([fill({ valueUsd: 0 })], LOOKBACK, NOW);
     expect(out.topSymbols).toEqual(['BTC']);
+  });
+
+  it('computes RR, drawdown, and per-asset contribution', () => {
+    const out = summariseFills([
+      fill({ symbol: 'BTC', realizedPnlUsd: 1000, valueUsd: 20_000, ts: new Date(NOW - 4 * DAY) }),
+      fill({ symbol: 'BTC', realizedPnlUsd: -500, valueUsd: 10_000, ts: new Date(NOW - 3 * DAY) }),
+      fill({ symbol: 'ETH', realizedPnlUsd: 250, valueUsd: 5_000, ts: new Date(NOW - 2 * DAY) }),
+    ], LOOKBACK, NOW);
+
+    expect(out.losses).toBe(1);
+    expect(out.avgWinUsd).toBe(625);
+    expect(out.avgLossUsd).toBe(500);
+    expect(out.rr).toBeCloseTo(1.25, 2);
+    expect(out.maxDrawdownUsd).toBe(500);
+    expect(out.assetBreakdown[0]).toMatchObject({
+      symbol: 'BTC',
+      realizedPnlUsd: 500,
+      closingTrades: 2,
+      winRatePct: 50,
+    });
+  });
+
+  it('classifies signal tiers by win rate and sample size', () => {
+    expect(classifySignalTier(90, 25)).toBe('A');
+    expect(classifySignalTier(80, 20)).toBe('B');
+    expect(classifySignalTier(65, 10)).toBe('C');
+    expect(classifySignalTier(95, 5)).toBe('Watch');
+  });
+
+  it('classifies trader type from cadence and DCA profile', () => {
+    expect(classifyTraderType({ closing: 2, medianHoursBetweenFills: 120, dcaOpenRatio: 0.2 })).toBe('hodler');
+    expect(classifyTraderType({ closing: 10, medianHoursBetweenFills: 120, dcaOpenRatio: 0.8 })).toBe('dca-heavy');
+    expect(classifyTraderType({ closing: 150, medianHoursBetweenFills: 2, dcaOpenRatio: 0.1 })).toBe('algo');
+    expect(classifyTraderType({ closing: 40, medianHoursBetweenFills: 5, dcaOpenRatio: 0.1 })).toBe('scalper');
+    expect(classifyTraderType({ closing: 40, medianHoursBetweenFills: 20, dcaOpenRatio: 0.1 })).toBe('day');
+    expect(classifyTraderType({ closing: 40, medianHoursBetweenFills: 80, dcaOpenRatio: 0.1 })).toBe('swing');
   });
 
   it('handles a single closing fill at the cutoff boundary', () => {
