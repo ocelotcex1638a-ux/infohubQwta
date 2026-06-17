@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchAllExchangesWithHealth } from '../../_shared/exchange-fetchers';
 import { fetchWithTimeout } from '../../_shared/fetch';
 import { tickerFetchers } from '../../tickers/exchanges';
+import { detectPriceArbitrage, type TickerEntry } from '@/lib/arbitrage-detector';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,58 +21,41 @@ export async function GET() {
   try {
     // Fetch tickers directly (no self-fetch)
     const { data: results } = await fetchAllExchangesWithHealth(tickerFetchers, fetchWithTimeout);
-    const tickers: Array<{ symbol: string; exchange: string; lastPrice: number }> = results as any;
+    const tickers = (results as any[])
+      .map((t): TickerEntry => ({
+        symbol: String(t.symbol ?? '').toUpperCase(),
+        exchange: String(t.exchange ?? ''),
+        lastPrice: Number(t.lastPrice ?? 0),
+        quoteVolume24h: Number(t.quoteVolume24h ?? 0),
+      }))
+      .filter((t) => t.symbol && t.exchange && t.lastPrice > 0);
 
-    // Group by symbol
-    const bySymbol: Record<string, Array<{ exchange: string; price: number }>> = {};
+    const exchangeCounts = new Map<string, number>();
     for (const t of tickers) {
-      if (!t.symbol || t.lastPrice <= 0) continue;
-      if (!bySymbol[t.symbol]) bySymbol[t.symbol] = [];
-      bySymbol[t.symbol].push({ exchange: t.exchange, price: t.lastPrice });
+      exchangeCounts.set(t.symbol, (exchangeCounts.get(t.symbol) ?? 0) + 1);
     }
 
-    // Compute spread for each symbol
-    const data: Array<{
-      symbol: string;
-      spreadUsd: number;
-      spreadPct: number;
-      highExchange: string;
-      highPrice: number;
-      lowExchange: string;
-      lowPrice: number;
-      exchangeCount: number;
-    }> = [];
+    // Christian's feedback: largest raw spread is often not tradable.
+    // Default to the existing volume-aware detector so the scanner opens on
+    // liquid, fee-adjusted, denomination-sane opportunities.
+    const data = detectPriceArbitrage(tickers, 0.02).map((row) => ({
+      ...row,
+      exchangeCount: exchangeCounts.get(row.symbol) ?? 2,
+      minSideVolume: Math.min(row.lowVolume, row.highVolume),
+      maxTradableUsd: Math.floor(Math.min(row.lowVolume, row.highVolume) * 0.0025),
+    }));
 
-    for (const [symbol, exchanges] of Object.entries(bySymbol)) {
-      if (exchanges.length < 2) continue;
-
-      // Filter outliers: exclude >5% from median
-      const prices = exchanges.map(e => e.price).sort((a, b) => a - b);
-      const mid = Math.floor(prices.length / 2);
-      const median = prices.length % 2 === 0 ? (prices[mid - 1] + prices[mid]) / 2 : prices[mid];
-      if (!median || median <= 0) continue;
-      const sane = exchanges.filter(e => Math.abs(e.price - median) / median < 0.05);
-      if (sane.length < 2) continue;
-
-      sane.sort((a, b) => b.price - a.price);
-      const high = sane[0];
-      const low = sane[sane.length - 1];
-      if (low.price <= 0) continue;
-      const spreadUsd = high.price - low.price;
-      const spreadPct = (spreadUsd / low.price) * 100;
-
-      data.push({
-        symbol, spreadUsd, spreadPct,
-        highExchange: high.exchange, highPrice: high.price,
-        lowExchange: low.exchange, lowPrice: low.price,
-        exchangeCount: sane.length,
-      });
-    }
-
-    // Sort by spread % descending
-    data.sort((a, b) => b.spreadPct - a.spreadPct);
-
-    const resp = { data, count: data.length, ts: Date.now() };
+    const resp = {
+      data,
+      count: data.length,
+      ts: Date.now(),
+      meta: {
+        minSideVolumeUsd: 500_000,
+        minNetSpreadPct: 0.02,
+        maxSpreadPct: 5,
+        rankedBy: 'netPct',
+      },
+    };
     cache = { data: resp, ts: Date.now() };
     return NextResponse.json(resp, { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=60' } });
   } catch (err: any) {

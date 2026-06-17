@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import ReferralBanner from '@/components/ReferralBanner';
 import PageHero from '@/components/PageHero';
 import { useApi } from '@/hooks/useSWRApi';
-import { ArrowUpDown, ArrowLeftRight, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpDown, ArrowLeftRight, RefreshCw, Copy, Check, ShieldCheck } from 'lucide-react';
 import { getCoinIcon } from '@/lib/coinIcons';
 
 // Derived from the canonical CEX set in @/lib/constants/exchanges.
@@ -30,14 +30,20 @@ interface SpreadRow {
   symbol: string;
   spreadUsd: number;
   spreadPct: number;
+  netPct: number;
+  feePct: number;
   highExchange: string;
   highPrice: number;
+  highVolume: number;
   lowExchange: string;
   lowPrice: number;
+  lowVolume: number;
   exchangeCount: number;
+  minSideVolume: number;
+  maxTradableUsd: number;
 }
 
-type SortKey = 'symbol' | 'spreadUsd' | 'spreadPct' | 'exchangeCount';
+type SortKey = 'symbol' | 'spreadUsd' | 'spreadPct' | 'netPct' | 'minSideVolume' | 'exchangeCount';
 
 function fp(v: number) {
   if (!isFinite(v)) return '—';
@@ -47,16 +53,32 @@ function fp(v: number) {
   return v.toFixed(6);
 }
 
+function usdCompact(v: number) {
+  if (!Number.isFinite(v) || v <= 0) return '$0';
+  if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(1)}B`;
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
+function qualityLabel(row: SpreadRow) {
+  if (row.netPct >= 0.5 && row.minSideVolume >= 5_000_000) return 'A';
+  if (row.netPct >= 0.2 && row.minSideVolume >= 2_000_000) return 'B';
+  if (row.netPct >= 0.05 && row.minSideVolume >= 500_000) return 'C';
+  return 'Watch';
+}
+
 export default function SpreadScannerPage() {
   const searchParams = useSearchParams();
   // Read ?symbol= so the chart's Arb tool can land users on this page
   // pre-filtered to the coin they were just looking at. Strip + cap so
   // a maliciously-long string can't blow up the search field.
   const prefilledSymbol = (searchParams.get('symbol') || '').toUpperCase().trim().slice(0, 16);
-  const [sortKey, setSortKey] = useState<SortKey>('spreadPct');
+  const [sortKey, setSortKey] = useState<SortKey>('netPct');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [filter, setFilter] = useState(prefilledSymbol);
   const [cexOnly, setCexOnly] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const fetcher = useCallback(async () => {
     const res = await fetch('/api/spreads/current');
@@ -88,6 +110,26 @@ export default function SpreadScannerPage() {
     });
   }, [rows, sortKey, sortDir, filter, cexOnly]);
 
+  const copyShareSummary = async () => {
+    const topRows = sorted.slice(0, 5);
+    const lines = topRows.map((r, i) => (
+      `${i + 1}. ${r.symbol}: ${r.lowExchange} -> ${r.highExchange}, net ${r.netPct.toFixed(3)}%, min vol ${usdCompact(r.minSideVolume)}`
+    ));
+    const text = [
+      'Top actionable cross-exchange spreads on InfoHub:',
+      ...lines,
+      'Filtered for min volume, fee-adjusted net spread, and outlier price sanity.',
+      'https://info-hub.io/spread-scanner',
+    ].join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   const SortIcon = ({ k }: { k: SortKey }) => (
     <ArrowUpDown className={`w-3 h-3 inline ml-1 ${sortKey === k ? 'text-hub-yellow' : 'text-neutral-600'}`} />
   );
@@ -104,7 +146,7 @@ export default function SpreadScannerPage() {
           accent="hub-yellow"
           className="mb-6"
           description={
-            <>Live cross-exchange price spreads for all tracked coins. Click a row to view detailed spread chart.</>
+            <>Actionable cross-exchange spreads, ranked after fee and liquidity gates. Click a row to inspect the venue pair.</>
           }
           actions={
             <>
@@ -112,7 +154,7 @@ export default function SpreadScannerPage() {
                   rows.length is the SYMBOL count, not venue count — use sources. */}
               <DataFreshness
                 exchangeCount={0}
-                sources={[`${rows.length} symbols across exchanges`]}
+                sources={[`${rows.length} actionable spreads`]}
                 lastUpdated={lastUpdate}
               />
               <button onClick={fetchData} className="p-1.5 rounded-lg hover:bg-white/[0.05] transition" title="Refresh">
@@ -121,6 +163,23 @@ export default function SpreadScannerPage() {
             </>
           }
         />
+
+        <section className="mb-4 grid gap-3 md:grid-cols-4">
+          <QualityTile label="Default gate" value="$500K+" hint="24h volume on both sides" />
+          <QualityTile label="Ranking" value="Net spread" hint="gross minus exchange fees" />
+          <QualityTile label="Noise cap" value="<5%" hint="filters stale or mismatched markets" />
+          <button
+            type="button"
+            onClick={copyShareSummary}
+            className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-3 text-left transition-colors hover:border-hub-yellow/30 hover:bg-white/[0.05]"
+          >
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-500">
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-hub-yellow" />}
+              Shareable brief
+            </div>
+            <div className="mt-1 text-sm font-semibold text-white">{copied ? 'Copied for CT / Reddit' : 'Copy top 5 setups'}</div>
+          </button>
+        </section>
 
         {/* Search + filters */}
         <div className="mb-4 flex items-center gap-3 flex-wrap">
@@ -136,6 +195,10 @@ export default function SpreadScannerPage() {
             className={`px-3 py-2 rounded-lg text-xs font-medium transition border ${cexOnly ? 'bg-hub-yellow/10 text-hub-yellow border-hub-yellow/30' : 'bg-white/[0.03] text-neutral-500 border-white/[0.08] hover:text-neutral-300'}`}>
             {cexOnly ? 'CEX Only ✓' : 'CEX Only'}
           </button>
+          <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-500/[0.06] px-3 py-2 text-xs font-medium text-emerald-300">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Junk spreads hidden by default
+          </div>
         </div>
 
         {error && !rows.length && (
@@ -167,11 +230,17 @@ export default function SpreadScannerPage() {
                   <th className="px-4 py-3 text-right cursor-pointer hover:text-white transition" role="button" tabIndex={0} onClick={() => handleSort('spreadUsd')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('spreadUsd'); } }}>
                     SPREAD $ <SortIcon k="spreadUsd" />
                   </th>
-                  <th className="px-4 py-3 text-right cursor-pointer hover:text-white transition" role="button" tabIndex={0} onClick={() => handleSort('spreadPct')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('spreadPct'); } }}>
-                    SPREAD % <SortIcon k="spreadPct" />
+                  <th className="px-4 py-3 text-right cursor-pointer hover:text-white transition" role="button" tabIndex={0} onClick={() => handleSort('netPct')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('netPct'); } }}>
+                    NET % <SortIcon k="netPct" />
+                  </th>
+                  <th className="px-4 py-3 text-right cursor-pointer hover:text-white transition hidden md:table-cell" role="button" tabIndex={0} onClick={() => handleSort('spreadPct')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('spreadPct'); } }}>
+                    GROSS % <SortIcon k="spreadPct" />
                   </th>
                   <th className="px-4 py-3 text-left hidden sm:table-cell">HIGH EXCHANGE</th>
                   <th className="px-4 py-3 text-left hidden sm:table-cell">LOW EXCHANGE</th>
+                  <th className="px-4 py-3 text-right cursor-pointer hover:text-white transition hidden lg:table-cell" role="button" tabIndex={0} onClick={() => handleSort('minSideVolume')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('minSideVolume'); } }}>
+                    MIN VOL <SortIcon k="minSideVolume" />
+                  </th>
                   <th className="px-4 py-3 text-right cursor-pointer hover:text-white transition hidden md:table-cell" role="button" tabIndex={0} onClick={() => handleSort('exchangeCount')} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('exchangeCount'); } }}>
                     EXCHANGES <SortIcon k="exchangeCount" />
                   </th>
@@ -186,13 +255,22 @@ export default function SpreadScannerPage() {
                           <span onClick={e => e.preventDefault()}><WatchlistStar symbol={r.symbol} /></span>
                           <img src={getCoinIcon(r.symbol)} alt={`${r.symbol} icon`} className="w-5 h-5 rounded-full" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                           <span className="font-semibold text-white">{r.symbol}</span>
+                          <span className="rounded border border-hub-yellow/20 bg-hub-yellow/[0.06] px-1.5 py-0.5 text-[10px] font-bold text-hub-yellow">
+                            {qualityLabel(r)}
+                          </span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right font-mono text-hub-yellow font-medium">
                         ${fp(r.spreadUsd)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className={`font-mono font-medium ${r.spreadPct > 0.1 ? 'text-green-400' : r.spreadPct > 0.05 ? 'text-hub-yellow' : 'text-neutral-400'}`}>
+                        <span className={`font-mono font-medium ${r.netPct > 0.2 ? 'text-green-400' : r.netPct > 0.05 ? 'text-hub-yellow' : 'text-neutral-400'}`}>
+                          {r.netPct.toFixed(3)}%
+                        </span>
+                        <div className="text-[10px] text-neutral-600">fee {r.feePct.toFixed(3)}%</div>
+                      </td>
+                      <td className="px-4 py-3 text-right hidden md:table-cell">
+                        <span className="font-mono text-neutral-400">
                           {r.spreadPct.toFixed(3)}%
                         </span>
                       </td>
@@ -218,6 +296,10 @@ export default function SpreadScannerPage() {
                           <span className="font-mono text-[11px] text-neutral-500">${fp(r.lowPrice)}</span>
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-right hidden lg:table-cell">
+                        <div className="font-mono text-xs text-neutral-300">{usdCompact(r.minSideVolume)}</div>
+                        <div className="text-[10px] text-neutral-600">size ~{usdCompact(r.maxTradableUsd)}</div>
+                      </td>
                       <td className="px-4 py-3 text-right text-neutral-500 hidden md:table-cell">
                         {r.exchangeCount}
                       </td>
@@ -225,7 +307,7 @@ export default function SpreadScannerPage() {
                   </Link>
                 ))}
                 {sorted.length === 0 && !loading && (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-neutral-600">No spread data available</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-neutral-600">No actionable spreads passed the default liquidity and fee filters</td></tr>
                 )}
               </tbody>
             </table>
@@ -236,6 +318,16 @@ export default function SpreadScannerPage() {
       </main>
       <ReferralBanner />
       <Footer />
+    </div>
+  );
+}
+
+function QualityTile({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-3">
+      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-white">{value}</div>
+      <div className="mt-0.5 text-[11px] text-neutral-500">{hint}</div>
     </div>
   );
 }

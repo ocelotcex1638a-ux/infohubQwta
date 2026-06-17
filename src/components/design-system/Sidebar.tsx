@@ -71,6 +71,14 @@ const PUR  = 'var(--highlight-purple)';
 const MUTE = 'var(--fg-muted)';
 
 const DEFAULT_SECTIONS: SidebarSection[] = [
+  { id: 'workflows', label: 'Start Here', items: [
+    { href: '/tools',                    label: 'Choose Workflow',  color: ACC,  icon: I.layers },
+    { href: '/spread-scanner',           label: 'Find Trades',      color: PUMP, icon: I.fundArb },
+    { href: '/scalper',                  label: 'Scalper Cockpit',  color: MUTE, icon: I.chart },
+    { href: '/liquidations',             label: 'Manage Risk',      color: REKT, icon: I.liq },
+    { href: '/watch',                    label: 'Watch Wallets',    color: ACC,  icon: I.watch },
+    { href: '/developers',               label: 'API / Developers', color: MUTE, icon: I.cube },
+  ]},
   { id: 'derivatives', label: 'Derivatives & Arb', items: [
     { href: '/funding',                  label: 'Funding Rates',   color: PUMP, icon: I.fundRate },
     { href: '/funding-heatmap',          label: 'Funding Heatmap', color: PUMP, icon: I.fundHeat },
@@ -231,6 +239,19 @@ interface SidebarProps { sections?: SidebarSection[]; className?: string; }
 // Persisted set of collapsed section ids. Bump the suffix if the section
 // id scheme ever changes so stale prefs don't hide/show the wrong groups.
 const SIDEBAR_COLLAPSED_KEY = 'infohub_sidebar_collapsed_v1';
+const DEFAULT_COLLAPSED_SECTIONS = new Set([
+  'derivatives',
+  'risk',
+  'spot',
+  'discovery',
+  'onchain',
+  'whales',
+  'macro',
+  'tools',
+  'account',
+  'resources',
+  'team',
+]);
 
 export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: SidebarProps) {
   // Real aggregator connectivity — same singleton hook the StatusBar
@@ -255,9 +276,9 @@ export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: Side
   const isMarketer = role === 'marketer'  || isAdmin;
   const isSupport  = role === 'support'   || isMod;
   const [q, setQ] = useState('');
-  // Collapsible sections. Seeded empty (= everything expanded) so the server
-  // render and the first client paint agree; real prefs hydrate after mount.
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  // Collapsible sections. Start compact so new users see workflows first;
+  // saved preferences hydrate after mount.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(DEFAULT_COLLAPSED_SECTIONS));
   const toggleSection = (id: string) =>
     setCollapsed(prev => {
       const next = new Set(prev);
