@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
   const minWallets = Math.min(Math.max(parseInt(request.nextUrl.searchParams.get('minWallets') ?? '2', 10) || 2, 1), 10);
   const minPositionUsd = Math.min(Math.max(parseInt(request.nextUrl.searchParams.get('minPositionUsd') ?? '25000', 10) || 25_000, 1_000), 1_000_000);
   const minTier = normalizeTier(request.nextUrl.searchParams.get('minTier'));
-  const cacheKey = `${topN}:${lookbackDays}:${minTier}:${minWallets}:${minPositionUsd}`;
+  const assetFilter = (request.nextUrl.searchParams.get('asset') ?? '').trim().toUpperCase() || null;
+  const cacheKey = `${topN}:${lookbackDays}:${minTier}:${minWallets}:${minPositionUsd}:${assetFilter ?? 'all'}`;
 
   if (l1 && l1.key === cacheKey && Date.now() - l1.ts < CACHE_TTL_MS) {
     return NextResponse.json(l1.body, {
@@ -36,6 +37,7 @@ export async function GET(request: NextRequest) {
     minTier,
     minWallets,
     minPositionUsd,
+    assetFilter,
   });
 
   if (feed.signals.length > 0) {

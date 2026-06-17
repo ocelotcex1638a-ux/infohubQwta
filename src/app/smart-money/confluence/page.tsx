@@ -47,6 +47,8 @@ interface ApiResponse {
   walletsConsidered: number;
   minTier: TraderTier;
   minWallets: number;
+  assetFilter: string | null;
+  availableSymbols: string[];
   signals: ConfluenceSignal[];
 }
 
@@ -86,6 +88,7 @@ export default function SmartMoneyConfluencePage() {
   const [lookback, setLookback] = useState(90);
   const [minTier, setMinTier] = useState<TraderTier>('B');
   const [minWallets, setMinWallets] = useState(2);
+  const [assetFilter, setAssetFilter] = useState<'all' | string>('all');
 
   const load = async () => {
     setLoading(true);
@@ -96,6 +99,7 @@ export default function SmartMoneyConfluencePage() {
         minTier,
         minWallets: String(minWallets),
       });
+      if (assetFilter !== 'all') params.set('asset', assetFilter);
       const res = await fetch(`/api/smart-money/confluence?${params.toString()}`, {
         signal: AbortSignal.timeout(60_000),
       });
@@ -117,7 +121,7 @@ export default function SmartMoneyConfluencePage() {
     const intervalId = setInterval(load, 60_000);
     return () => clearInterval(intervalId);
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [topN, lookback, minTier, minWallets]);
+  }, [topN, lookback, minTier, minWallets, assetFilter]);
 
   const strongest = useMemo(() => data?.signals.slice(0, 12) ?? [], [data]);
 
@@ -139,6 +143,7 @@ export default function SmartMoneyConfluencePage() {
             <>
               Surface live agreement across top-tier Hyperliquid traders. We group current positions by asset and side,
               then rank clusters by wallet count, specialist overlap, signal score, and notional conviction.
+              Filter to BTC, ETH, HYPE, or any other active asset when you want a cleaner directional read.
             </>
           }
           actions={
@@ -213,6 +218,29 @@ export default function SmartMoneyConfluencePage() {
               </button>
             ))}
           </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-medium">Asset:</span>
+            <button
+              onClick={() => setAssetFilter('all')}
+              className={`text-[11px] px-2 py-1 rounded font-medium ${
+                assetFilter === 'all' ? 'bg-hub-yellow text-black' : 'bg-white/[0.04] text-neutral-400 hover:text-white'
+              }`}
+            >
+              all
+            </button>
+            {(data?.availableSymbols ?? []).slice(0, 12).map((symbol) => (
+              <button
+                key={symbol}
+                onClick={() => setAssetFilter(symbol)}
+                className={`text-[11px] px-2 py-1 rounded font-medium ${
+                  assetFilter === symbol ? 'bg-hub-yellow text-black' : 'bg-white/[0.04] text-neutral-400 hover:text-white'
+                }`}
+              >
+                {symbol}
+              </button>
+            ))}
+          </div>
         </div>
 
         {error && (
@@ -245,6 +273,13 @@ export default function SmartMoneyConfluencePage() {
             <div className="card-premium p-4">
               <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Shared entry threshold</div>
               <div className="text-2xl font-bold text-white">{data.minWallets}+</div>
+            </div>
+            <div className="card-premium p-4 md:col-span-4">
+              <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Asset scope</div>
+              <div className="text-sm text-white">{data.assetFilter ?? 'All active assets'}</div>
+              <div className="text-[10px] text-neutral-500 mt-1">
+                {data.availableSymbols.length} active symbols available in the current wallet set
+              </div>
             </div>
           </div>
         )}
@@ -341,7 +376,7 @@ export default function SmartMoneyConfluencePage() {
 
         {data && strongest.length === 0 && !error && (
           <div className="card-premium p-8 text-center text-neutral-500 text-sm">
-            No confluence clusters match the current tier and wallet-count filters.
+            No confluence clusters match the current tier, wallet-count, and asset filters.
           </div>
         )}
 

@@ -188,4 +188,37 @@ describe('buildConfluenceSignals', () => {
     const solLong = signals.find((signal) => signal.symbol === 'SOL' && signal.side === 'long');
     expect(solLong?.walletCount).toBe(1);
   });
+
+  it('supports filtering confluence clusters to a single asset', () => {
+    const signals = buildConfluenceSignals([
+      candidate(),
+      candidate({
+        entry: {
+          address: '0x4444444444444444444444444444444444444444',
+          label: 'delta',
+        },
+        positions: [
+          {
+            symbol: 'ETH',
+            side: 'short',
+            size: 5,
+            entryPrice: 2_500,
+            markPrice: 2_450,
+            positionValue: 12_250,
+            unrealizedPnl: 250,
+            leverage: 2,
+            marginUsed: 6_000,
+            liquidationPrice: 3_000,
+            tpPrice: null,
+            slPrice: null,
+            cumulativeFunding: null,
+          },
+        ],
+      }),
+    ], { minTier: 'C', minWallets: 1, minPositionUsd: 10_000, assetFilter: 'ETH' });
+
+    expect(signals).toHaveLength(1);
+    expect(signals[0].symbol).toBe('ETH');
+    expect(signals[0].side).toBe('short');
+  });
 });

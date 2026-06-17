@@ -39,6 +39,8 @@ export interface SmartMoneyConfluenceFeed {
   walletsConsidered: number;
   minTier: TraderSignalTier;
   minWallets: number;
+  assetFilter: string | null;
+  availableSymbols: string[];
   signals: ConfluenceSignal[];
 }
 
@@ -66,11 +68,12 @@ function normalizeLabel(entry: SmartMoneyEntry): string {
 
 export function buildConfluenceSignals(
   candidates: ConfluenceCandidate[],
-  opts: { minTier?: TraderSignalTier; minWallets?: number; minPositionUsd?: number } = {},
+  opts: { minTier?: TraderSignalTier; minWallets?: number; minPositionUsd?: number; assetFilter?: string | null } = {},
 ): ConfluenceSignal[] {
   const minTier = opts.minTier ?? 'B';
   const minWallets = Math.max(1, opts.minWallets ?? 2);
   const minPositionUsd = Math.max(0, opts.minPositionUsd ?? 25_000);
+  const assetFilter = opts.assetFilter?.trim().toUpperCase() || null;
   const minTierRank = TIER_RANK[minTier];
 
   const groups = new Map<string, {
@@ -100,6 +103,7 @@ export function buildConfluenceSignals(
       const side = position.side;
       const sizeUsd = positionSizeUsd(position);
       if (!symbol || sizeUsd < minPositionUsd) continue;
+      if (assetFilter && symbol !== assetFilter) continue;
 
       const key = `${symbol}:${side}`;
       if (seenKeys.has(key)) continue;
@@ -196,12 +200,14 @@ export async function buildSmartMoneyConfluenceFeed(opts: {
   minTier?: TraderSignalTier;
   minWallets?: number;
   minPositionUsd?: number;
+  assetFilter?: string | null;
 } = {}): Promise<SmartMoneyConfluenceFeed> {
   const topN = Math.min(Math.max(opts.topN ?? 50, 5), 100);
   const lookbackDays = Math.min(Math.max(opts.lookbackDays ?? 90, 1), 180);
   const minTier = opts.minTier ?? 'B';
   const minWallets = Math.max(1, opts.minWallets ?? 2);
   const minPositionUsd = Math.max(0, opts.minPositionUsd ?? 25_000);
+  const assetFilter = opts.assetFilter?.trim().toUpperCase() || null;
 
   const leaderboard = await buildSmartMoneyFeed({ topN, lookbackDays });
   const candidates: ConfluenceCandidate[] = [];
@@ -217,6 +223,15 @@ export async function buildSmartMoneyConfluenceFeed(opts: {
     }),
   );
 
+  const availableSymbols = Array.from(new Set(
+    candidates.flatMap((candidate) =>
+      candidate.positions
+        .filter((position) => positionSizeUsd(position) >= minPositionUsd)
+        .map((position) => (position.symbol || '').toUpperCase().trim())
+        .filter(Boolean),
+    ),
+  )).sort();
+
   return {
     ts: Date.now(),
     scanned: leaderboard.scanned,
@@ -224,6 +239,8 @@ export async function buildSmartMoneyConfluenceFeed(opts: {
     walletsConsidered: candidates.filter((candidate) => candidate.positions.length > 0).length,
     minTier,
     minWallets,
-    signals: buildConfluenceSignals(candidates, { minTier, minWallets, minPositionUsd }),
+    assetFilter,
+    availableSymbols,
+    signals: buildConfluenceSignals(candidates, { minTier, minWallets, minPositionUsd, assetFilter }),
   };
 }
