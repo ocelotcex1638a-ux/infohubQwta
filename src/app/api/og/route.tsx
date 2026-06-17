@@ -19,7 +19,8 @@ type Variant =
   | 'ratios'
   | 'etf'
   | 'options'
-  | 'changelog';
+  | 'changelog'
+  | 'spreads';
 
 const ACCENT = '#FF9500';
 const ACCENT_DARK = '#E06600';
@@ -487,6 +488,50 @@ function ChangelogPreview() {
   );
 }
 
+function SpreadsPreview() {
+  const rows = [
+    { sym: 'BTC', route: 'Binance -> Bybit', net: '+0.18%', vol: '$42.0M', grade: 'A' },
+    { sym: 'ETH', route: 'OKX -> Binance', net: '+0.13%', vol: '$28.4M', grade: 'A' },
+    { sym: 'SOL', route: 'Bitget -> OKX', net: '+0.09%', vol: '$14.7M', grade: 'B' },
+    { sym: 'HYPE', route: 'Hyperliquid -> KuCoin', net: '+0.07%', vol: '$6.2M', grade: 'C' },
+  ];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 18, borderRadius: 18, border: '1px solid rgba(255,149,0,0.22)', background: 'linear-gradient(180deg, rgba(255,149,0,0.08), rgba(255,255,255,0.025))' }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ width: 10, height: 10, borderRadius: 999, background: ACCENT, boxShadow: `0 0 18px ${ACCENT}`, display: 'flex' }} />
+        <span style={{ marginLeft: 9, fontSize: 12, fontWeight: 900, color: '#fed7aa', textTransform: 'uppercase', letterSpacing: 1.5 }}>ACTIONABLE SPREADS</span>
+        <div style={{ flex: 1, display: 'flex' }} />
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#737373', textTransform: 'uppercase', letterSpacing: 1.2 }}>fee + liquidity filtered</span>
+      </div>
+      {rows.map((row) => (
+        <div key={row.sym} style={{ display: 'flex', alignItems: 'center', padding: '13px 12px', marginBottom: 8, borderRadius: 12, background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ width: 58, display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: 17, fontWeight: 900, color: '#fafafa' }}>{row.sym}</span>
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#d4d4d4' }}>{row.route}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: 0.8 }}>min side volume {row.vol}</span>
+          </div>
+          <div style={{ width: 78, display: 'flex', justifyContent: 'flex-end' }}>
+            <span style={{ fontSize: 18, fontWeight: 900, color: PUMP, fontFamily: 'monospace' }}>{row.net}</span>
+          </div>
+          <div style={{ width: 36, marginLeft: 12, height: 30, borderRadius: 8, background: 'rgba(255,149,0,0.14)', border: '1px solid rgba(255,149,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: 13, fontWeight: 900, color: '#fdba74' }}>{row.grade}</span>
+          </div>
+        </div>
+      ))}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+        {['NET SPREAD', 'MIN VOLUME', 'SANITY CAP'].map((label) => (
+          <div key={label} style={{ display: 'flex', flex: 1, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.035)', border: '1px solid rgba(255,255,255,0.06)', justifyContent: 'center' }}>
+            <span style={{ fontSize: 10, fontWeight: 900, color: '#a3a3a3', letterSpacing: 1 }}>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PreviewByVariant({ variant }: { variant: Variant }) {
   switch (variant) {
     case 'liquidations': return <LiquidationsPreview />;
@@ -500,6 +545,7 @@ function PreviewByVariant({ variant }: { variant: Variant }) {
     case 'etf':          return <ETFPreview />;
     case 'options':      return <OptionsPreview />;
     case 'changelog':    return <ChangelogPreview />;
+    case 'spreads':      return <SpreadsPreview />;
     case 'funding':
     case 'default':
     default:             return <FundingPreview />;
@@ -528,6 +574,8 @@ function badgesForVariant(variant: Variant): { label: string; color: string }[] 
       // /changelog now is a rolling log; the badge shouldn't undercount it
       // or imply we stopped shipping.
       return [{ label: 'Recent Releases', color: ACCENT }, { label: 'All Free', color: PUMP }];
+    case 'spreads':
+      return [{ label: 'Net of fees', color: PUMP }, { label: 'Liquidity gated', color: ACCENT }];
     default:
       return [{ label: `${ALL_EXCHANGES.length}+ Exchanges`, color: ACCENT }, { label: 'LIVE', color: PUMP }];
   }

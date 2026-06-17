@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import ReferralBanner from '@/components/ReferralBanner';
 import PageHero from '@/components/PageHero';
 import { useApi } from '@/hooks/useSWRApi';
-import { ArrowUpDown, ArrowLeftRight, RefreshCw, Copy, Check, ShieldCheck } from 'lucide-react';
+import { ArrowUpDown, ArrowLeftRight, RefreshCw, Copy, Check, ShieldCheck, ExternalLink } from 'lucide-react';
 import { getCoinIcon } from '@/lib/coinIcons';
 
 // Derived from the canonical CEX set in @/lib/constants/exchanges.
@@ -100,6 +100,7 @@ export default function SpreadScannerPage() {
   const [minVolumeUsd, setMinVolumeUsd] = useState(500_000);
   const [minNetSpreadPct, setMinNetSpreadPct] = useState(0.02);
   const [maxSpreadPct, setMaxSpreadPct] = useState(5);
+  const shareCardUrl = '/api/og?v=spreads&title=Actionable%20Crypto%20Spreads&desc=Fee-adjusted%2C%20liquidity-gated%20cross-exchange%20opportunities%20on%20InfoHub';
 
   const fetcher = useCallback(async () => {
     const params = new URLSearchParams({
@@ -146,6 +147,7 @@ export default function SpreadScannerPage() {
       ...lines,
       'Filtered for min volume, fee-adjusted net spread, and outlier price sanity.',
       'https://info-hub.io/spread-scanner',
+      `Share card: https://info-hub.io${shareCardUrl}`,
     ].join('\n');
     try {
       await navigator.clipboard.writeText(text);
@@ -190,7 +192,7 @@ export default function SpreadScannerPage() {
           }
         />
 
-        <section className="mb-4 grid gap-3 md:grid-cols-4">
+        <section className="mb-4 grid gap-3 md:grid-cols-5">
           <QualityTile label="Volume gate" value={usdCompact(minVolumeUsd)} hint="24h volume on both sides" />
           <QualityTile label="Ranking" value="Net spread" hint="gross minus exchange fees" />
           <QualityTile label="Noise cap" value={`<${maxSpreadPct}%`} hint="filters stale or mismatched markets" />
@@ -205,6 +207,18 @@ export default function SpreadScannerPage() {
             </div>
             <div className="mt-1 text-sm font-semibold text-white">{copied ? 'Copied for CT / Reddit' : 'Copy top 5 setups'}</div>
           </button>
+          <a
+            href={shareCardUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-3 text-left transition-colors hover:border-hub-yellow/30 hover:bg-white/[0.05]"
+          >
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-500">
+              <ExternalLink className="h-3.5 w-3.5 text-sky-400" />
+              Social card
+            </div>
+            <div className="mt-1 text-sm font-semibold text-white">Open OG preview</div>
+          </a>
         </section>
 
         {/* Search + filters */}

@@ -23,6 +23,7 @@ import { Compass, TrendingUp, Zap, PiggyBank, Sigma, ArrowLeftRight } from 'luci
 import type { LucideIcon } from 'lucide-react';
 
 interface Tool { label: string; href: string; hint: string }
+interface QuickStart { goal: string; href: string; primary: string; secondary: string; tone: string }
 interface Persona {
   key: string;
   title: string;
@@ -128,6 +129,37 @@ const PERSONAS: Persona[] = [
   },
 ];
 
+const QUICK_STARTS: QuickStart[] = [
+  {
+    goal: 'I need a trade idea now',
+    href: '/spread-scanner',
+    primary: 'Start with actionable spreads',
+    secondary: 'Fee-adjusted, liquidity-gated setups first.',
+    tone: 'from-hub-yellow/20 to-emerald-500/10',
+  },
+  {
+    goal: 'I scalp intraday',
+    href: '/scalper',
+    primary: 'Open the scalper cockpit',
+    secondary: 'Chart, flow, positioning, and liquidation magnets.',
+    tone: 'from-orange-500/20 to-red-500/10',
+  },
+  {
+    goal: 'I want market context',
+    href: '/dashboard',
+    primary: 'Use the command center',
+    secondary: 'Portfolio, alerts, watched wallets, and daily brief.',
+    tone: 'from-sky-500/20 to-cyan-500/10',
+  },
+  {
+    goal: 'I build with the data',
+    href: '/developers',
+    primary: 'Go to the API workbench',
+    secondary: 'Funding, liquidations, spreads, and webhooks.',
+    tone: 'from-neutral-400/15 to-white/[0.03]',
+  },
+];
+
 export default function ToolsPage() {
   return (
     <div className="min-h-screen bg-hub-black">
@@ -146,6 +178,31 @@ export default function ToolsPage() {
           }
           className="mb-4"
         />
+
+        <section className="mb-5 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">Not sure where to start?</div>
+              <div className="text-sm font-semibold text-white">Pick the job. InfoHub will take you to the right bench.</div>
+            </div>
+            <Link href="/spread-scanner" className="rounded-full border border-hub-yellow/25 bg-hub-yellow/10 px-3 py-1.5 text-xs font-bold text-hub-yellow hover:bg-hub-yellow/15">
+              Most actionable first
+            </Link>
+          </div>
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {QUICK_STARTS.map((item) => (
+              <Link
+                key={item.goal}
+                href={item.href}
+                className={`group rounded-xl border border-white/[0.07] bg-gradient-to-br ${item.tone} p-3 transition hover:-translate-y-0.5 hover:border-hub-yellow/30`}
+              >
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500">{item.goal}</div>
+                <div className="mt-1 text-sm font-bold text-white group-hover:text-hub-yellow">{item.primary}</div>
+                <div className="mt-1 text-[11px] leading-snug text-neutral-500">{item.secondary}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         {/* Jump-to persona chips */}
         <nav aria-label="Jump to trader type" className="flex flex-wrap gap-2 mb-7">
