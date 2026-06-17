@@ -9,7 +9,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, getUserTier } from '@/lib/auth';
 import { getSQL, isDBConfigured } from '@/lib/db';
-import { parseJsonbArray, parseJsonbObject, MAX_WATCHED_WALLETS, VENUES } from '@/lib/hl-watch';
+import { parseJsonbArray, parseJsonbObject, MAX_WATCHED_WALLETS } from '@/lib/hl-watch';
+import { determineVenue, normalizeAddress } from '@/lib/watch-service';
 import { TIER_LIMITS } from '@/lib/constants/tiers';
 
 export const runtime = 'nodejs';
@@ -79,26 +80,17 @@ export async function POST(req: NextRequest) {
 
   let body: { address?: string; label?: string; venue?: string; chain?: string };
   try { body = await req.json(); } catch { body = {}; }
-  const address = (body.address ?? '').trim().toLowerCase();
+  const address = normalizeAddress(body.address);
   if (!ADDR_RE.test(address)) {
     return NextResponse.json({ error: 'invalid EVM address' }, { status: 400 });
   }
   const label = (body.label ?? '').trim().slice(0, 80) || null;
 
-  // Determine venue: accept explicit `venue` (one of VENUES), or map
-  // known chains (e.g. 'arbitrum') to the appropriate venue. Default
-  // to 'hyperliquid' for backward compatibility.
-  let venue = 'hyperliquid';
-  const vraw = (body.venue ?? body.chain ?? '').toString().trim().toLowerCase();
-  if (vraw) {
-    if (vraw === 'arbitrum') {
-      // gTrade is the Arbitrum on-chain reader we support today
-      venue = 'gtrade';
-    } else if (VENUES.includes(vraw as any)) {
-      venue = vraw as any;
-    } else {
-      return NextResponse.json({ error: `unsupported venue/chain: ${vraw}` }, { status: 400 });
-    }
+  let venue: string;
+  try {
+    venue = determineVenue(body.venue ?? body.chain);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
   }
 
   const sql = getSQL();

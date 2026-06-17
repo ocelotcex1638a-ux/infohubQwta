@@ -26,6 +26,7 @@ import { resolveUserTier, TIER_LIMITS } from '@/lib/constants/tiers';
 interface Wallet {
   id: number;
   address: string;
+  venue: Venue;
   label: string | null;
   trigger_opened: boolean;
   trigger_closed: boolean;
@@ -413,18 +414,18 @@ function WatchPageInner() {
     return () => ac.abort();
   }, [status]);
 
-  const handleSubscribe = useCallback(async (addr: string, label: string | null) => {
+  const handleSubscribe = useCallback(async (addr: string, label: string | null, chain = chainInput) => {
     setAddingAddr(addr);
     try {
       const res = await fetch('/api/watch/wallets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: addr, label, chain: chainInput }),
+        body: JSON.stringify({ address: addr, label, chain }),
       });
       if (res.ok) await load();
     } catch (e) { console.error('[watch] subscribe error:', e); }
     finally { setAddingAddr(null); }
-  }, [load]);
+  }, [chainInput, load]);
 
   const handleAdd = async () => {
     setError(null);
@@ -709,7 +710,12 @@ function WatchPageInner() {
                         {w.displayName || shortAddr(w.address)}
                       </Link>
                       <button
-                        onClick={() => handleSubscribe(w.address, w.displayName || null)}
+                        onClick={() => {
+                          const venue = w.venues?.[0] || 'hyperliquid';
+                          const chain = venue === 'gtrade' ? 'arbitrum' : venue.startsWith('gmx') ? 'gmx' : venue;
+                          setChainInput(chain);
+                          handleSubscribe(w.address, w.displayName || null, chain);
+                        }}
                         disabled={alreadyWatching || submitting}
                         className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border transition-colors ${
                           alreadyWatching
@@ -824,6 +830,7 @@ function WatchPageInner() {
                           >
                             {w.label || shortAddr(w.address)}
                           </Link>
+                          <span className="ml-2 text-[11px] text-neutral-500 font-mono">{w.venue ? w.venue.toUpperCase() : ''}</span>
                           {w.label && <span className="font-mono text-[11px] text-neutral-500">{shortAddr(w.address)}</span>}
                           {/* Activity pill — count of events fired in last 24h */}
                           {recent24h > 0 && (

@@ -360,6 +360,16 @@ export default function ConnectionsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-semibold text-white capitalize">{w.chain}</span>
+                        {/* Venue chip: surface the underlying venue reader where helpful */}
+                        {w.chain === 'arbitrum' && (
+                          <span className="ml-2 text-[10px] font-mono uppercase tracking-wider text-cyan-300 border border-cyan-400/30 bg-cyan-500/6 px-1 py-px rounded">gTrade</span>
+                        )}
+                        {w.chain === 'hyperliquid' && (
+                          <span className="ml-2 text-[10px] font-mono uppercase tracking-wider text-emerald-300 border border-emerald-400/30 bg-emerald-500/6 px-1 py-px rounded">HL</span>
+                        )}
+                        {w.chain === 'gmx' && (
+                          <span className="ml-2 text-[10px] font-mono uppercase tracking-wider text-violet-300 border border-violet-400/30 bg-violet-500/6 px-1 py-px rounded">GMX</span>
+                        )}
                         <span className="text-[11px] text-neutral-500 font-mono">{shortAddr(w.address)}</span>
                         {w.label && <span className="text-[11px] text-neutral-500">· {w.label}</span>}
                         {/* Live status pill — green dot when sync'd recently */}

@@ -159,7 +159,7 @@ export async function GET() {
     // ─── Engagement (per-user activity scale) ───────────────────────
     const [
       alertsActive, alertsTotal,
-      watchedWallets, connectedKeys, connectedWallets,
+      watchedWallets, watchedWalletsUnique, connectedKeys, connectedWallets,
     ] = await Promise.all([
       // Alerts live in user_prefs.prefs->'alerts' (jsonb array).
       // activeAlertsTotal = SUM of array lengths across all users.
@@ -172,6 +172,7 @@ export async function GET() {
            WHERE jsonb_typeof(prefs->'alerts') = 'array'
              AND jsonb_array_length(prefs->'alerts') > 0`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM hl_watched_wallets`.catch(() => [{ count: 0 }]),
+      db`SELECT COUNT(DISTINCT address) as count FROM hl_watched_wallets`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM user_exchange_keys`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM user_wallets`.catch(() => [{ count: 0 }]),
     ]);
@@ -244,6 +245,7 @@ export async function GET() {
           activeAlertsTotal: Number(alertsActive[0]?.count ?? 0),
           usersWithAlerts:   Number(alertsTotal[0]?.count  ?? 0),
           watchedWallets:    Number(watchedWallets[0]?.count   ?? 0),
+          watchedWalletsUnique: Number(watchedWalletsUnique[0]?.count ?? 0),
           connectedKeys:     Number(connectedKeys[0]?.count    ?? 0),
           connectedWallets:  Number(connectedWallets[0]?.count ?? 0),
         },
