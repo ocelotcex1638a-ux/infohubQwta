@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -43,106 +43,114 @@ interface NavItem { id: string; label: string; href: string; hint?: string; }
 interface NavGroup { key: string; label: string; icon: React.ReactNode; items: NavItem[]; }
 
 const NAV_GROUPS: NavGroup[] = [
-  // ── Persona-first nav (May 2026) — grouped by HOW you trade rather than by
-  //    data category. The /tools hub is the cross-cutting persona entry point;
-  //    these dropdowns mirror it. "Spot & Macro" is intentionally the broad
-  //    research/investor bucket. Every item below also feeds the ⌘K search index.
-  { key: 'directional', label: 'Directional',
+  { key: 'scan', label: 'Scan & Trade',
     icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>,
     items: [
-      { id: 'chart',          label: 'Chart',            href: '/chart',          hint: 'Candles + book + tape' },
-      { id: 'screener',       label: 'Screener',         href: '/screener',       hint: 'Filter & sort markets' },
-      { id: 'breakouts',      label: 'Breakouts',        href: '/breakouts',      hint: 'Range breaks & setups' },
-      { id: 'momentum',       label: 'Momentum',         href: '/momentum',       hint: 'Trend strength' },
-      { id: 'rsi-heatmap',    label: 'RSI Heatmap',      href: '/rsi-heatmap',    hint: 'Overbought / oversold' },
-      { id: 'top-movers',     label: 'Top Movers',       href: '/top-movers',     hint: 'Biggest gainers/losers' },
-      { id: 'market-heatmap', label: 'Market Heatmap',   href: '/market-heatmap', hint: 'Treemap by mcap' },
-      { id: 'crowdedness',    label: 'Crowdedness',      href: '/crowdedness',    hint: 'Positioning extremes' },
-      { id: 'position-size',  label: 'Position Sizer',   href: '/position-size',  hint: 'Risk-based size · R:R · plan' },
-      { id: 'alerts',         label: 'Alerts',           href: '/alerts',         hint: 'Price / level triggers' },
+      { id: 'tools-hub',    label: 'Tools by Type',     href: '/tools',     hint: 'Find tools for your trading style' },
+      { id: 'scalper',      label: 'Scalper Cockpit',   href: '/scalper',   hint: 'Chart + flow + positioning' },
+      { id: 'screener',     label: 'Screener',          href: '/screener',  hint: 'Filter & sort markets' },
+      { id: 'chart',        label: 'Chart',             href: '/chart',              hint: 'Candles + book + tape' },
+      { id: 'options',      label: 'Options',           href: '/options',   hint: 'Max pain · OI by strike · IV smile · skew · RV vs IV' },
+      // /options-iv, /rv-iv, /max-pain, /skew consolidated into /options (May 2026)
+      { id: 'spreads',      label: 'Spreads',           href: '/spreads',            hint: 'Cross-venue arb' },
+      { id: 'funding-arb',  label: 'Funding Arb',       href: '/spread-scanner',     hint: 'Long/short pairs' },
+      { id: 'basis',        label: 'Basis',             href: '/basis',              hint: 'Spot-perp premium' },
+      { id: 'cme-basis',    label: 'CME Basis',         href: '/cme-basis',          hint: 'Futures vs spot · annualized' },
+      { id: 'premiums',     label: 'Premiums',          href: '/premiums',           hint: 'Perp premiums' },
+      { id: 'execution',    label: 'Execution Costs',   href: '/execution-costs',    hint: 'Slippage + fees' },
+      { id: 'trade-opt',    label: 'Trade Optimizer',   href: '/trade-optimizer',    hint: 'Cheapest venue per trade' },
+      { id: 'fees',         label: 'Exchange Fees',     href: '/exchange-fees',      hint: 'Maker/taker tiers' },
     ]},
-  { key: 'intraday', label: 'Intraday & Risk',
-    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-    items: [
-      { id: 'scalper',        label: 'Scalper Cockpit',  href: '/scalper',             hint: 'Chart + flow + positioning' },
-      { id: 'orderflow',      label: 'Order Flow',       href: '/orderflow',           hint: 'Tape + aggressor' },
-      { id: 'cvd',            label: 'CVD',              href: '/cvd',                 hint: 'Cumulative volume delta' },
-      { id: 'ob-imbalance',   label: 'OB Imbalance',     href: '/orderbook-imbalance', hint: 'Bid vs ask depth ratio' },
-      { id: 'long-short',     label: 'Long / Short',     href: '/longshort',           hint: 'Crowd positioning' },
-      { id: 'liq',            label: 'Liquidations',     href: '/liquidations',        hint: 'Live rekt feed' },
-      { id: 'liq-heatmap',    label: 'Liq Heatmap',      href: '/liquidation-heatmap', hint: 'Heat tiles · whale tags' },
-      { id: 'liq-map',        label: 'Liq Map',          href: '/liquidation-map',     hint: 'Price-level density' },
-      { id: 'liq-levels',     label: 'Liq Levels',       href: '/liquidation-levels',  hint: 'Imminent zones' },
-      { id: 'liq-calc',       label: 'Liq Calculator',   href: '/liq-calculator',      hint: 'Price needed to liquidate' },
-      { id: 'leverage',       label: 'Leverage',         href: '/leverage',            hint: 'Position leverage' },
-    ]},
-  { key: 'derivatives', label: 'Derivatives & Arb',
-    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 16-4-4 4-4"/></svg>,
-    items: [
-      { id: 'funding',         label: 'Funding Rates',     href: '/funding',           hint: 'Live across all venues' },
-      { id: 'funding-heatmap', label: 'Funding Heatmap',   href: '/funding-heatmap',   hint: 'Asset × venue grid' },
-      { id: 'funding-countdown', label: 'Funding Countdown', href: '/funding-countdown', hint: 'Next settlement clocks' },
-      { id: 'funding-paid',    label: 'Funding Paid · 30d', href: '/funding-paid',     hint: 'Most expensive longs' },
-      { id: 'spreads',         label: 'Spreads',           href: '/spreads',           hint: 'Cross-venue arb' },
-      { id: 'funding-arb',     label: 'Funding Arb',       href: '/spread-scanner',    hint: 'Long/short pairs' },
-      { id: 'basis',           label: 'Basis',             href: '/basis',             hint: 'Spot-perp premium' },
-      { id: 'cme-basis',       label: 'CME Basis',         href: '/cme-basis',         hint: 'Futures vs spot · annualized' },
-      { id: 'premiums',        label: 'Premiums',          href: '/premiums',          hint: 'Perp premiums' },
-      { id: 'oi',              label: 'Open Interest',     href: '/open-interest',     hint: 'OI changes, dominance' },
-      { id: 'oi-heatmap',      label: 'OI Heatmap',        href: '/oi-heatmap',        hint: 'OI flux grid' },
-      { id: 'perp-vol',        label: 'Perp DEX Volume',   href: '/perp-dex-volume',   hint: 'On-chain derivatives' },
-      { id: 'volume-share',    label: 'CEX vs DEX Vol',    href: '/volume-share',      hint: 'Spot volume share · 30d' },
-      { id: 'options',         label: 'Options',           href: '/options',           hint: 'Max pain · IV smile · skew' },
-      { id: 'trade-opt',       label: 'Trade Optimizer',   href: '/trade-optimizer',   hint: 'Cheapest venue per trade' },
-      { id: 'execution',       label: 'Execution Costs',   href: '/execution-costs',   hint: 'Slippage + fees' },
-      { id: 'fees',            label: 'Exchange Fees',     href: '/exchange-fees',     hint: 'Maker/taker tiers' },
-    ]},
-  { key: 'spot-macro', label: 'Spot & Macro',
+  { key: 'monitor', label: 'Monitor',
     icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></svg>,
     items: [
-      { id: 'market-cycle',    label: 'Market Cycle',      href: '/market-cycle',       hint: 'Macro phase' },
-      { id: 'cycle-phase',     label: 'Cycle Phase',       href: '/cycle-phase',        hint: 'Composite of 5 cycle signals' },
-      { id: 'dominance',       label: 'Dominance',         href: '/dominance',          hint: 'BTC/ETH/alt share' },
-      { id: 'altseason',       label: 'Altseason',         href: '/altseason',          hint: 'Alt rotation index' },
-      { id: 'sectors',         label: 'Sector Rotation',   href: '/sectors',            hint: 'Heatmap by category' },
-      { id: 'fear-greed',      label: 'Fear & Greed',      href: '/fear-greed',         hint: 'Sentiment index' },
-      { id: 'etf',             label: 'ETF Tracker',       href: '/etf',                hint: 'Spot ETF live quotes' },
-      { id: 'etf-flows',       label: 'ETF Flows',         href: '/etf-flows',          hint: 'Daily net inflows · Farside' },
-      { id: 'crypto-stocks',   label: 'Crypto Stocks',     href: '/crypto-stocks',      hint: 'COIN · MSTR · miners · ETFs' },
-      { id: 'memecoin-radar',  label: 'Memecoin Radar',    href: '/memecoin-radar',     hint: 'Solana DEX velocity' },
-      { id: 'btc-treasuries',  label: 'BTC Treasuries',    href: '/bitcoin-treasuries', hint: 'Corporate holdings' },
-      { id: 'unlocks',         label: 'Token Unlocks',     href: '/token-unlocks',      hint: 'Vesting schedules' },
-      { id: 'cliff-watch',     label: 'Cliff Watch',       href: '/cliff-watch',        hint: 'Unlocks ranked by impact' },
-      { id: 'onchain',         label: 'On-Chain',          href: '/onchain',            hint: 'Network metrics' },
-      { id: 'hash-ribbons',    label: 'Hash Ribbons',      href: '/hash-ribbons',       hint: 'Miner capitulation signal' },
-      { id: 'stable-flows',    label: 'Stablecoin Flows',  href: '/stablecoin-flows',   hint: 'Mint/burn tracker' },
-      { id: 'stable-supply',   label: 'Stablecoin Supply', href: '/stablecoin-supply',  hint: 'USD pegs · 1d/7d/30d' },
-      { id: 'stable-peg',      label: 'Stablecoin Peg',    href: '/stablecoin-peg',     hint: 'Peg deviations' },
-      { id: 'gas',             label: 'Gas Tracker',       href: '/gas-tracker',        hint: 'L1/L2 fees' },
-      { id: 'protocol-rev',    label: 'Protocol Revenue',  href: '/protocol-revenue',   hint: 'Top earners' },
-      { id: 'yields',          label: 'Yields',            href: '/yields',             hint: 'DeFi APYs' },
-      { id: 'staking',         label: 'Staking',           href: '/staking',            hint: 'Validator yields' },
-      { id: 'validators',      label: 'Validator Econ',    href: '/validators',         hint: 'LST + restaking yields' },
-      { id: 'reserves',        label: 'Exchange Reserves', href: '/exchange-reserves',  hint: 'CEX balances' },
-      { id: 'listings',        label: 'New Listings',      href: '/listings',           hint: 'Recent debuts' },
-      { id: 'news',            label: 'News Feed',         href: '/news',               hint: 'Curated + sentiment' },
-      { id: 'calendar',        label: 'Event Calendar',    href: '/economic-calendar',  hint: 'Macro + token events' },
-      { id: 'fomc',            label: 'FOMC Playbook',     href: '/fomc-playbook',      hint: 'BTC reaction to past Fed decisions' },
+      { id: 'funding',         label: 'Funding Rates',   href: '/funding',          hint: 'Live across all venues' },
+      { id: 'funding-heatmap', label: 'Funding Heatmap', href: '/funding-heatmap',   hint: 'Asset × venue grid' },
+      { id: 'funding-countdown', label: 'Funding Countdown', href: '/funding-countdown', hint: 'Next settlement clocks' },
+      { id: 'funding-paid',    label: 'Funding Paid · 30d', href: '/funding-paid',     hint: 'Most expensive longs' },
+      // /funding-leaderboard, /funding-flips, /funding-predictor consolidated into /funding + /funding-paid (May 2026)
+      { id: 'ob-imbalance',    label: 'OB Imbalance',     href: '/orderbook-imbalance', hint: 'Bid vs ask depth ratio' },
+      { id: 'oi',              label: 'Open Interest',   href: '/open-interest',       hint: 'OI changes, dominance' },
+      { id: 'oi-heatmap',      label: 'OI Heatmap',      href: '/oi-heatmap',        hint: 'OI flux grid' },
+      { id: 'perp-vol',        label: 'Perp DEX Volume', href: '/perp-dex-volume',   hint: 'On-chain derivatives' },
+      { id: 'volume-share',    label: 'CEX vs DEX Vol',  href: '/volume-share',      hint: 'Spot volume share · 30d' },
+      { id: 'long-short',      label: 'Long / Short',    href: '/longshort',         hint: 'Crowd positioning' },
+      { id: 'etf',             label: 'ETF Tracker',     href: '/etf',               hint: 'Spot ETF live quotes' },
+      { id: 'etf-flows',       label: 'ETF Flows',        href: '/etf-flows',          hint: 'Daily net inflows · Farside' },
+      // /etf-counterfactual consolidated into /etf-flows (May 2026)
+      { id: 'crypto-stocks',   label: 'Crypto Stocks',    href: '/crypto-stocks',      hint: 'COIN · MSTR · miners · ETFs' },
+      { id: 'memecoin-radar',  label: 'Memecoin Radar',  href: '/memecoin-radar',    hint: 'Solana DEX velocity' },
+      { id: 'top-movers',      label: 'Top Movers',      href: '/top-movers',        hint: 'Biggest gainers/losers' },
+      { id: 'momentum',        label: 'Momentum',        href: '/momentum',          hint: 'Trend strength' },
+      { id: 'breakouts',       label: 'Breakouts',       href: '/breakouts',         hint: 'Range breaks' },
+      { id: 'dominance',       label: 'Dominance',       href: '/dominance',         hint: 'BTC/ETH/alt share' },
+      { id: 'altseason',       label: 'Altseason',       href: '/altseason',         hint: 'Alt rotation index' },
+      { id: 'sectors',         label: 'Sector Rotation', href: '/sectors',           hint: 'Heatmap by category' },
+      { id: 'market-cycle',    label: 'Market Cycle',    href: '/market-cycle',      hint: 'Macro phase' },
+      { id: 'cycle-phase',     label: 'Cycle Phase',     href: '/cycle-phase',       hint: 'Composite of 5 cycle signals' },
+      { id: 'crowdedness',     label: 'Crowdedness',     href: '/crowdedness',       hint: 'Per-coin positioning extremes' },
+      { id: 'market-heatmap',  label: 'Market Heatmap',  href: '/market-heatmap',    hint: 'Treemap by mcap' },
+      { id: 'rsi-heatmap',     label: 'RSI Heatmap',     href: '/rsi-heatmap',       hint: 'Overbought / oversold' },
+      { id: 'fear-greed',      label: 'Fear & Greed',    href: '/fear-greed',        hint: 'Sentiment index' },
     ]},
-  { key: 'smart-money', label: 'Smart Money',
-    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+  { key: 'risk', label: 'Risk',
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
     items: [
-      { id: 'smart-money',     label: 'Smart Money',     href: '/smart-money',     hint: 'Top trader flows' },
-      { id: 'hl-traders',      label: 'HL Traders',      href: '/hl-traders',      hint: 'Hyperliquid leaderboard' },
-      { id: 'hl-vaults',       label: 'HL Vaults',       href: '/hl-vaults',       hint: 'Hyperliquid vaults' },
-      { id: 'hl-whales',       label: 'HL Whales',       href: '/hl-whales',       hint: 'Top HL positions' },
-      { id: 'gmx-traders',     label: 'GMX Traders',     href: '/gmx-traders',     hint: 'GMX leaderboard' },
-      { id: 'compare-traders', label: 'Compare Traders', href: '/compare-traders', hint: 'Side-by-side' },
+      { id: 'liq',             label: 'Liquidations',    href: '/liquidations', hint: 'Live rekt feed' },
+      { id: 'liq-heatmap',     label: 'Liq Heatmap',     href: '/liquidation-heatmap',   hint: 'Heat tiles · whale tags' },
+      { id: 'liq-map',         label: 'Liq Map',         href: '/liquidation-map',       hint: 'Price-level density' },
+      { id: 'liq-levels',      label: 'Liq Levels',      href: '/liquidation-levels',    hint: 'Imminent zones' },
+      { id: 'liq-calc',        label: 'Liq Calculator',  href: '/liq-calculator',        hint: 'Price needed to liquidate' },
+      { id: 'leverage',        label: 'Leverage',        href: '/leverage',              hint: 'Position leverage' },
+      { id: 'position-size',   label: 'Position Sizer',  href: '/position-size',         hint: 'Risk-based sizing' },
+      // /whale-alert consolidated into /liquidations (May 2026)
+      { id: 'alerts',          label: 'Alerts',          href: '/alerts',                hint: 'Triggers + history' },
+    ]},
+  { key: 'research', label: 'Research',
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+    items: [
+      { id: 'news',            label: 'News Feed',       href: '/news',         hint: 'Curated + signals' },
+      { id: 'calendar',        label: 'Event Calendar',  href: '/economic-calendar',     hint: 'Macro + token events' },
+      { id: 'fomc',            label: 'FOMC Playbook',   href: '/fomc-playbook',         hint: 'BTC reaction to past Fed decisions' },
+      { id: 'unlocks',         label: 'Token Unlocks',   href: '/token-unlocks',         hint: 'Vesting schedules' },
+      { id: 'cliff-watch',     label: 'Cliff Watch',     href: '/cliff-watch',           hint: 'Upcoming unlocks ranked by impact' },
+      { id: 'btc-treasuries',  label: 'BTC Treasuries',  href: '/bitcoin-treasuries',    hint: 'Corporate holdings' },
+      { id: 'smart-money',     label: 'Smart Money',     href: '/smart-money',           hint: 'Top trader flows' },
+      // /smart-money-composite folded into /smart-money (May 2026)
+      { id: 'hl-traders',      label: 'HL Traders',      href: '/hl-traders',            hint: 'Hyperliquid leaderboard' },
+      { id: 'hl-vaults',       label: 'HL Vaults',       href: '/hl-vaults',             hint: 'Hyperliquid vaults' },
+      { id: 'hl-whales',       label: 'HL Whales',       href: '/hl-whales',             hint: 'Top HL positions' },
+      { id: 'gmx-traders',     label: 'GMX Traders',     href: '/gmx-traders',           hint: 'GMX leaderboard' },
+      // /wallet-tracker replaced by /watch (May 2026)
+      { id: 'compare-traders', label: 'Compare Traders', href: '/compare-traders',       hint: 'Side-by-side' },
+      { id: 'onchain',         label: 'On-Chain',        href: '/onchain',               hint: 'Network metrics' },
+      { id: 'hash-ribbons',    label: 'Hash Ribbons',    href: '/hash-ribbons',          hint: 'BTC miner capitulation signal' },
+      { id: 'cvd',             label: 'CVD',             href: '/cvd',                   hint: 'Cumulative volume delta' },
+      { id: 'orderflow',       label: 'Order Flow',      href: '/orderflow',             hint: 'Tape + aggressor' },
+      { id: 'stable-flows',    label: 'Stablecoin Flows', href: '/stablecoin-flows',     hint: 'Mint/burn tracker' },
+      { id: 'stable-supply',   label: 'Stablecoin Supply', href: '/stablecoin-supply',   hint: 'USD pegs · 1d/7d/30d' },
+      { id: 'stable-peg',      label: 'Stablecoin Peg',  href: '/stablecoin-peg',        hint: 'Peg deviations' },
+      { id: 'gas',             label: 'Gas Tracker',     href: '/gas-tracker',           hint: 'L1/L2 fees' },
+      { id: 'protocol-rev',    label: 'Protocol Revenue', href: '/protocol-revenue',     hint: 'Top earners' },
+      { id: 'yields',          label: 'Yields',          href: '/yields',                hint: 'DeFi APYs' },
+      { id: 'staking',         label: 'Staking',         href: '/staking',               hint: 'Validator yields' },
+      { id: 'validators',      label: 'Validator Econ',  href: '/validators',            hint: 'LST + restaking yields' },
+      // /restaking + /restaking-delta consolidated into /staking (May 2026)
+      { id: 'reserves',        label: 'Exchange Reserves', href: '/exchange-reserves',   hint: 'CEX balances' },
+      { id: 'listings',        label: 'New Listings',    href: '/listings',              hint: 'Recent debuts' },
+      { id: 'guides',          label: 'Guides',          href: '/guides',                hint: 'Trading tutorials' },
+      { id: 'api-docs',        label: 'API Docs',        href: '/api-docs',              hint: 'For developers' },
+      { id: 'developers',      label: 'Developers',      href: '/developers',            hint: 'Integrations' },
+      // /pricing moved to "My Tools" group — it's account/billing, not
+      // research. Leaving it here made the Research dropdown show as
+      // "active" when on /pricing (visually wrong since pricing isn't a
+      // research surface). Top-level Pricing pill in chrome is the
+      // primary entry point regardless.
+      { id: 'faq',             label: 'FAQ',             href: '/faq',                   hint: 'Common questions' },
     ]},
   { key: 'tools', label: 'My Tools',
     icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
     items: [
-      { id: 'tools-hub',  label: 'Tools by Type', href: '/tools',     hint: 'Find tools for your trading style' },
       { id: 'dashboard',  label: 'Dashboard',     href: '/dashboard', hint: 'Portfolio overview' },
       { id: 'positions',  label: 'Positions',     href: '/positions',          hint: 'Live positions across CEX + DEX with funding context' },
       { id: 'connections', label: 'Connections',  href: '/account/connections', hint: 'Connect CEX API keys + wallets' },
@@ -151,15 +159,11 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'portfolio',  label: 'Portfolio (manual)', href: '/portfolio',     hint: 'Manual holdings + P&L' },
       { id: 'compare',    label: 'Compare',       href: '/compare',            hint: 'Side-by-side coins' },
       { id: 'profile',    label: 'Profile',       href: '/profile',            hint: 'Your trader profile' },
-      { id: 'pricing',    label: 'Pricing',       href: '/pricing',            hint: 'Free / Trader / Pro / Whale · annual -17%' },
+      { id: 'pricing',    label: 'Pricing',       href: '/pricing',            hint: 'Free / Trader / Pro / Whale · free during launch' },
       { id: 'referrals',  label: 'Referrals',     href: '/referrals',          hint: 'Invite friends' },
       { id: 'donate',     label: 'Donate',        href: '/donate',             hint: 'Support InfoHub' },
       { id: 'points',     label: 'Points',        href: '/points',             hint: 'Loyalty rewards' },
       { id: 'settings',   label: 'Settings',      href: '/settings',           hint: 'Account + API' },
-      { id: 'guides',     label: 'Guides',        href: '/guides',             hint: 'Trading tutorials' },
-      { id: 'api-docs',   label: 'API Docs',      href: '/api-docs',           hint: 'For developers' },
-      { id: 'developers', label: 'Developers',    href: '/developers',         hint: 'Integrations' },
-      { id: 'faq',        label: 'FAQ',           href: '/faq',                hint: 'Common questions' },
       { id: 'login',      label: 'Sign In',       href: '/login',              hint: 'Existing account' },
       { id: 'signup',     label: 'Sign Up',       href: '/signup',             hint: 'Create account' },
       { id: 'forgot',     label: 'Forgot Password', href: '/forgot-password',  hint: 'Reset' },
@@ -238,14 +242,6 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
   }, [openKey]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
-  // Mobile nav drawer (hamburger) — below lg the left sidebar is hidden, so
-  // the header's group nav becomes a slide-in drawer rather than a
-  // horizontally scrolling button row.
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [mobileGroup, setMobileGroup] = useState<string | null>(null);
-  // Hover-intent timer for the desktop dropdowns (open on a short delay so
-  // sweeping the cursor across the bar doesn't pop menus).
-  const hoverTimerRef = useRef<number | null>(null);
 
   // Search palette state
   const [searchOpen, setSearchOpen] = useState(false);
@@ -361,40 +357,11 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
     }
   }, [searchOpen]);
 
-  // Clear any pending hover-open timer on unmount.
-  useEffect(() => () => { if (hoverTimerRef.current != null) window.clearTimeout(hoverTimerRef.current); }, []);
-  // Close the mobile drawer on Escape.
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileNavOpen(false); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [mobileNavOpen]);
-  // Always dismiss the drawer when the route changes — defensive against any
-  // future navigable element that doesn't carry the per-link close handler.
-  useEffect(() => { setMobileNavOpen(false); }, [pathname]);
-
   const goToResult = (idx: number) => {
     const r = searchResults[idx];
     if (!r) return;
     setSearchOpen(false);
     router.push(r.href);
-  };
-
-  const clearHoverTimer = () => {
-    if (hoverTimerRef.current != null) { window.clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
-  };
-  // Open on hover with intent: instant if a menu is already open (responsive
-  // switching), otherwise after a short delay so pass-through doesn't pop one.
-  const openGroupHover = (key: string) => {
-    clearHoverTimer();
-    if (openKey) { setOpenKey(key); return; }
-    hoverTimerRef.current = window.setTimeout(() => { setOpenKey(key); hoverTimerRef.current = null; }, 140);
-  };
-  const openMobileNav = () => {
-    const active = NAV_GROUPS.find(g => g.items.some(it => it.href === pathname));
-    setMobileGroup(active?.key ?? null);
-    setMobileNavOpen(true);
   };
   return (
     <header
@@ -402,21 +369,11 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
       className="terminal-header"
       style={{ position: 'sticky', top: 0, zIndex: 40, height: 48, flexShrink: 0, background: 'rgba(7,9,13,0.92)', backdropFilter: 'blur(8px)', borderBottom: '1px solid var(--hub-border)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 4 }}
     >
-      <button
-        type="button"
-        className="terminal-header-mobile-toggle"
-        aria-label="Open navigation menu"
-        aria-expanded={mobileNavOpen}
-        onClick={openMobileNav}
-        style={{ ...iconBtn, marginRight: 4 }}
-      >
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-      </button>
       <Link href="/home" aria-label="Home" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', padding: '0 4px', height: '100%' }}>
         <BrandMark size="md" />
       </Link>
-      <div className="terminal-header-nav-divider" style={{ width: 1, height: 24, background: 'var(--hub-border-subtle)', margin: '0 8px' }} />
-      {/* The nav-group buttons (6 dropdowns) plus the
+      <div style={{ width: 1, height: 24, background: 'var(--hub-border-subtle)', margin: '0 8px' }} />
+      {/* The nav-group buttons (5 dropdowns × ~110px each) plus the
           search trigger + 3 icon buttons + sign-in fill the full
           1100-1200px width. Below that the nav was pushing the
           right-hand cluster off-screen. Globals.css collapses these
@@ -425,18 +382,8 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
         {NAV_GROUPS.map(g => {
           const isOpen = openKey === g.key;
           const groupActive = g.items.some(it => it.href === pathname);
-          // Compact the two longest labels in the bar itself so all six groups
-          // fit a 1366px laptop without the nav scrolling sideways; the
-          // dropdown header below still shows the full name.
-          const navLabel = g.label.replace(' & Arb', '').replace(' & Risk', '');
-          // Signed-in users don't need Sign In / Sign Up / Forgot in My Tools
-          // (their account links live in the avatar menu). Dropdown renders
-          // closed by default, so this auth-conditional can't hydration-mismatch.
-          const items = (g.key === 'tools' && isAuthed)
-            ? g.items.filter(it => !['login', 'signup', 'forgot'].includes(it.id))
-            : g.items;
           return (
-            <div key={g.key} style={{ position: 'relative', height: '100%' }} onMouseEnter={() => openGroupHover(g.key)} onMouseLeave={clearHoverTimer}>
+            <div key={g.key} style={{ position: 'relative', height: '100%' }} onMouseEnter={() => setOpenKey(g.key)}>
               {/* Button needs onClick too — onMouseEnter alone doesn't
                   fire on touch devices. Mobile users couldn't open
                   any nav dropdown at all (the sidebar is now hidden
@@ -447,20 +394,20 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
                   else triggerRefs.current.delete(g.key);
                 }}
                 type="button"
-                onClick={() => { clearHoverTimer(); setOpenKey(isOpen ? null : g.key); }}
+                onClick={() => setOpenKey(isOpen ? null : g.key)}
                 aria-expanded={isOpen}
                 aria-haspopup="menu"
                 style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', gap: 6, color: groupActive ? 'var(--hub-accent)' : (isOpen ? 'var(--fg-default)' : 'var(--fg-muted)'), fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: groupActive ? 600 : 500, letterSpacing: '-0.005em', cursor: 'pointer', whiteSpace: 'nowrap' }}
               >
                 <span style={{ color: 'var(--hub-accent)', display: 'inline-flex' }}>{g.icon}</span>
-                {navLabel}
+                {g.label}
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--fg-subtle)', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><polyline points="6 9 12 15 18 9" /></svg>
                 {groupActive && <span style={{ position: 'absolute', left: 10, right: 10, bottom: 0, height: 2, background: 'var(--hub-accent)', boxShadow: '0 0 8px rgb(var(--hub-accent-rgb) / 0.4)' }} />}
               </button>
               {isOpen && triggerRect && (
                 <div
                   data-nav-dropdown-panel="true"
-                  onMouseEnter={() => { clearHoverTimer(); setOpenKey(g.key); }}
+                  onMouseEnter={() => setOpenKey(g.key)}
                   onMouseLeave={() => setOpenKey(null)}
                   style={{
                     // FIXED positioning escapes the nav's overflow clip
@@ -488,7 +435,7 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
                     <span style={{ color: 'var(--hub-accent)', display: 'inline-flex' }}>{g.icon}</span>
                     {g.label}
                   </div>
-                  {items.map(it => {
+                  {g.items.map(it => {
                     const on = pathname === it.href;
                     return (
                       <Link
@@ -536,7 +483,7 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
         title="Press ⌘K or /"
         className="terminal-header-search-trigger"
         onClick={() => { setSearchOpen(true); onSearch?.(); }}
-        style={{ background: 'var(--hub-darker)', border: '1px solid var(--hub-border)', borderRadius: 8, padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-subtle)', fontFamily: 'var(--font-sans)', fontSize: 12, cursor: 'pointer', minWidth: 200, flexShrink: 0 }}
+        style={{ background: 'var(--hub-darker)', border: '1px solid var(--hub-border)', borderRadius: 8, padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-subtle)', fontFamily: 'var(--font-sans)', fontSize: 12, cursor: 'pointer', minWidth: 220, flexShrink: 0 }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
         <span style={{ flex: 1, textAlign: 'left' }}>Search or jump to…</span>
@@ -547,16 +494,15 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
           the launch tier system actually discoverable. */}
       <Link
         href="/pricing"
-        title="Free, Trader, Pro, Whale · annual -17%"
+        title="Free, Trader, Pro, Whale — free during launch"
         style={{
-          // Green = "upgrade / go" CTA accent (distinct from the orange brand).
-          background: 'rgba(52,211,153,0.12)',
-          border: '1px solid rgba(52,211,153,0.40)',
+          background: 'rgb(var(--hub-accent-rgb) / 0.10)',
+          border: '1px solid rgb(var(--hub-accent-rgb) / 0.35)',
           borderRadius: 8,
           padding: '6px 10px',
           fontSize: 11,
           fontWeight: 700,
-          color: 'var(--pump-hot)',
+          color: 'var(--hub-accent)',
           textDecoration: 'none',
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
@@ -570,14 +516,13 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         Upgrade
       </Link>
-      <Link href="/donate" data-iconbtn style={{ ...iconBtn, textDecoration: 'none' }} aria-label="Donate" title="Support InfoHub">
+      <Link href="/donate" data-iconbtn style={{ ...iconBtn, textDecoration: 'none' }} aria-label="Donate">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
       </Link>
       <button
         data-iconbtn
         style={iconBtn}
         aria-label="Toggle theme"
-        title="Toggle light / dark"
         onClick={() => {
           if (typeof document !== 'undefined') {
             const cur = document.documentElement.dataset.theme;
@@ -589,7 +534,7 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
       </button>
-      <Link href="/alerts" data-iconbtn style={{ ...iconBtn, textDecoration: 'none' }} aria-label="Alerts" title="Manage your alerts">
+      <Link href="/alerts" data-iconbtn style={{ ...iconBtn, textDecoration: 'none' }} aria-label="Alerts">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
       </Link>
       {!isAuthed ? (
@@ -680,69 +625,6 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* ─── Mobile nav drawer (hamburger) ─── */}
-      {mobileNavOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Navigation menu"
-          onClick={() => setMobileNavOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 95, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex' }}
-        >
-          <nav
-            aria-label="Mobile primary navigation"
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: 'min(320px, 86vw)', height: '100%', background: 'rgba(12,15,20,0.99)', borderRight: '1px solid var(--hub-border-hover)', boxShadow: '0 0 60px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: 10, gap: 2 }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 4px 10px', position: 'sticky', top: 0, background: 'rgba(12,15,20,0.99)', zIndex: 1 }}>
-              <BrandMark size="md" />
-              <button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Close menu" style={{ ...iconBtn }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
-            </div>
-            {NAV_GROUPS.map(g => {
-              const gOpen = mobileGroup === g.key;
-              const groupActive = g.items.some(it => it.href === pathname);
-              const items = (g.key === 'tools' && isAuthed)
-                ? g.items.filter(it => !['login', 'signup', 'forgot'].includes(it.id))
-                : g.items;
-              return (
-                <div key={g.key}>
-                  <button
-                    type="button"
-                    onClick={() => setMobileGroup(gOpen ? null : g.key)}
-                    aria-expanded={gOpen}
-                    style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '10px 8px', border: 'none', background: gOpen ? 'rgba(255,255,255,0.03)' : 'transparent', borderRadius: 8, cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <span style={{ color: 'var(--hub-accent)', display: 'inline-flex' }}>{g.icon}</span>
-                    <span style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: groupActive ? 'var(--hub-accent)' : 'var(--fg-default)' }}>{g.label}</span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--fg-subtle)', transform: gOpen ? 'rotate(90deg)' : 'none', transition: 'transform 160ms' }}><path d="m9 18 6-6-6-6" /></svg>
-                  </button>
-                  {gOpen && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingBottom: 4 }}>
-                      {items.map(it => {
-                        const on = pathname === it.href;
-                        return (
-                          <Link
-                            key={it.id}
-                            href={it.href}
-                            onClick={() => setMobileNavOpen(false)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px 9px 30px', borderRadius: 6, background: on ? 'rgb(var(--hub-accent-rgb) / 0.10)' : 'transparent', borderLeft: on ? '2px solid var(--hub-accent)' : '2px solid transparent', color: on ? 'var(--hub-accent)' : 'var(--fg-muted)', fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: on ? 600 : 500, textDecoration: 'none' }}
-                          >
-                            <span style={{ flex: 1 }}>{it.label}</span>
-                            {it.hint && <span style={{ fontSize: 10, color: 'var(--fg-subtle)', whiteSpace: 'nowrap' }}>{it.hint}</span>}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
         </div>
       )}
 

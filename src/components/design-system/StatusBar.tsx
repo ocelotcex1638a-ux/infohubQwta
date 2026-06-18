@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import StreamBars from './StreamBars';
 import SatPing from './SatPing';
-import LatencyGauge from './LatencyGauge';
 import ExchangeStrip from './ExchangeStrip';
 import ThroughputCounter from './ThroughputCounter';
 import SupportChat from '@/components/SupportChat';
@@ -57,12 +56,13 @@ export default function StatusBar({ version = 'v2.0', className }: StatusBarProp
   const versionTitle = isAdmin
     ? `InfoHub ${version} — view changelog`
     : `InfoHub ${version}`;
+  const versionLabel = isAdmin ? 'CHANGELOG' : "WHAT'S NEW";
   return (
     <footer
       className={className}
       style={{
         height: 36, flexShrink: 0,
-        background: 'linear-gradient(180deg, var(--hub-dark) 0%, rgba(0,0,0,0.4) 100%)',
+        background: 'linear-gradient(180deg, rgba(13,17,27,0.98) 0%, rgba(7,9,14,0.96) 100%)',
         borderTop: '1px solid var(--hub-border-subtle)',
         display: 'flex', alignItems: 'center',
         padding: '0 18px', gap: 12,
@@ -78,16 +78,6 @@ export default function StatusBar({ version = 'v2.0', className }: StatusBarProp
             hook the STREAMING badge above uses. */}
         <ThroughputCounter />
         <span className="hidden md:inline-flex"><ExchangeStrip compact /></span>
-      </span>
-
-      <Sep hidden="sm" />
-
-      {/* Real-time API latency. WS gauge removed — no single WebSocket
-          to honestly ping (each user holds 6-12 concurrent venue WS) and
-          the previous implementation was a random-jitter fake. The api
-          gauge measures actual round-trip to /api/v1/status. */}
-      <span className="hidden sm:inline-flex" style={{ gap: 12 }}>
-        <LatencyGauge label="api" url="/api/v1/status" />
       </span>
 
       <div style={{ flex: 1, minWidth: 12 }} />
@@ -123,19 +113,20 @@ export default function StatusBar({ version = 'v2.0', className }: StatusBarProp
         className="status-bar-version"
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '3px 9px', borderRadius: 999,
-          background: 'rgb(var(--hub-accent-rgb) / 0.07)',
-          border: '1px solid rgb(var(--hub-accent-rgb) / 0.18)',
+          padding: '4px 11px', borderRadius: 999,
+          background: 'linear-gradient(180deg, rgba(255,184,0,0.14) 0%, rgba(255,184,0,0.06) 100%)',
+          border: '1px solid rgba(255,184,0,0.24)',
           color: 'var(--hub-accent)',
           fontWeight: 700, letterSpacing: '0.04em', fontSize: 9,
           textTransform: 'uppercase', flexShrink: 0,
           marginLeft: 4,
           textDecoration: 'none',
-          transition: 'background 150ms, border-color 150ms, transform 150ms',
+          transition: 'background 150ms, border-color 150ms, transform 150ms, box-shadow 150ms',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
         }}
       >
         <SatPing size={10} color="var(--hub-accent)" />
-        InfoHub <span style={{ color: 'var(--hub-accent-light)', fontWeight: 800 }}>{version}</span>
+        <span>{versionLabel}</span>
       </Link>
 
       {/* Support chat — sits next to the InfoHub badge so it's findable
@@ -145,9 +136,10 @@ export default function StatusBar({ version = 'v2.0', className }: StatusBarProp
 
       <style jsx>{`
         .status-bar-version:hover {
-          background: rgb(var(--hub-accent-rgb) / 0.14) !important;
-          border-color: rgb(var(--hub-accent-rgb) / 0.35) !important;
+          background: linear-gradient(180deg, rgba(255,184,0,0.18) 0%, rgba(255,184,0,0.08) 100%) !important;
+          border-color: rgba(255,184,0,0.38) !important;
           transform: translateY(-1px);
+          box-shadow: 0 10px 20px -16px rgba(255,184,0,0.85);
         }
       `}</style>
     </footer>

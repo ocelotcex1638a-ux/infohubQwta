@@ -367,29 +367,31 @@ export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: Side
       style={{ width: 232, flexShrink: 0, background: 'var(--hub-black)', borderRight: '1px solid var(--hub-border-subtle)', padding: '12px 8px', flexDirection: 'column', gap: 16, height: '100%', overflowY: 'auto' }}
       aria-label="Primary navigation"
     >
-      <div style={{ position: 'relative', padding: '0 4px' }}>
-        <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-subtle)', display: 'inline-flex', pointerEvents: 'none' }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-        </span>
-        <input
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          placeholder="Filter menu…"
-          aria-label="Filter navigation menu"
-          style={{ width: '100%', background: 'var(--hub-darker)', border: '1px solid var(--hub-border)', borderRadius: 7, padding: '7px 28px 7px 30px', color: 'var(--fg-default)', fontFamily: 'var(--font-sans)', fontSize: 12, outline: 'none', transition: 'border-color 120ms' }}
-          onFocus={e => { e.currentTarget.style.borderColor = 'var(--hub-accent)'; }}
-          onBlur={e => { e.currentTarget.style.borderColor = 'var(--hub-border)'; }}
-        />
-        {q && (
-          <button
-            type="button"
-            aria-label="Clear filter"
-            onClick={() => setQ('')}
-            style={{ position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, padding: 0, border: 'none', background: 'transparent', color: 'var(--fg-subtle)', cursor: 'pointer' }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-          </button>
-        )}
+      <div style={{ padding: '0 4px' }}>
+        <div style={{ position: 'relative' }}>
+          <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-subtle)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+          </span>
+          <input
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Filter menu…"
+            aria-label="Filter navigation menu"
+            style={{ width: '100%', background: 'var(--hub-darker)', border: '1px solid var(--hub-border)', borderRadius: 7, padding: '7px 28px 7px 30px', color: 'var(--fg-default)', fontFamily: 'var(--font-sans)', fontSize: 12, outline: 'none', transition: 'border-color 120ms' }}
+            onFocus={e => { e.currentTarget.style.borderColor = 'var(--hub-accent)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'var(--hub-border)'; }}
+          />
+          {q && (
+            <button
+              type="button"
+              aria-label="Clear filter"
+              onClick={() => setQ('')}
+              style={{ position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, padding: 0, border: 'none', background: 'transparent', color: 'var(--fg-subtle)', cursor: 'pointer' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          )}
+        </div>
         {/* Inline toolbar — kept inside the search block to dodge the aside's
             16px column gap. Shows a live result count while filtering, else a
             one-click expand/collapse-all for the 11-section index. */}
@@ -460,35 +462,51 @@ export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: Side
           to make 'live' feel live. Hover lifts the panel slightly. */}
       <div
         style={{
-          padding: '10px 12px',
-          background: 'linear-gradient(180deg, var(--hub-darker) 0%, rgba(0,0,0,0.4) 100%)',
-          border: '1px solid var(--hub-border)',
-          borderRadius: 10,
+          padding: '12px',
+          background: 'radial-gradient(140% 160% at 0% 0%, rgba(84, 255, 162, 0.08) 0%, rgba(122, 162, 255, 0.04) 26%, rgba(0,0,0,0) 62%), linear-gradient(180deg, rgba(20,26,39,0.98) 0%, rgba(10,13,21,0.96) 100%)',
+          border: '1px solid rgba(114, 132, 184, 0.22)',
+          borderRadius: 14,
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
-          transition: 'transform 200ms, border-color 200ms',
+          gap: 10,
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03), 0 18px 28px -24px rgba(0,0,0,0.9)',
+          transition: 'transform 200ms, border-color 200ms, box-shadow 200ms',
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--hub-border-strong, rgba(255,255,255,0.12))'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--hub-border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+        onMouseEnter={e => {
+          e.currentTarget.style.borderColor = 'rgba(114, 132, 184, 0.34)';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.04), 0 24px 34px -24px rgba(0,0,0,0.95)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.borderColor = 'rgba(114, 132, 184, 0.22)';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.03), 0 18px 28px -24px rgba(0,0,0,0.9)';
+        }}
         title={`${online}/${total} venues online · ${dexCount} are DEX`}
       >
-        {/* Top row: venue counts side-by-side */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-              <span style={{ width: 5, height: 5, background: 'var(--pump-mild)', borderRadius: 999, boxShadow: '0 0 6px var(--pump-mild)', flexShrink: 0, animation: 'sidebar-pulse 1.6s ease-in-out infinite', alignSelf: 'center' }} />
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-default)', fontFamily: 'var(--font-mono)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{online}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '0.18em' }}>
+            Venue health
+          </span>
+          <span style={{ fontSize: 8, fontWeight: 700, color: online > 0 ? 'var(--pump-mild)' : 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.18em' }}>
+            {online > 0 ? 'Live' : 'Waiting'}
+          </span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+          <div style={{ minWidth: 0, padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.015) 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 7, height: 7, background: 'var(--pump-mild)', borderRadius: 999, boxShadow: '0 0 10px var(--pump-mild)', flexShrink: 0, animation: 'sidebar-pulse 1.6s ease-in-out infinite' }} />
+              <span style={{ fontSize: 19, fontWeight: 700, color: 'var(--fg-default)', fontFamily: 'var(--font-mono)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{online}</span>
             </div>
-            <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--pump-mild)', textTransform: 'uppercase', letterSpacing: '0.16em', paddingLeft: 10 }}>Online</span>
+            <div style={{ marginTop: 6, fontSize: 8, fontWeight: 700, color: 'var(--pump-mild)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Online</div>
           </div>
-          <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--hub-border)', opacity: 0.5 }} />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-              <span style={{ width: 5, height: 5, background: 'var(--hub-accent-light)', borderRadius: 999, flexShrink: 0, alignSelf: 'center' }} />
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-default)', fontFamily: 'var(--font-mono)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{dexCount}</span>
+          <div style={{ minWidth: 0, padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.015) 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 7, height: 7, background: 'var(--hub-accent-light)', borderRadius: 999, boxShadow: '0 0 10px rgba(74, 158, 255, 0.45)', flexShrink: 0 }} />
+              <span style={{ fontSize: 19, fontWeight: 700, color: 'var(--fg-default)', fontFamily: 'var(--font-mono)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{dexCount}</span>
             </div>
-            <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--hub-accent-light)', textTransform: 'uppercase', letterSpacing: '0.16em', paddingLeft: 10 }}>DEX</span>
+            <div style={{ marginTop: 6, fontSize: 8, fontWeight: 700, color: 'var(--hub-accent-light)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>DEX</div>
           </div>
         </div>
         {/* Aggregator health summary. Replaced the previous "1.2k msg/s"
@@ -496,8 +514,9 @@ export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: Side
             a real "X / Y venues" line that comes from useAggregatorHealth.
             Equalizer bars retained as a decorative cue — they're cosmetic,
             not claiming a specific msg/s rate. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingTop: 6, borderTop: '1px solid var(--hub-border)', opacity: 0.85 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 1.5, height: 9 }} aria-hidden>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)', opacity: 0.96 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 1.5, height: 9 }} aria-hidden>
             {[3, 6, 4, 7, 5, 8].map((h, i) => (
               <span
                 key={i}
@@ -513,9 +532,13 @@ export default function Sidebar({ sections = DEFAULT_SECTIONS, className }: Side
                 }}
               />
             ))}
+            </span>
+            <span style={{ minWidth: 0, fontSize: 9, color: 'var(--fg-subtle)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {total > 0 ? `${online}/${total} venues` : 'connecting…'}
+            </span>
           </span>
-          <span style={{ fontSize: 9, color: 'var(--fg-subtle)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {total > 0 ? `${online}/${total} venues` : 'connecting…'}
+          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 8px', borderRadius: 999, background: online > 0 ? 'rgba(74, 222, 128, 0.09)' : 'rgba(255,255,255,0.04)', border: `1px solid ${online > 0 ? 'rgba(74, 222, 128, 0.16)' : 'rgba(255,255,255,0.08)'}`, fontSize: 8, fontWeight: 700, color: online > 0 ? 'var(--pump-mild)' : 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.16em', whiteSpace: 'nowrap' }}>
+            {online > 0 ? 'Streaming' : 'Waiting'}
           </span>
         </div>
       </div>

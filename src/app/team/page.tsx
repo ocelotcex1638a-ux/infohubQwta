@@ -1,4 +1,4 @@
-import Header from '@/components/Header';
+﻿import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { ALL_EXCHANGES } from '@/lib/constants';
@@ -19,7 +19,7 @@ const teamMembers: TeamMember[] = [
     name: '0x.0celot',
     role: 'Founder',
     image: '/team/ocelot.jpg',
-    bio: 'Honestly just wanted one clean page to compare funding rates. Every tool out there was either ugly, expensive, or both. Built a quick thing for himself, showed it to a few traders, and they wouldn’t stop asking for more features. Still hasn’t stopped adding them.',
+    bio: 'Honestly just wanted one clean page to compare funding rates. Every tool out there was either ugly, expensive, or both. Built a quick thing for himself, showed it to a few traders, and they would not stop asking for more features. Still has not stopped adding them.',
     stats: [
       { label: 'Ships', value: 'Daily' },
     ],
@@ -40,18 +40,30 @@ const teamMembers: TeamMember[] = [
     ringColor: 'from-blue-500 via-purple-500 to-blue-400',
     roleBadgeColor: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
   },
+  {
+    name: 'Ben',
+    role: 'Marketer',
+    image: '/team/ben.png',
+    bio: 'Owns the growth side of InfoHub: campaigns, outreach, and making sure the product actually gets in front of the right traders. Focused on turning useful tools into a clear story people understand quickly.',
+    stats: [
+      { label: 'Focus', value: 'Growth' },
+      { label: 'Role', value: 'Marketing' },
+    ],
+    ringColor: 'from-fuchsia-500 via-hub-orange to-sky-400',
+    roleBadgeColor: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/20',
+  },
 ];
 
 const projectStats = [
   { value: `${ALL_EXCHANGES.length}`, label: 'Exchanges', sub: 'CEX + DEX' },
-  // Was "8,000+ Pairs · Updated live" — aggregator's actual pair count
+  // Was "8,000+ Pairs / Updated live" â€” aggregator's actual pair count
   // sits around ~8.5k right now but fluctuates, and we don't pin it
   // anywhere in code, so the literal is a marketing guess. "26 endpoints"
   // is the honest, verifiable count (matches /api/v1/openapi).
   { value: '26', label: 'Endpoints', sub: 'REST API' },
   { value: '60s', label: 'Refresh', sub: 'Funding cadence' },
-  // Was "24/7 Uptime · No batch jobs". 14 cron jobs run on 5s-30 min
-  // timers + two daily ones (12:00 UTC snapshot, 08:00 UTC telegram) —
+  // Was "24/7 Uptime / No batch jobs". 14 cron jobs run on 5s-30 min
+  // timers + two daily ones (12:00 UTC snapshot, 08:00 UTC telegram) â€”
   // those ARE batch jobs. The serving layer is 24/7 (DO App Platform)
   // but the wording was contradictory.
   { value: '24/7', label: 'Live data', sub: 'WS aggregator' },
@@ -60,19 +72,19 @@ const projectStats = [
 const principles = [
   {
     title: 'Build it because we use it',
-    body: 'Every dashboard exists because we needed it open in another tab. If it isn’t useful for live trading, it doesn’t ship.',
+    body: 'Every dashboard exists because we needed it open in another tab. If it is not useful for live trading, it does not ship.',
   },
   {
     title: 'No fluff data',
-    body: 'No vanity metrics, no padded “sentiment scores”. Just the numbers that move PnL: funding, OI, liquidations, basis, flow.',
+    body: 'No vanity metrics, no padded "sentiment scores". Just the numbers that move PnL: funding, OI, liquidations, basis, flow.',
   },
   {
-    title: 'Free tier that’s actually free',
+    title: 'Free tier that is actually free',
     body: 'You should never hit a paywall on a public market data point. The free tier is the whole product, the paid tier just removes friction.',
   },
   {
     title: 'Ship fast, fix faster',
-    body: 'When something breaks we’d rather hear it from you than pretend it’s fine. Every stale number is a bug, not a feature.',
+    body: 'When something breaks we would rather hear it from you than pretend it is fine. Every stale number is a bug, not a feature.',
   },
 ];
 
@@ -83,7 +95,7 @@ export default function TeamPage() {
       <Header />
 
       <main id="main-content" className="max-w-[1400px] mx-auto px-4 sm:px-6">
-        {/* ── Hero Section ── */}
+        {/* â”€â”€ Hero Section â”€â”€ */}
         <section className="relative py-16 sm:py-24 text-center overflow-hidden">
           {/* Background glow */}
           <div className="absolute inset-0 hero-mesh opacity-60 pointer-events-none" />
@@ -113,10 +125,10 @@ export default function TeamPage() {
           </div>
         </section>
 
-        {/* ── Accent Divider ── */}
+        {/* â”€â”€ Accent Divider â”€â”€ */}
         <div className="accent-line mb-12" />
 
-        {/* ── Team Members ── */}
+        {/* â”€â”€ Team Members â”€â”€ */}
         <section className="stagger space-y-6 mb-16">
           {teamMembers.map((member) => (
             <div
@@ -214,7 +226,7 @@ export default function TeamPage() {
           ))}
         </section>
 
-        {/* ── Principles ── */}
+        {/* â”€â”€ Principles â”€â”€ */}
         <section className="mb-16">
           <div className="text-center mb-8">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -249,7 +261,7 @@ export default function TeamPage() {
           </div>
         </section>
 
-        {/* ── Project Stats ── */}
+        {/* â”€â”€ Project Stats â”€â”€ */}
         <section className="mb-16">
           <div className="text-center mb-8">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -278,7 +290,7 @@ export default function TeamPage() {
           </div>
         </section>
 
-        {/* ── CTA Section ── */}
+        {/* â”€â”€ CTA Section â”€â”€ */}
         <section className="mb-12">
           <div className="relative rounded-2xl overflow-hidden">
             {/* Gradient background */}
@@ -345,11 +357,11 @@ export default function TeamPage() {
                 <Link href="/donate" className="hover:text-hub-yellow transition-colors">
                   Support InfoHub
                 </Link>
-                <span className="text-neutral-700">·</span>
+                <span className="text-neutral-700">/</span>
                 <Link href="/developers" className="hover:text-hub-yellow transition-colors">
                   Build with our API
                 </Link>
-                <span className="text-neutral-700">·</span>
+                <span className="text-neutral-700">/</span>
                 <Link href="/social" className="hover:text-hub-yellow transition-colors">
                   Follow the KOL feed
                 </Link>
@@ -363,3 +375,4 @@ export default function TeamPage() {
     </div>
   );
 }
+

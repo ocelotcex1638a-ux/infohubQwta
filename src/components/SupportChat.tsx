@@ -198,19 +198,28 @@ export default function SupportChat() {
         title="Support chat"
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 5,
-          padding: '3px 9px', borderRadius: 999,
-          background: 'rgba(125, 211, 252, 0.08)',
-          border: '1px solid rgba(125, 211, 252, 0.25)',
+          padding: '4px 11px', borderRadius: 999,
+          background: 'linear-gradient(180deg, rgba(56, 189, 248, 0.12) 0%, rgba(56, 189, 248, 0.05) 100%)',
+          border: '1px solid rgba(125, 211, 252, 0.24)',
           color: '#7dd3fc',
           fontWeight: 700, letterSpacing: '0.04em', fontSize: 9,
           textTransform: 'uppercase', flexShrink: 0,
           cursor: 'pointer',
           marginLeft: 4,
           fontFamily: 'var(--font-mono, monospace)',
-          transition: 'background 150ms, border-color 150ms, transform 150ms',
+          transition: 'background 150ms, border-color 150ms, transform 150ms, box-shadow 150ms',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(125, 211, 252, 0.15)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(125, 211, 252, 0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = 'linear-gradient(180deg, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.08) 100%)';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = '0 10px 20px -16px rgba(56, 189, 248, 0.85)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'linear-gradient(180deg, rgba(56, 189, 248, 0.12) 0%, rgba(56, 189, 248, 0.05) 100%)';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.03)';
+        }}
       >
         <MessageSquare style={{ width: 11, height: 11 }} />
         Support

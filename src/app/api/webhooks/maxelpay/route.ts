@@ -353,6 +353,12 @@ export async function POST(request: NextRequest) {
             billing_expires_at = ${nextExpiry.toISOString()}
         WHERE id = ${user.id}
       `;
+      await tx`
+        UPDATE api_keys
+        SET tier = ${nextTier}
+        WHERE user_id = ${user.id}
+          AND is_active = true
+      `;
     }
 
     if (isSuccessful && user.referred_by_user_id) {

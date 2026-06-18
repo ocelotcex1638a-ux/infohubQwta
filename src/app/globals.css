@@ -1,19 +1,19 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ═══ Theme: Orange (default) ═══ */
-/* 60:30:10 Color Rule — Dominant : Secondary : Accent */
+/* â•â•â• Theme: Orange (default) â•â•â• */
+/* 60:30:10 Color Rule â€” Dominant : Secondary : Accent */
 /* Palette tuned for extended reading sessions: no pure black, no pure white,
    desaturated semantic colors. Warm-neutral dark base reduces retinal halation
    and blue-light fatigue versus #000000 + #ffffff. */
 :root {
-  /* ── 60% Dominant: Dark backgrounds (soft blue-gray, not pure black) ── */
-  --hub-black: #080c18;            /* page body — deep navy (brand: blue base + orange glow) */
+  /* â”€â”€ 60% Dominant: Dark backgrounds (soft blue-gray, not pure black) â”€â”€ */
+  --hub-black: #080c18;            /* page body â€” deep navy (brand: blue base + orange glow) */
   --hub-dark: #0e1424;              /* primary surface (navbar, footer) */
   --hub-darker: #141b30;            /* card backgrounds */
 
-  /* ── 30% Secondary: Supporting surfaces & text ── */
+  /* â”€â”€ 30% Secondary: Supporting surfaces & text â”€â”€ */
   --hub-secondary: #1c2030;         /* elevated surfaces, tooltips, dropdowns */
   --hub-secondary-light: #232738;   /* subtle fills, skeleton mid-tone */
   --hub-secondary-medium: #2b3042;  /* input backgrounds, hover states */
@@ -22,28 +22,28 @@
   --hub-gray-light: var(--hub-secondary-light);
   --hub-gray-medium: var(--hub-secondary-medium);
 
-  /* ── Borders: 3 tiers (softer than pure white alpha) ── */
+  /* â”€â”€ Borders: 3 tiers (softer than pure white alpha) â”€â”€ */
   --hub-border-subtle: rgba(255, 255, 255, 0.04); /* dividers, grid lines */
   --hub-border: rgba(255, 255, 255, 0.07);        /* default */
   --hub-border-hover: rgba(255, 255, 255, 0.14);  /* hover / focus / active */
 
-  /* ── Semantic foreground tokens — soft off-whites, no pure #fff ── */
-  --fg-default: #e6e6ea;                /* primary text — 90% luminance */
+  /* â”€â”€ Semantic foreground tokens â€” soft off-whites, no pure #fff â”€â”€ */
+  --fg-default: #e6e6ea;                /* primary text â€” 90% luminance */
   --fg-muted:   #a5a8b2;                /* secondary / labels */
   --fg-subtle:  #777b87;                /* tertiary / captions */
   --fg-faint:   #555965;                /* decorative / disabled */
 
-  /* ── 10% Accent: Orange spectrum ── */
-  --hub-accent-rgb: 255 165 0;            /* #FFA500 — primary */
-  --hub-accent-light-rgb: 255 215 0;      /* #FFD700 — gold (hover/highlight) */
-  --hub-accent-dark-rgb: 255 140 0;       /* #FF8C00 — deep (gradients/glow) */
-  --hub-accent-secondary-rgb: 255 107 0;  /* #FF6B00 — darkest (gradient endpoint) */
+  /* â”€â”€ 10% Accent: Orange spectrum â”€â”€ */
+  --hub-accent-rgb: 255 165 0;            /* #FFA500 â€” primary */
+  --hub-accent-light-rgb: 255 215 0;      /* #FFD700 â€” gold (hover/highlight) */
+  --hub-accent-dark-rgb: 255 140 0;       /* #FF8C00 â€” deep (gradients/glow) */
+  --hub-accent-secondary-rgb: 255 107 0;  /* #FF6B00 â€” darkest (gradient endpoint) */
   --hub-accent: #FFA500;
   --hub-accent-light: #FFD700;
   --hub-accent-dark: #FF8C00;
   --hub-accent-secondary: #FF6B00;
 
-  /* ── PH×Coinglass: Intensity colors (desaturated for eye comfort) ── */
+  /* â”€â”€ PHÃ—Coinglass: Intensity colors (desaturated for eye comfort) â”€â”€ */
   --rekt-mild: #f87171;
   --rekt-hot: #ef5464;
   --rekt-nuclear: #e63946;
@@ -63,12 +63,12 @@
 .text-fg-subtle { color: var(--fg-subtle); }
 .text-fg-faint  { color: var(--fg-faint); }
 
-/* ═══════════════════════════════════════════════════════════════════
-   POLISH PASS — premium trader terminal aesthetic
-   Linear motion · Vercel chrome · Coinglass density · Notion cards · Figma accent
-   ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   POLISH PASS â€” premium trader terminal aesthetic
+   Linear motion Â· Vercel chrome Â· Coinglass density Â· Notion cards Â· Figma accent
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ─── Premium typography ─── */
+/* â”€â”€â”€ Premium typography â”€â”€â”€ */
 .h1-pro {
   font-size: clamp(28px, 3.2vw, 40px);
   line-height: 1.04;
@@ -99,7 +99,7 @@
   letter-spacing: 0.005em;
 }
 
-/* ─── Numeric polish — Coinglass density ─── */
+/* â”€â”€â”€ Numeric polish â€” Coinglass density â”€â”€â”€ */
 .num, .num-mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -117,7 +117,7 @@ table .num, table [class*="font-mono"] {
   letter-spacing: -0.01em;
 }
 
-/* ─── Cards — Notion soft + Vercel chrome ─── */
+/* â”€â”€â”€ Cards â€” Notion soft + Vercel chrome â”€â”€â”€ */
 .card-pro {
   background: var(--hub-darker);
   border: 1px solid var(--hub-border);
@@ -141,7 +141,7 @@ table .num, table [class*="font-mono"] {
     0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
-/* ─── Smooth global transitions ─── */
+/* â”€â”€â”€ Smooth global transitions â”€â”€â”€ */
 a, button, [role="button"], [role="tab"], .interactive {
   transition:
     color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -151,7 +151,7 @@ a, button, [role="button"], [role="tab"], .interactive {
     transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* ─── Page motion (Linear-style entry) ─── */
+/* â”€â”€â”€ Page motion (Linear-style entry) â”€â”€â”€ */
 @keyframes page-enter {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -170,16 +170,16 @@ a, button, [role="button"], [role="tab"], .interactive {
 .card-enter-stagger > *:nth-child(5) { animation-delay: 180ms; }
 .card-enter-stagger > *:nth-child(6) { animation-delay: 220ms; }
 
-/* ─── Apply page-enter to every <main> by default (cheap global polish) ─── */
+/* â”€â”€â”€ Apply page-enter to every <main> by default (cheap global polish) â”€â”€â”€ */
 main { animation: page-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
-/* ─── Row hover for tables (subtle accent tint) ─── */
+/* â”€â”€â”€ Row hover for tables (subtle accent tint) â”€â”€â”€ */
 .row-hover { transition: background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .row-hover:hover {
   background: rgb(var(--hub-accent-rgb) / 0.045);
 }
 
-/* ─── Pro button polish (drop-in for primary actions) ─── */
+/* â”€â”€â”€ Pro button polish (drop-in for primary actions) â”€â”€â”€ */
 .btn-pro {
   display: inline-flex;
   align-items: center;
@@ -222,9 +222,9 @@ main { animation: page-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
   border-color: var(--hub-border-hover);
 }
 
-/* ═══ Theme: Light ═══ */
+/* â•â•â• Theme: Light â•â•â• */
 [data-theme="light"] {
-  /* Semantic foreground tokens — inverted for light mode */
+  /* Semantic foreground tokens â€” inverted for light mode */
   --fg-default: #0a0a0a;
   --fg-muted:   #404040;
   --fg-subtle:  #737373;
@@ -245,12 +245,12 @@ main { animation: page-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
   --hub-border: rgba(0, 0, 0, 0.08);
   --hub-border-hover: rgba(0, 0, 0, 0.15);
 
-  /* 10% Accent — same as dark (orange stays consistent) */
+  /* 10% Accent â€” same as dark (orange stays consistent) */
 
   color-scheme: light;
 }
 
-/* Light theme — body & scrollbar */
+/* Light theme â€” body & scrollbar */
 [data-theme="light"] body {
   background: #f5f6f8;
   color: #1a1a1a;
@@ -266,7 +266,7 @@ main { animation: page-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
   color: #000;
 }
 
-/* Light theme — header */
+/* Light theme â€” header */
 [data-theme="light"] header {
   background: rgba(255, 255, 255, 0.97);
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
@@ -285,7 +285,7 @@ html { scroll-behavior: smooth; }
 }
 .skip-to-content:focus { left: 0; }
 
-/* ─── v4 terminal keyframes (radar pulse, stream bars, ticker, exchange pop) ─── */
+/* â”€â”€â”€ v4 terminal keyframes (radar pulse, stream bars, ticker, exchange pop) â”€â”€â”€ */
 @keyframes radar-ring { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.9); opacity: 0; } }
 @keyframes radar-core { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
 @keyframes stream-bar { 0%, 100% { height: 30%; } 50% { height: 100%; } }
@@ -293,7 +293,7 @@ html { scroll-behavior: smooth; }
 @keyframes tape-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
-/* ─── Sharper accent focus ring (Vercel-style) ─── */
+/* â”€â”€â”€ Sharper accent focus ring (Vercel-style) â”€â”€â”€ */
 *:focus-visible {
   outline: 2px solid var(--hub-accent);
   outline-offset: 2px;
@@ -313,7 +313,7 @@ body {
   max-width: 100vw; overflow-x: hidden;
   /* Eye-care dark base: soft blue-gray, not pure black, with a subtle
      radial vignette so the center of the page reads slightly warmer than
-     the edges — reduces halation at night and during long sessions. */
+     the edges â€” reduces halation at night and during long sessions. */
   background:
     radial-gradient(1300px 760px at 50% -8%, rgba(255, 140, 0, 0.05), transparent 62%),
     var(--hub-black);
@@ -323,7 +323,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  /* Linear/Vercel trick — Inter feels premium with slight negative tracking */
+  /* Linear/Vercel trick â€” Inter feels premium with slight negative tracking */
   letter-spacing: -0.011em;
   font-feature-settings: "cv11", "ss01", "ss03";
 }
@@ -339,7 +339,7 @@ body {
 /* Dark dropdown options (native <select>) */
 option { background: var(--hub-secondary); color: var(--fg-default); }
 
-/* Custom caret for native <select> — hides the OS arrow and draws a
+/* Custom caret for native <select> â€” hides the OS arrow and draws a
    consistent chevron, so selects match the on-brand custom caret used on
    /profile instead of varying OS chrome across forms. Apply `select-caret`. */
 .select-caret {
@@ -351,7 +351,7 @@ option { background: var(--hub-secondary); color: var(--fg-default); }
   padding-right: 30px;
 }
 
-/* ═══ Eye-care palette overrides ═══
+/* â•â•â• Eye-care palette overrides â•â•â•
    Soften saturated Tailwind utilities without touching individual files.
    Runs after @tailwind utilities so cascade order tie goes to these rules. */
 .text-white { color: var(--fg-default); }
@@ -367,7 +367,7 @@ option { background: var(--hub-secondary); color: var(--fg-default); }
 .bg-red-500\/10   { background-color: rgba(248, 113, 113, 0.10); }
 .border-green-500 { border-color: #4ade80; }
 .border-red-500   { border-color: #f87171; }
-/* Respect reduced-motion preference — calms the entire UI for sensitive users */
+/* Respect reduced-motion preference â€” calms the entire UI for sensitive users */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -377,7 +377,7 @@ option { background: var(--hub-secondary); color: var(--fg-default); }
   }
 }
 
-/* ─── Mobile breakpoints (May 2026) ────────────────────────────────
+/* â”€â”€â”€ Mobile breakpoints (May 2026) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  *  Critic walkthrough flagged that the desktop sidebar + sticky tickers
  *  + 4-up stat grids made phone screens unusable. We don't have a mobile
  *  drawer yet, so this is a pragmatic first pass:
@@ -390,7 +390,7 @@ option { background: var(--hub-secondary); color: var(--fg-default); }
   aside[aria-label="Primary navigation"] {
     display: none;
   }
-  /* Auto-fit stat grids — force min ≥150px so we get 2-up on phones
+  /* Auto-fit stat grids â€” force min â‰¥150px so we get 2-up on phones
      instead of 1-up at the minmax(200px,1fr) default */
   main [style*="minmax(200px"] {
     grid-template-columns: repeat(2, 1fr) !important;
@@ -400,7 +400,7 @@ option { background: var(--hub-secondary); color: var(--fg-default); }
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 6px !important;
   }
-  /* TerminalHeader compact — drop the dense top nav padding on phone */
+  /* TerminalHeader compact â€” drop the dense top nav padding on phone */
   header[aria-label="terminal-header"], header.terminal-header {
     padding-left: 8px !important;
     padding-right: 8px !important;
@@ -413,7 +413,7 @@ option { background: var(--hub-secondary); color: var(--fg-default); }
     min-width: 0;
   }
   /* Collapse the search trigger to icon-only on phones so it doesn't
-     swallow the row. Hide the placeholder label + ⌘K hint. */
+     swallow the row. Hide the placeholder label + âŒ˜K hint. */
   header.terminal-header .terminal-header-search-trigger {
     min-width: 0 !important;
     padding: 6px 8px !important;
@@ -428,7 +428,7 @@ option { background: var(--hub-secondary); color: var(--fg-default); }
   }
 }
 
-/* Tablet / narrow-desktop band: 6 nav groups + 200px search trigger +
+/* Tablet / narrow-desktop band: 5 nav groups + 220px search trigger +
    icon row don't fit under 1100px. Shrink the trigger and drop the ⌘K
    hint chip so the row reflows without horizontal scroll. */
 @media (min-width: 768px) and (max-width: 1099px) {
@@ -439,6 +439,7 @@ option { background: var(--hub-secondary); color: var(--fg-default); }
     display: none !important;
   }
 }
+
 
 /* Hover affordance for the terminal-header nav-group buttons + the icon
    cluster (donate / theme / alerts). Inline styles set the resting state;
@@ -465,7 +466,7 @@ header.terminal-header [data-iconbtn]:hover {
   header.terminal-header .terminal-header-mobile-toggle { display: inline-flex !important; }
 }
 
-/* Quick-links chips (RecentChips) — inline styles set the resting border/
+/* Quick-links chips (RecentChips) â€” inline styles set the resting border/
    color, so the hover needs !important to win. Gives the dead `transition:
    all 100ms` something to animate. */
 .rc-chip:hover {
@@ -476,7 +477,7 @@ header.terminal-header [data-iconbtn]:hover {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Heatmap horizontal scrollbar — neutral (was orange, too loud) */
+/* Heatmap horizontal scrollbar â€” neutral (was orange, too loud) */
 .heatmap-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) rgba(255,255,255,0.04); }
 .heatmap-scroll::-webkit-scrollbar { height: 8px; }
 .heatmap-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 8px; margin: 0 130px 0 0; }
@@ -501,7 +502,7 @@ header.terminal-header [data-iconbtn]:hover {
     animation: flash-green 1.5s ease-out;
   }
 
-  /* --- Surface system (60→30 elevation) --- */
+  /* --- Surface system (60â†’30 elevation) --- */
   .surface-0 { background: var(--hub-dark); border: 1px solid var(--hub-border); }
   .surface-1 { background: var(--hub-darker); border: 1px solid var(--hub-border); }
   .surface-2 { background: var(--hub-secondary); border: 1px solid var(--hub-border); }
@@ -535,7 +536,7 @@ header.terminal-header [data-iconbtn]:hover {
   .glow-text { text-shadow: 0 0 8px rgb(var(--hub-accent-rgb) / 0.4); }
   .glow-box { box-shadow: 0 0 12px rgb(var(--hub-accent-rgb) / 0.15); }
 
-  /* --- Stat cards (accent line removed — was orange) --- */
+  /* --- Stat cards (accent line removed â€” was orange) --- */
   .stat-card {
     @apply rounded-xl p-4 relative;
     background: var(--hub-darker); border: 1px solid var(--hub-border);
@@ -616,13 +617,13 @@ header.terminal-header [data-iconbtn]:hover {
     opacity: 0.02; pointer-events: none; z-index: 0;
   }
 
-  /* ═══ Typography utilities ═══ */
+  /* â•â•â• Typography utilities â•â•â• */
   .heading-page { @apply text-2xl sm:text-3xl font-bold tracking-tight text-white; text-wrap: balance; }
   .heading-section { @apply text-lg sm:text-xl font-semibold text-white; }
   .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
   .page-desc { @apply text-neutral-400 text-sm mt-1; }
 
-  /* ═══ Canonical card system (calm, one hover state) ═══ */
+  /* â•â•â• Canonical card system (calm, one hover state) â•â•â• */
   .card,
   .card-premium {
     background: var(--hub-darker);
@@ -691,14 +692,14 @@ header.terminal-header [data-iconbtn]:hover {
   .stagger > *:nth-child(16) { animation-delay: 450ms; }
   .stagger > *:nth-child(17) { animation-delay: 480ms; }
 
-  /* Accent line (now neutral — was orange, caused visual noise) */
+  /* Accent line (now neutral â€” was orange, caused visual noise) */
   .accent-line {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
   }
 
   /* Coinglass-style section header: flat, compact, utilitarian.
-     Small white title + thin rule line — no decorations, no serif,
+     Small white title + thin rule line â€” no decorations, no serif,
      no eyebrow kickers. Lets the data itself be the thing. */
   .cg-section-head {
     display: flex;
@@ -718,11 +719,11 @@ header.terminal-header [data-iconbtn]:hover {
     background: rgba(255, 255, 255, 0.06);
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-     TERMINAL LAYOUT — sticky left sidebar + dense data main area.
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+     TERMINAL LAYOUT â€” sticky left sidebar + dense data main area.
      This is the big structural change: the homepage now feels like
      a Bloomberg/Coinglass terminal, not a landing page.
-     ═══════════════════════════════════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   .terminal-sidebar {
     width: 220px;
     flex-shrink: 0;
@@ -735,7 +736,7 @@ header.terminal-header [data-iconbtn]:hover {
     border-right: 1px solid var(--hub-border);
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, transparent 100%);
   }
-  /* Collapse sidebar on mobile/tablet — the JSX uses `hidden lg:flex` but
+  /* Collapse sidebar on mobile/tablet â€” the JSX uses `hidden lg:flex` but
      the plain CSS `display: flex` above lands after the Tailwind utilities
      layer and would otherwise win source-order at equal specificity.
      This explicit media query forces the sidebar to vanish below lg. */
@@ -836,7 +837,7 @@ header.terminal-header [data-iconbtn]:hover {
     font-weight: 600;
   }
 
-  /* Top vitals strip — Coinglass-style major coin tiles.
+  /* Top vitals strip â€” Coinglass-style major coin tiles.
      Leads the main content area above the heatmap. */
   .market-tile {
     display: block;
@@ -1045,7 +1046,7 @@ header.terminal-header [data-iconbtn]:hover {
   .legend-item { @apply flex items-center gap-2; }
   .legend-swatch { @apply w-4 h-4 rounded; }
 
-  /* ═══ 10% Accent utilities ═══ */
+  /* â•â•â• 10% Accent utilities â•â•â• */
   .accent-glow { box-shadow: 0 0 20px rgb(var(--hub-accent-dark-rgb) / 0.15); }
   .accent-gradient {
     background: linear-gradient(135deg, var(--hub-accent-light), var(--hub-accent), var(--hub-accent-secondary));
@@ -1055,7 +1056,7 @@ header.terminal-header [data-iconbtn]:hover {
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
 
-  /* ═══ PH×Coinglass: Dopamine system ═══ */
+  /* â•â•â• PHÃ—Coinglass: Dopamine system â•â•â• */
 
   /* --- Mega numbers (PH view-count energy) --- */
   .mega-number {
@@ -1073,7 +1074,7 @@ header.terminal-header [data-iconbtn]:hover {
     vertical-align: super;
   }
 
-  /* --- Delta badges (Coinglass-style ±% pills) --- */
+  /* --- Delta badges (Coinglass-style Â±% pills) --- */
   .delta-badge {
     display: inline-flex;
     align-items: center;
@@ -1104,21 +1105,21 @@ header.terminal-header [data-iconbtn]:hover {
     box-shadow: 0 0 8px rgba(255, 23, 68, 0.2);
   }
 
-  /* --- Directional pips (▲/▼ inline arrows) --- */
+  /* --- Directional pips (â–²/â–¼ inline arrows) --- */
   .pip-up::before {
-    content: '▲';
+    content: 'â–²';
     font-size: 0.55em;
     margin-right: 2px;
     vertical-align: 1px;
   }
   .pip-down::before {
-    content: '▼';
+    content: 'â–¼';
     font-size: 0.55em;
     margin-right: 2px;
     vertical-align: 1px;
   }
   .pip-neutral::before {
-    content: '–';
+    content: 'â€“';
     font-size: 0.7em;
     margin-right: 2px;
     opacity: 0.5;
@@ -1195,7 +1196,7 @@ header.terminal-header [data-iconbtn]:hover {
     box-shadow: none;
     animation: none;
   }
-  /* Variants tied to real useAggregatorHealth status — used by
+  /* Variants tied to real useAggregatorHealth status â€” used by
      TopStatsBar. Match the StatusBar STREAMING badge color scale. */
   .heartbeat-dot--degraded {
     background: #f59e0b;
@@ -1355,12 +1356,12 @@ header.terminal-header [data-iconbtn]:hover {
   }
 }
 
-/* ═══ Dark Theme — Accessibility Overrides ═══ */
+/* â•â•â• Dark Theme â€” Accessibility Overrides â•â•â• */
 
 /* Boost neutral-600 from #525252 to #737373 for WCAG AA contrast on dark backgrounds */
 .text-neutral-600 { color: #737373 !important; }
 
-/* ═══ Light Theme — Visual Overrides ═══ */
+/* â•â•â• Light Theme â€” Visual Overrides â•â•â• */
 
 /* --- Text color remaps (dark text on light bg) --- */
 [data-theme="light"] .text-white { color: #111827; }
@@ -1473,7 +1474,7 @@ header.terminal-header [data-iconbtn]:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-/* --- Noise bg — hide on light --- */
+/* --- Noise bg â€” hide on light --- */
 [data-theme="light"] .noise-bg::after { opacity: 0; }
 
 /* --- Mobile nav --- */
@@ -1605,7 +1606,7 @@ header.terminal-header [data-iconbtn]:hover {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Terminal-style loading dots — used by /loading.tsx.
+/* Terminal-style loading dots â€” used by /loading.tsx.
    `content` swaps through 1-3 dots over 1.2s to mimic a TTY cursor. */
 @keyframes loading-dots {
   0%, 20%  { content: '.'; }
@@ -1638,7 +1639,7 @@ header.terminal-header [data-iconbtn]:hover {
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* PH×Coinglass: Dopamine animations */
+/* PHÃ—Coinglass: Dopamine animations */
 @keyframes heartbeat {
   0%, 100% { opacity: 0.85; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(0.8); }
@@ -1666,7 +1667,7 @@ header.terminal-header [data-iconbtn]:hover {
 .animate-flash-red { animation: flash-red 0.6s ease-out; }
 .animate-flash-green { animation: flash-green 0.6s ease-out; }
 
-/* ═══ PH×Coinglass: Mobile-first responsive ═══ */
+/* â•â•â• PHÃ—Coinglass: Mobile-first responsive â•â•â• */
 @media (max-width: 640px) {
   .mega-number { font-size: 1.75rem; }
   .heatmap-tile { min-width: 64px; min-height: 44px; }
@@ -1683,7 +1684,7 @@ header.terminal-header [data-iconbtn]:hover {
   font-size: 0.75rem;
   font-family: var(--font-sans);
 }
-.data-unavailable::before { content: '⚠ '; font-style: normal; }
+.data-unavailable::before { content: 'âš  '; font-style: normal; }
 
 /* Source attribution tooltip */
 .source-tooltip {
@@ -1711,24 +1712,24 @@ header.terminal-header [data-iconbtn]:hover {
 }
 .source-tooltip:hover::after { opacity: 1; }
 
-/* Ultrawide screens — wider container */
+/* Ultrawide screens â€” wider container */
 @media (min-width: 1920px) {
   .max-w-\[1400px\] { max-width: 1600px; }
 }
 
 /* Scrollbar accent tinting for data areas */
-/* Chat widget clearance — prevent floating widget from hiding last table row */
+/* Chat widget clearance â€” prevent floating widget from hiding last table row */
 main { padding-bottom: 56px; }
 @media (max-width: 640px) { main { padding-bottom: 48px; } }
-/* …but the /chart terminal is a fixed, full-bleed, non-scrolling layout
+/* â€¦but the /chart terminal is a fixed, full-bleed, non-scrolling layout
    (h-full grid that fills the viewport, StatusBar pinned below). The
    chat-clearance padding just leaves a dead band between the bottom-tabs
    panel and the StatusBar there, so zero it out when main wraps the
    chart root. :has() is well-supported in all current browsers. */
 main:has(> .chart-terminal-root) { padding-bottom: 0; }
 
-/* Hide the 232 px primary sidebar on mobile / small tablet — it was eating
-   ≈43% of the viewport at 540 px, leaving the main content cramped. The
+/* Hide the 232 px primary sidebar on mobile / small tablet â€” it was eating
+   â‰ˆ43% of the viewport at 540 px, leaving the main content cramped. The
    header dropdowns (Scan & Trade / Monitor / Risk / Research / My Tools)
    already provide nav on small screens. Below md (768 px) we collapse the
    sidebar to 0 so the data takes the full width. !important is needed to

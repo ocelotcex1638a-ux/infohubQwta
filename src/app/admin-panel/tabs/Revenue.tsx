@@ -5,7 +5,8 @@
  *
  * "Projected" because most paid tiers are comped during launch — the
  * numbers show the upside ceiling assuming every paid-tier user pays.
- * Once Paymento wires up actual webhook events these flip to real.
+ * As MaxelPay conversions come through, these move from ceiling estimates
+ * toward the real paid run-rate.
  */
 
 import { useCallback, useEffect, useState } from 'react';

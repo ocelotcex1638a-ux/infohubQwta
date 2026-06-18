@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Header from '@/components/Header';
@@ -31,6 +31,7 @@ const brandColors = {
 };
 
 const assets = [
+  { name: 'Brand Update Logo', file: '/brand-update-logo.png', preview: '/brand-update-logo.png', desc: 'Featured iH circuit-board lockup', size: '640x640', format: 'PNG' },
   { name: 'Wordmark PNG', file: '/infohub-wordmark.png', preview: '/infohub-wordmark.png', desc: 'Text logo (Info|Hub)', size: '1600x400', format: 'PNG' },
   { name: 'Wordmark SVG', file: '/logo-full.svg', preview: '/infohub-wordmark.png', desc: 'Vector text logo', size: 'Vector', format: 'SVG' },
   { name: 'Logo Icon', file: '/icon-512.png', preview: '/icon-512.png', desc: 'Primary logo icon', size: '512x512', format: 'PNG' },
@@ -111,11 +112,11 @@ export default function BrandPage() {
           description={
             <>
               <span>Download official logos, colors, and brand assets for use in articles, integrations, and partner materials.</span>
-              <span className="block mt-2 text-neutral-400 text-sm">The InfoHub mark is a circuit-board <span className="text-white font-semibold">i</span><span className="text-hub-yellow font-semibold">H</span> monogram — glowing orange traces on deep navy, echoing the terminal&apos;s electric, data-dense feel.</span>
+              <span className="block mt-2 text-neutral-400 text-sm">The InfoHub mark is a circuit-board <span className="text-white font-semibold">i</span><span className="text-hub-yellow font-semibold">H</span> monogram - glowing orange traces on deep navy, echoing the terminal&apos;s electric, data-dense feel.</span>
               <span className="flex items-center gap-6 mt-3">
                 <span className="flex items-center gap-2 text-neutral-500 text-xs">
                   <Image className="w-3.5 h-3.5 text-hub-yellow/60" />
-                  <span>7 logo assets</span>
+                  <span>8 logo assets</span>
                 </span>
                 <span className="flex items-center gap-2 text-neutral-500 text-xs">
                   <Palette className="w-3.5 h-3.5 text-hub-yellow/60" />
@@ -160,6 +161,43 @@ export default function BrandPage() {
             <Image className="w-4 h-4 text-hub-yellow/70" />
             Logo
           </h2>
+
+          <div className="bg-white/[0.04] border border-hub-yellow/15 rounded-2xl p-6 md:p-8 mb-6 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-hub-yellow/20 bg-hub-yellow/10 px-3 py-1 mb-4">
+                  <Sparkles className="w-3.5 h-3.5 text-hub-yellow" />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-hub-yellow">Brand Update</span>
+                </div>
+                <h3 className="text-white text-2xl md:text-3xl font-semibold mb-3">Featured circuit-board InfoHub lockup</h3>
+                <p className="text-neutral-400 text-sm md:text-base max-w-2xl mb-5">
+                  This version leans harder into the platform&apos;s market-terminal feel: the <span className="text-white font-medium">iH</span> monogram becomes the chip, and the orange tracework reinforces the live-data identity.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <a
+                    href="/brand-update-logo.png"
+                    download
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-hub-yellow text-black text-sm font-semibold hover:bg-hub-yellow/90 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download PNG
+                  </a>
+                  <span className="text-xs text-neutral-500 font-mono">brand-update-logo.png / 640x640</span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/[0.08] bg-hub-darker/80 p-4 md:p-6">
+                <div className="rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(255,165,0,0.16),_transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-4 md:p-6 flex items-center justify-center">
+                  <img
+                    src="/brand-update-logo.png"
+                    alt="InfoHub brand update logo"
+                    loading="lazy"
+                    className="w-full max-w-[320px] rounded-xl object-contain shadow-[0_24px_80px_rgba(0,0,0,0.4)]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Wordmark Logo */}
@@ -380,7 +418,7 @@ export default function BrandPage() {
 
             <div className="bg-error/5 border border-error/20 rounded-xl p-6">
               <h3 className="text-error font-semibold mb-4 flex items-center gap-2">
-                <span className="w-5 h-5 flex items-center justify-center">✕</span>
+                <span className="w-5 h-5 flex items-center justify-center">x</span>
                 Don&apos;t
               </h3>
               <ul className="space-y-2 text-neutral-600 text-sm">
@@ -397,3 +435,4 @@ export default function BrandPage() {
     </div>
   );
 }
+

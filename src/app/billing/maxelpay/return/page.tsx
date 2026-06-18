@@ -7,6 +7,7 @@ import { initDB, isDBConfigured, getSQL } from '@/lib/db';
 import { TIER_BRANDING } from '@/lib/constants/tiers';
 import { type MaxelPayTier } from '@/lib/maxelpay';
 import SessionRefresh from './SessionRefresh';
+import CheckoutStatusRefresh from '@/components/CheckoutStatusRefresh';
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -59,6 +60,11 @@ export default async function MaxelPayReturnPage({ searchParams }: { searchParam
   return (
     <div className="min-h-screen bg-hub-black text-white">
       <SessionRefresh enabled={Boolean(session?.user?.id)} />
+      <CheckoutStatusRefresh
+        enabled={Boolean(session?.user?.id && orderId)}
+        orderId={orderId}
+        initialFinal={isFinal}
+      />
       <Header />
       <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-3xl items-center justify-center px-4 py-10">
         <section className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 shadow-2xl shadow-black/30 backdrop-blur-sm sm:p-8">
@@ -103,10 +109,10 @@ export default async function MaxelPayReturnPage({ searchParams }: { searchParam
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/profile"
+              href="/profile?tab=billing"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
             >
-              Open profile <ArrowRight className="h-4 w-4" aria-hidden />
+              Open billing <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
             <Link
               href="/pricing"
@@ -118,7 +124,7 @@ export default async function MaxelPayReturnPage({ searchParams }: { searchParam
 
           {!session?.user?.id && (
             <p className="mt-4 text-xs text-neutral-500">
-              If you opened this outside the account that started checkout, sign in and check the billing tab.
+              If you opened this outside the account that started checkout, sign in and check the billing tab in your profile.
             </p>
           )}
         </section>

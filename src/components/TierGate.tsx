@@ -1,18 +1,18 @@
-'use client';
+﻿'use client';
 
 /**
- * <TierGate> — paywall component for tier-restricted features.
+ * <TierGate> â€” paywall component for tier-restricted features.
  *
  * Two modes:
  *   - 'soft' (default): renders the children but overlays a paywall card
  *     when the user doesn't meet the required tier. Good for SEO + lower
- *     friction — the chrome is visible, the data is gated.
+ *     friction â€” the chrome is visible, the data is gated.
  *   - 'hard': replaces children entirely with the paywall card. Use for
  *     features that would consume real backend resources for a Free user
  *     even if rendered (e.g. heavy API endpoints, paid integrations).
  *
  * Launch-mode override (May 2026): while the global flag below is true,
- * the gate is DISABLED entirely — children render unmodified for every
+ * the gate is DISABLED entirely â€” children render unmodified for every
  * tier. This matches the /pricing "Free during launch" banner. Flip
  * LAUNCH_GATING_ENABLED to true when MaxelPay checkout goes live.
  *
@@ -24,6 +24,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Sparkles, Compass, Zap, Crown, ArrowRight, Lock } from 'lucide-react';
 import { resolveUserTier, tierAtLeast, TIER_BRANDING, type Tier } from '@/lib/constants/tiers';
+import { isLaunchCutoverReached } from '@/lib/launch';
 
 /**
  * Master switch for tier gating. Stays `false` during the "free during
@@ -34,7 +35,7 @@ import { resolveUserTier, tierAtLeast, TIER_BRANDING, type Tier } from '@/lib/co
  * "Pro tier" / "Whale tier" hint chip so users see which features will
  * eventually require an upgrade.
  */
-export const LAUNCH_GATING_ENABLED = false;
+export const LAUNCH_GATING_ENABLED = isLaunchCutoverReached();
 
 interface TierGateProps {
   requires: Exclude<Tier, 'free'>;
@@ -60,7 +61,7 @@ export default function TierGate({ requires, mode = 'soft', hideLaunchHint = fal
     billingTier: (session?.user as { billingTier?: string } | undefined)?.billingTier ?? null,
   });
 
-  // Loading the session — render children to avoid layout flicker. Backend
+  // Loading the session â€” render children to avoid layout flicker. Backend
   // routes still enforce tier checks separately so this isn't a security gap.
   if (status === 'loading') return <>{children}</>;
 
@@ -79,10 +80,10 @@ export default function TierGate({ requires, mode = 'soft', hideLaunchHint = fal
     );
   }
 
-  // Gating enabled, user has access → just render.
+  // Gating enabled, user has access â†’ just render.
   if (meetsTier) return <>{children}</>;
 
-  // Gating enabled, user does NOT have access → paywall.
+  // Gating enabled, user does NOT have access â†’ paywall.
   if (mode === 'hard') return <Paywall requires={requires} />;
   return (
     <div className="relative">
@@ -113,7 +114,7 @@ function LaunchHintChip({ requires }: { requires: Exclude<Tier, 'free'> }) {
       <Icon className={`w-3.5 h-3.5 ${b.textColor} flex-shrink-0`} aria-hidden />
       <span className="text-neutral-300">
         <strong className={b.textColor}>{b.label} tier</strong> feature.{' '}
-        <Link href="/pricing" className="text-emerald-300 hover:underline">See pricing →</Link>
+        <Link href="/pricing" className="text-emerald-300 hover:underline">See pricing -&gt;</Link>
       </span>
     </div>
   );

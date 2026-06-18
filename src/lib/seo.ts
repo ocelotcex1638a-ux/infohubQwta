@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { ALL_EXCHANGES } from '@/lib/constants';
 import { FREE_TIER_PER_MINUTE } from '@/lib/api/rate-limit';
 
 type OGVariant =
   | 'default'
-  | 'tape'         // hero variant — only /home + landing pages opt in
+  | 'tape'         // hero variant â€” only /home + landing pages opt in
   | 'funding'
   | 'liquidations'
   | 'oi'
@@ -15,7 +15,11 @@ type OGVariant =
   | 'donate'
   | 'ratios'
   | 'etf'
-  | 'options';
+  | 'options'
+  | 'pricing'
+  | 'team'
+  | 'brand'
+  | 'smartmoney';
 
 type PageMeta = {
   title: string;
@@ -26,7 +30,7 @@ type PageMeta = {
 };
 
 // Maps a path to its OG variant when `ogVariant` isn't explicitly set.
-// Substring match on path (so e.g. /funding-heatmap → 'heatmap').
+// Substring match on path (so e.g. /funding-heatmap â†’ 'heatmap').
 const VARIANT_BY_PATH_PREFIX: { match: string; variant: OGVariant }[] = [
   { match: 'funding-heatmap', variant: 'heatmap' },
   { match: 'liquidation-heatmap', variant: 'heatmap' },
@@ -51,6 +55,10 @@ const VARIANT_BY_PATH_PREFIX: { match: string; variant: OGVariant }[] = [
   { match: 'economic-calendar', variant: 'news' },
   { match: 'token-unlocks', variant: 'news' },
   { match: 'listings', variant: 'news' },
+  { match: 'smart-money', variant: 'smartmoney' },
+  { match: 'pricing', variant: 'pricing' },
+  { match: 'team', variant: 'team' },
+  { match: 'brand', variant: 'brand' },
   { match: 'donate', variant: 'donate' },
   { match: 'referrals', variant: 'donate' },
   { match: 'points', variant: 'donate' },
@@ -75,8 +83,8 @@ const VARIANT_BY_PATH_PREFIX: { match: string; variant: OGVariant }[] = [
  * matches.
  *
  * Order matters in VARIANT_BY_PATH_PREFIX: longer / more-specific
- * matches come first ('funding-heatmap' → 'heatmap' must beat
- * 'funding' → 'funding').
+ * matches come first ('funding-heatmap' â†’ 'heatmap' must beat
+ * 'funding' â†’ 'funding').
  */
 export function pickVariant(path: string, explicit?: OGVariant): OGVariant {
   if (explicit) return explicit;
@@ -90,7 +98,7 @@ export function pickVariant(path: string, explicit?: OGVariant): OGVariant {
 export const PAGE_META: Record<string, PageMeta> = {
   '/etf': {
     title: 'Crypto ETF Tracker',
-    description: 'Track Bitcoin and Ethereum spot ETF funds — IBIT, FBTC, GBTC, ETHA, and more. Compare fees, issuers, and fund performance.',
+    description: 'Track Bitcoin and Ethereum spot ETF funds â€” IBIT, FBTC, GBTC, ETHA, and more. Compare fees, issuers, and fund performance.',
   },
   '/orderflow': {
     title: 'Order Flow',
@@ -158,7 +166,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/news': {
     title: 'Crypto News',
-    description: 'Real-time crypto news from 25+ sources — CoinDesk, The Block, Cointelegraph, Decrypt, CryptoSlate, Blockworks, Watcher Guru, BitMEX Research, and more. Filter by time and source type.',
+    description: 'Real-time crypto news from 25+ sources â€” CoinDesk, The Block, Cointelegraph, Decrypt, CryptoSlate, Blockworks, Watcher Guru, BitMEX Research, and more. Filter by time and source type.',
   },
   '/compare': {
     title: 'Compare Exchanges',
@@ -185,16 +193,19 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: 'Frequently asked questions about InfoHub, crypto funding rates, open interest, and derivatives data.',
   },
   '/pricing': {
-    title: 'Pricing · Free, Trader, Pro, Whale',
-    description: 'Pricing for InfoHub — Free forever with the full data terminal, Trader ($15/mo) for active retail with every venue real-time, Pro ($49/mo) for daily traders with API archive + tax export + custom dashboards + setup scanner, Whale ($99/mo) for funds + desks with priority alerts, custom webhooks, and 1:1 Telegram. Launch access is open while we onboard early users.',
+    title: 'Pricing - Free, Trader, Pro, Whale',
+    description: 'Pricing for InfoHub - Free forever with the full data terminal, Trader ($15/mo) for active retail with every venue real-time, Pro ($49/mo) for daily traders with API archive, tax export, custom dashboards, and setup scanner, Whale ($99/mo) for funds and desks with priority alerts, custom webhooks, and 1:1 Telegram. Launch access is open while we onboard early users.',
+    ogVariant: 'pricing',
   },
   '/brand': {
     title: 'Brand Assets',
     description: 'InfoHub brand guidelines, logos, and assets for media and partners.',
+    ogVariant: 'brand',
   },
   '/team': {
     title: 'Team',
-    description: 'Two traders. One frustration: every derivatives tool was ugly, expensive, or both. Meet 0x.0celot and snakether, the people building InfoHub.',
+    description: 'Meet the people building InfoHub: 0x.0celot on product, snakether on market sanity checks, and Ben on growth. Traders first, builders second, shipping every week.',
+    ogVariant: 'team',
   },
   '/terms': {
     title: 'Terms of Service',
@@ -202,7 +213,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/privacy': {
     title: 'Privacy Policy',
-    description: 'InfoHub privacy policy — how we handle your data, analytics, cookies, and your rights.',
+    description: 'InfoHub privacy policy â€” how we handle your data, analytics, cookies, and your rights.',
   },
   '/hl-whales': {
     title: 'Hyperliquid Whale Tracker',
@@ -250,7 +261,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/onchain': {
     title: 'On-Chain Metrics',
-    description: 'Bitcoin on-chain analytics — hash rate, mining difficulty, miner revenue, Puell Multiple, MVRV Z-Score, mempool fees, and transaction volume.',
+    description: 'Bitcoin on-chain analytics â€” hash rate, mining difficulty, miner revenue, Puell Multiple, MVRV Z-Score, mempool fees, and transaction volume.',
   },
   '/liquidation-heatmap': {
     title: 'Liquidation Heatmap',
@@ -274,7 +285,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/stock-heatmap': {
     title: 'Stock Heatmap',
-    description: 'Real-time stock market heatmap — S&P 500, US stocks, and global equities. Visualize performance by sector, market cap, and timeframe.',
+    description: 'Real-time stock market heatmap â€” S&P 500, US stocks, and global equities. Visualize performance by sector, market cap, and timeframe.',
   },
   '/yields': {
     title: 'DeFi Yields',
@@ -285,8 +296,8 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: `26 endpoints, ${ALL_EXCHANGES.length} exchanges, free ${FREE_TIER_PER_MINUTE} req/min tier. Real-time funding rates, OI, liquidations, fee-aware arbitrage grading, multi-venue klines fallback, on-chain whale data. OpenAPI 3.1 spec, X-RateLimit headers, no credit card required.`,
   },
   '/developers/webhooks': {
-    title: 'Custom Webhooks Setup · Developers',
-    description: 'Set up HMAC-signed HTTPS webhooks for InfoHub alerts. Copy-paste curl commands, Node.js + Python signature verification examples. Whale tier — free during launch.',
+    title: 'Custom Webhooks Setup Â· Developers',
+    description: 'Set up HMAC-signed HTTPS webhooks for InfoHub alerts. Copy-paste curl commands, Node.js + Python signature verification examples. Whale tier â€” free during launch.',
   },
   '/home': {
     title: 'Live Crypto Derivatives Dashboard',
@@ -302,12 +313,12 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: 'Scan for the largest price spreads across crypto exchanges in real time. Identify arbitrage opportunities across CEX and DEX venues.',
   },
   '/dashboard': {
-    title: 'Dashboard · Command Center',
-    description: 'Your InfoHub command center — equity, open positions, alerts, watched wallets, and connected exchanges in one personal view.',
+    title: 'Dashboard Â· Command Center',
+    description: 'Your InfoHub command center â€” equity, open positions, alerts, watched wallets, and connected exchanges in one personal view.',
   },
   '/account': {
-    title: 'Account · Command Center',
-    description: 'Your InfoHub account at a glance — connected venues, open positions, watched wallets, alerts, recent notifications, and quick actions for everything you trade.',
+    title: 'Account Â· Command Center',
+    description: 'Your InfoHub account at a glance â€” connected venues, open positions, watched wallets, alerts, recent notifications, and quick actions for everything you trade.',
   },
   '/account/connections': {
     title: 'Exchange + Wallet Connections',
@@ -315,37 +326,37 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/account/api-keys': {
     title: 'API Keys',
-    description: 'Manage your InfoHub Public API keys — create, revoke, and check usage. Free tier 100 req/min, Trader 200, Pro 600, Whale unlimited (free during launch).',
+    description: 'Manage your InfoHub Public API keys â€” create, revoke, and check usage. Free tier 100 req/min, Trader 200, Pro 600, Whale unlimited (free during launch).',
   },
   '/watch': {
-    title: 'Wallet Watch · Hyperliquid + gTrade Position Alerts',
+    title: 'Wallet Watch Â· Hyperliquid + gTrade Position Alerts',
     description: 'Watch any Hyperliquid or gTrade wallet in real time. Get Telegram pings when they open or close positions, change size, near liq, take realized PnL, or pay funding. Free.',
   },
   '/health': {
     title: 'Endpoint Health',
     description: 'Live status of every InfoHub data endpoint, measured from your browser. Green = healthy, amber = degraded, red = error or timeout. Re-checks every 60s.',
-    noIndex: true, // admin-gated at runtime (5daf10c6) — keep out of search
+    noIndex: true, // admin-gated at runtime (5daf10c6) â€” keep out of search
   },
   // Public unauthenticated status page (shipped in task #131). Was
-  // missing from PAGE_META / sitemap / robots — search results
+  // missing from PAGE_META / sitemap / robots â€” search results
   // for "infohub status" landed on the SaaS-y /api/v1/status JSON
   // instead of the actual status page. Now indexed with proper
   // share-card metadata (Stripe / GitHub / Vercel all do this).
   '/status': {
     title: 'System Status',
-    description: 'Live health of the InfoHub data pipeline — aggregator venues connected, API responsiveness, alert engine per-channel freshness. Refreshes every 30 seconds. No auth required.',
+    description: 'Live health of the InfoHub data pipeline â€” aggregator venues connected, API responsiveness, alert engine per-channel freshness. Refreshes every 30 seconds. No auth required.',
   },
   '/changelog': {
     title: 'Changelog',
-    description: 'What we have shipped recently. New features, fixes, and improvements to the InfoHub data terminal — admin-only release notes.',
-    noIndex: true, // admin-gated at runtime (5daf10c6) — keep out of search
+    description: 'What we have shipped recently. New features, fixes, and improvements to the InfoHub data terminal â€” admin-only release notes.',
+    noIndex: true, // admin-gated at runtime (5daf10c6) â€” keep out of search
   },
   '/positions': {
-    title: 'Positions · Cross-Venue',
+    title: 'Positions Â· Cross-Venue',
     description: 'Unified view of your open positions across connected accounts. Direction-aware funding, per-position health score, funding cost-of-carry, TP/SL, and liquidation distance.',
   },
   '/positions/tax': {
-    title: 'Tax / Cost-Basis · FIFO',
+    title: 'Tax / Cost-Basis Â· FIFO',
     description: 'Aggregate cost-basis and realised PnL across every connected wallet and key. FIFO accounting over your entire trade history. Live for Hyperliquid, Binance, Bybit, and OKX.',
   },
   '/positions/journal': {
@@ -393,7 +404,7 @@ export const PAGE_META: Record<string, PageMeta> = {
     noIndex: true,
   },
   '/developers/docs': {
-    title: 'API Reference · v1',
+    title: 'API Reference Â· v1',
     description: '26 endpoints across funding, OI, tickers, klines, spreads, arbitrage, liquidations, options, on-chain whales, and more. Fee transparency with versioned schedule, aggregate=1 modes, X-RateLimit headers, OpenAPI 3.1 spec.',
   },
   '/guides/reading-open-interest': {
@@ -418,11 +429,12 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/funding-arb': {
     title: 'Funding Rate Arbitrage Scanner',
-    description: `Cross-exchange funding rate divergence scanner across ${ALL_EXCHANGES.length}+ venues. Identify cash-and-carry opportunities, annualized APR estimates, and CEX↔DEX arbs in real-time.`,
+    description: `Cross-exchange funding rate divergence scanner across ${ALL_EXCHANGES.length}+ venues. Identify cash-and-carry opportunities, annualized APR estimates, and CEXâ†”DEX arbs in real-time.`,
   },
   '/smart-money': {
     title: 'Smart Money Wallets',
-    description: 'Track wallets with proven alpha — high lifetime PnL, high volume, consistent win rate. See what the pros are positioned in right now with aggregate sentiment gauge.',
+    description: 'Track wallets with proven alpha using true PnL, unrealized risk, asset filters, and cross-platform coverage. See what the strongest traders are positioned in right now.',
+    ogVariant: 'smartmoney',
   },
   '/liquidation-levels': {
     title: 'Liquidation Levels & Cascade Forecast',
@@ -430,7 +442,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/points': {
     title: 'Points & Airdrop Hub',
-    description: 'Curated directory of active crypto points programs — Hyperliquid, Aster, Lighter, Paradex, Backpack, Drift, and more. Deep-link to each program with your wallet pre-filled.',
+    description: 'Curated directory of active crypto points programs â€” Hyperliquid, Aster, Lighter, Paradex, Backpack, Drift, and more. Deep-link to each program with your wallet pre-filled.',
   },
   '/compare-traders': {
     title: 'Compare Traders',
@@ -438,182 +450,182 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/stablecoin-peg': {
     title: 'Stablecoin Peg Monitor',
-    description: 'Live peg-deviation tracker for major USD stablecoins — USDT, USDC, DAI, FDUSD, PYUSD, USDe, and more. 25bp watch threshold · 100bp depeg alert · updates every 30 seconds.',
+    description: 'Live peg-deviation tracker for major USD stablecoins â€” USDT, USDC, DAI, FDUSD, PYUSD, USDe, and more. 25bp watch threshold Â· 100bp depeg alert Â· updates every 30 seconds.',
   },
   '/protocol-revenue': {
     title: 'Protocol Revenue Leaderboard',
-    description: 'Which crypto protocols actually make money. 24h / 7d / 30d fee revenue ranking across DEXs, perps, lending, L1s, and stablecoin issuers — sourced from DeFiLlama.',
+    description: 'Which crypto protocols actually make money. 24h / 7d / 30d fee revenue ranking across DEXs, perps, lending, L1s, and stablecoin issuers â€” sourced from DeFiLlama.',
   },
   '/perp-dex-volume': {
     title: 'Perp DEX Volume Race',
     description: 'Daily and weekly market-share leaderboard for on-chain perp DEXs. Fees tracked in real time with implied notional volume, change%, and concentration stats.',
   },
   '/premiums': {
-    title: 'Regional Premiums · Coinbase + Kimchi',
+    title: 'Regional Premiums Â· Coinbase + Kimchi',
     description: 'Live BTC / ETH price gaps between Coinbase (US), Upbit (Korea), bitFlyer (Japan) and global Binance. Track institutional and regional demand in real time.',
   },
   '/gas-tracker': {
-    title: 'Gas Tracker · Ethereum + L2s',
+    title: 'Gas Tracker Â· Ethereum + L2s',
     description: 'Live gas prices and transaction costs across Ethereum mainnet, Base, Arbitrum, Optimism, Polygon, and BNB Chain. Transfer and swap cost estimates in USD.',
   },
   '/altseason': {
     title: 'Altseason Index',
-    description: 'Live Altseason Index — % of top-50 altcoins outperforming Bitcoin over 90 days. BTC dominance, stablecoin share, and per-coin relative performance.',
+    description: 'Live Altseason Index â€” % of top-50 altcoins outperforming Bitcoin over 90 days. BTC dominance, stablecoin share, and per-coin relative performance.',
   },
   '/leverage': {
     title: 'Leverage Dashboard',
     description: `OI-weighted funding rates, spot-vs-perp volume ratio, and aggregate leverage pressure across ${ALL_EXCHANGES.length} venues. One lens on real positioning vs retail noise.`,
   },
   '/donate': {
-    title: 'Support the project · Crypto Donations',
+    title: 'Support the project Â· Crypto Donations',
     description: 'Help keep InfoHub free, no-ads, no-signup. Accepting BTC, ETH (+ all L2s), SOL, HYPE, USDT-TRC20. Every tip funds hosting, APIs, and shipping velocity.',
   },
   '/outperformers': {
-    title: 'Altcoin Outperformance · vs BTC + ETH',
+    title: 'Altcoin Outperformance Â· vs BTC + ETH',
     description: 'Which altcoins are beating BTC and ETH over the rolling window. Sort by relative performance, top-100 screened, stablecoins + BTC/ETH wrappers excluded.',
   },
   '/skew': {
-    title: 'Options Skew · Put-Call IV per Expiry',
-    description: 'Live put-call IV skew per Deribit expiry for BTC + ETH. Negative skew (calls richer than puts) is rare and historically a top warning signal — track it across the term structure.',
+    title: 'Options Skew Â· Put-Call IV per Expiry',
+    description: 'Live put-call IV skew per Deribit expiry for BTC + ETH. Negative skew (calls richer than puts) is rare and historically a top warning signal â€” track it across the term structure.',
   },
   '/cme-basis': {
-    title: 'CME Basis · BTC + ETH Cash-and-Carry',
-    description: 'CME front-month BTC and ETH futures premium vs spot, annualized to expiry. Real cash-and-carry rate institutions can earn — hot basis (>15% APR) marks risk-on regimes.',
+    title: 'CME Basis Â· BTC + ETH Cash-and-Carry',
+    description: 'CME front-month BTC and ETH futures premium vs spot, annualized to expiry. Real cash-and-carry rate institutions can earn â€” hot basis (>15% APR) marks risk-on regimes.',
   },
   '/sectors': {
-    title: 'Sector Rotation · Crypto Money Flow Map',
-    description: 'Which crypto sectors money is flowing into right now. 24h market-cap change heatmap across 27 sectors — AI, DeFi, L2s, RWA, memes — to spot rotations as they form.',
+    title: 'Sector Rotation Â· Crypto Money Flow Map',
+    description: 'Which crypto sectors money is flowing into right now. 24h market-cap change heatmap across 27 sectors â€” AI, DeFi, L2s, RWA, memes â€” to spot rotations as they form.',
   },
   '/cycle-phase': {
-    title: 'BTC Cycle Phase · Composite of 5 Signals',
+    title: 'BTC Cycle Phase Â· Composite of 5 Signals',
     description: 'Where in the cycle are we? Hash Ribbons + Puell Multiple + MVRV Z-score + funding regime + price-vs-200d-SMA synthesised into a single phase tag with confidence.',
   },
   '/etf-flows': {
-    title: 'ETF Flows · Daily Net BTC + ETH Spot Flows',
+    title: 'ETF Flows Â· Daily Net BTC + ETH Spot Flows',
     description: 'Daily net inflows / outflows for every US spot Bitcoin and Ethereum ETF, sourced from Farside. Cumulative 7d / 30d totals + per-issuer breakdown.',
   },
   '/etf-counterfactual': {
-    title: 'BTC without ETF Flows · Counterfactual Model',
-    description: 'Where would BTC be trading if spot ETFs hadn’t been bidding? Linear regression of daily ETF net flows against price returns, then strip the flow contribution out.',
+    title: 'BTC without ETF Flows Â· Counterfactual Model',
+    description: 'Where would BTC be trading if spot ETFs hadnâ€™t been bidding? Linear regression of daily ETF net flows against price returns, then strip the flow contribution out.',
   },
   '/cliff-watch': {
-    title: 'Cliff Watch · Major Token Vesting Cliffs',
+    title: 'Cliff Watch Â· Major Token Vesting Cliffs',
     description: 'Upcoming cliff vesting events that drop large supply tranches all at once. Tracks the biggest single-day unlocks alongside investor / team / treasury attribution.',
   },
   '/crowdedness': {
-    title: 'Crowdedness Score · Position-Side Imbalance',
-    description: 'Composite crowdedness across funding, OI growth, long/short ratio. Extreme readings precede squeezes / flushes — see which symbols are most one-sided.',
+    title: 'Crowdedness Score Â· Position-Side Imbalance',
+    description: 'Composite crowdedness across funding, OI growth, long/short ratio. Extreme readings precede squeezes / flushes â€” see which symbols are most one-sided.',
   },
   '/crypto-stocks': {
-    title: 'Crypto Stocks · MSTR + COIN + Miners',
-    description: 'Live prices and momentum for crypto-exposed equities — MSTR, COIN, MARA, RIOT, CLSK, HUT and more. Premium / discount to NAV for the BTC-treasuries.',
+    title: 'Crypto Stocks Â· MSTR + COIN + Miners',
+    description: 'Live prices and momentum for crypto-exposed equities â€” MSTR, COIN, MARA, RIOT, CLSK, HUT and more. Premium / discount to NAV for the BTC-treasuries.',
   },
   '/fomc-playbook': {
-    title: 'FOMC Playbook · Crypto Reaction Patterns',
-    description: 'Crypto’s historical reaction to every FOMC decision — hike, hold, cut, dot-plot revisions — broken down by 1h / 4h / 24h price moves with median + IQR.',
+    title: 'FOMC Playbook Â· Crypto Reaction Patterns',
+    description: 'Cryptoâ€™s historical reaction to every FOMC decision â€” hike, hold, cut, dot-plot revisions â€” broken down by 1h / 4h / 24h price moves with median + IQR.',
   },
   '/funding-countdown': {
-    title: 'Funding Countdown · Next Settlement Per Venue',
+    title: 'Funding Countdown Â· Next Settlement Per Venue',
     description: 'Real-time countdown to the next funding settlement on every perp exchange, with predicted rates based on the live mark-vs-index gap.',
   },
   '/funding-flips': {
-    title: 'Funding Flips · Sign Changes Across Venues',
-    description: 'Symbols where funding just flipped from positive to negative (longs paying → shorts paying) or vice versa across exchanges — leading sentiment indicator.',
+    title: 'Funding Flips Â· Sign Changes Across Venues',
+    description: 'Symbols where funding just flipped from positive to negative (longs paying â†’ shorts paying) or vice versa across exchanges â€” leading sentiment indicator.',
   },
   '/funding-leaderboard': {
-    title: 'Funding Leaderboard · Highest + Most Negative Rates',
-    description: 'Top symbols by absolute funding rate across every venue. The most-stressed positions today — either crowded longs paying through the nose or aggressive shorts.',
+    title: 'Funding Leaderboard Â· Highest + Most Negative Rates',
+    description: 'Top symbols by absolute funding rate across every venue. The most-stressed positions today â€” either crowded longs paying through the nose or aggressive shorts.',
   },
   '/funding-paid': {
-    title: 'Funding Paid 30d · Cumulative Cost Per Symbol',
-    description: '30-day cumulative funding paid (or earned) per perpetual futures pair — useful for sizing the carry cost / yield of a delta-neutral or directional position.',
+    title: 'Funding Paid 30d Â· Cumulative Cost Per Symbol',
+    description: '30-day cumulative funding paid (or earned) per perpetual futures pair â€” useful for sizing the carry cost / yield of a delta-neutral or directional position.',
   },
   '/funding-predictor': {
-    title: 'Funding Predictor · Next Settlement Forecast',
+    title: 'Funding Predictor Â· Next Settlement Forecast',
     description: 'Forecast the next funding rate at every venue using live mark / index basis and recent rate momentum. Spot upcoming rate spikes before they print.',
   },
   '/hash-ribbons': {
-    title: 'Hash Ribbons · Bitcoin Miner Capitulation Signal',
-    description: 'Live Hash Ribbons (30d / 60d hash rate moving averages). When the 30d crosses below the 60d, miners are capitulating — historically a multi-month BTC bottom signal.',
+    title: 'Hash Ribbons Â· Bitcoin Miner Capitulation Signal',
+    description: 'Live Hash Ribbons (30d / 60d hash rate moving averages). When the 30d crosses below the 60d, miners are capitulating â€” historically a multi-month BTC bottom signal.',
   },
   '/memecoin-radar': {
-    title: 'Memecoin Radar · Trending On-Chain Tokens',
-    description: 'Live trending memecoins from Solana, Base, and Hyperliquid — sorted by volume momentum, holder growth, and freshness. Catch the rotation before it tops.',
+    title: 'Memecoin Radar Â· Trending On-Chain Tokens',
+    description: 'Live trending memecoins from Solana, Base, and Hyperliquid â€” sorted by volume momentum, holder growth, and freshness. Catch the rotation before it tops.',
   },
   '/orderbook-imbalance': {
-    title: 'Order Book Imbalance · Bid/Ask Pressure',
+    title: 'Order Book Imbalance Â· Bid/Ask Pressure',
     description: 'Live bid vs ask depth imbalance for top symbols. Heavy bid-side pressure = absorption / squeeze setup; heavy ask-side = distribution / breakdown setup.',
   },
   '/restaking-delta': {
-    title: 'Restaking Delta · TVL + APY Movements',
+    title: 'Restaking Delta Â· TVL + APY Movements',
     description: '30-day change in TVL and APY across every liquid restaking pool. Spot which protocols are gaining share and which are bleeding outflows.',
   },
   '/rv-iv': {
-    title: 'Realised vs Implied Vol · Premium Tracker',
+    title: 'Realised vs Implied Vol Â· Premium Tracker',
     description: 'Live realised volatility vs Deribit implied vol for BTC + ETH at multiple horizons. RV>IV = options under-priced; IV>RV = vol-sellers harvesting premium.',
   },
   '/smart-money-composite': {
-    title: 'Smart Money Composite · Aggregate Positioning',
-    description: 'Aggregate sentiment gauge built from top traders’ positioning across Hyperliquid + GMX V2. Net long/short bias, leaderboard alignment, conviction score.',
+    title: 'Smart Money Composite Â· Aggregate Positioning',
+    description: 'Aggregate sentiment gauge built from top tradersâ€™ positioning across Hyperliquid + GMX V2. Net long/short bias, leaderboard alignment, conviction score.',
   },
   '/social': {
-    title: 'KOL Feed · Crypto Twitter Signal',
+    title: 'KOL Feed Â· Crypto Twitter Signal',
     description: 'Live feed of high-signal crypto Twitter posts from a curated list of traders, analysts, and protocol leads. $TICKERS auto-linked, no algorithmic ranking noise.',
   },
   '/stablecoin-supply': {
-    title: 'Stablecoin Supply · Total Issued + 7d / 30d Change',
-    description: 'Live supply across USDT, USDC, DAI, FDUSD, PYUSD, USDe and more. 7d / 30d issuance changes — net stablecoin inflow into crypto is a leading risk-on indicator.',
+    title: 'Stablecoin Supply Â· Total Issued + 7d / 30d Change',
+    description: 'Live supply across USDT, USDC, DAI, FDUSD, PYUSD, USDe and more. 7d / 30d issuance changes â€” net stablecoin inflow into crypto is a leading risk-on indicator.',
   },
   '/trade-optimizer': {
-    title: 'Trade Optimizer · Best Venue + Size + Slippage',
+    title: 'Trade Optimizer Â· Best Venue + Size + Slippage',
     description: 'Given size, side and asset, find the venue with the best execution: lowest fee, smallest slippage, deepest book, and least adverse funding.',
   },
   '/validators': {
-    title: 'Validator Economics · LST + Restaking Yields',
+    title: 'Validator Economics Â· LST + Restaking Yields',
     description: 'Live yields from validator staking + liquid-staking pools across ETH, SOL, NEAR, ATOM, MATIC and more. Cross-protocol APY ranking with TVL + risk metadata.',
   },
   '/volume-share': {
-    title: 'CEX vs DEX Volume Share · Daily Trend',
-    description: 'On-chain perp DEXs vs centralized exchange perp volume — the rolling DEX market share trend. Daily and weekly tracking with leader concentration.',
+    title: 'CEX vs DEX Volume Share Â· Daily Trend',
+    description: 'On-chain perp DEXs vs centralized exchange perp volume â€” the rolling DEX market share trend. Daily and weekly tracking with leader concentration.',
   },
   '/whale-liq': {
-    title: 'Whale Liquidation Roulette · Near-Liq HL Positions',
-    description: 'Live tracker of Hyperliquid whale positions sitting near their liquidation price. Sorted by distance to liq with notional, leverage, and PnL — see who is about to get rekt.',
+    title: 'Whale Liquidation Roulette Â· Near-Liq HL Positions',
+    description: 'Live tracker of Hyperliquid whale positions sitting near their liquidation price. Sorted by distance to liq with notional, leverage, and PnL â€” see who is about to get rekt.',
   },
   '/restaking': {
-    title: 'Restaking Yields · EigenLayer + Symbiotic + Karak + LRTs',
+    title: 'Restaking Yields Â· EigenLayer + Symbiotic + Karak + LRTs',
     description: 'Aggregated APY + TVL for liquid restaking pools across EigenLayer, Symbiotic, Karak, EtherFi, Renzo, Kelp, Puffer, and more. Sorted by TVL with reward token + risk metadata.',
   },
   '/bridge-flows': {
-    title: 'Cross-Chain Bridge Flow Map · Wormhole',
-    description: 'Live cross-chain volume + transfer counts via Wormhole. Source→destination chain matrix, top assets being bridged, and ranked corridors over 24h / 7d / 30d windows.',
+    title: 'Cross-Chain Bridge Flow Map Â· Wormhole',
+    description: 'Live cross-chain volume + transfer counts via Wormhole. Sourceâ†’destination chain matrix, top assets being bridged, and ranked corridors over 24h / 7d / 30d windows.',
   },
   '/earnings-calendar': {
-    title: 'Crypto Earnings Calendar · Unlocks + TGEs + Mainnets',
-    description: 'Upcoming crypto schedule events grouped by ISO week — token unlocks, TGEs, halvings, governance votes, and mainnet launches with USD impact estimates.',
+    title: 'Crypto Earnings Calendar Â· Unlocks + TGEs + Mainnets',
+    description: 'Upcoming crypto schedule events grouped by ISO week â€” token unlocks, TGEs, halvings, governance votes, and mainnet launches with USD impact estimates.',
   },
   '/backtest': {
-    title: 'Strategy Backtest Lab · DCA + Funding Carry',
+    title: 'Strategy Backtest Lab Â· DCA + Funding Carry',
     description: 'Run historical simulations of dollar-cost-averaging and funding-carry strategies on real on-chain price + funding data. Sharpe, max drawdown, daily series with one click.',
   },
   '/listing-radar': {
-    title: 'Pre-Listing Leak Tracker · Listing Radar',
-    description: 'Real-time CEX listing announcements from Binance/Coinbase/OKX. Listings historically pump 30-200% in the first 24h — track which announcements are still inside the front-run window.',
+    title: 'Pre-Listing Leak Tracker Â· Listing Radar',
+    description: 'Real-time CEX listing announcements from Binance/Coinbase/OKX. Listings historically pump 30-200% in the first 24h â€” track which announcements are still inside the front-run window.',
   },
   '/smart-money/leaderboard': {
-    title: 'Top Hyperliquid Traders · Realized PnL Leaderboard',
+    title: 'Top Hyperliquid Traders Â· Realized PnL Leaderboard',
     description: 'Top wallets ranked by closing-trade PnL over the last 90 days on Hyperliquid. Per-trader win rate, biggest single trade, top symbols, and click into full position detail.',
   },
   '/exchange-fees': {
-    title: 'Exchange Fee Comparison · CEX + DEX',
+    title: 'Exchange Fee Comparison Â· CEX + DEX',
     description: 'Maker and taker fees side-by-side across Binance, Bybit, OKX, Bitget, MEXC, Kraken, Coinbase, BingX, KuCoin, Hyperliquid, GMX, dYdX, Aster, Lighter, and more. Affiliate commission rates included.',
   },
   '/max-pain': {
-    title: 'Max Pain Tracker · BTC + ETH Options Expiries',
+    title: 'Max Pain Tracker Â· BTC + ETH Options Expiries',
     description: 'Max pain strike for every BTC and ETH options expiry on Deribit. Weighted average, spot-to-pain gap, next big expiry callout, dealer-hedging pressure direction.',
   },
   '/breakouts': {
-    title: 'Breakout Scanner · Near ATH, 24h Highs, Strong Trends',
+    title: 'Breakout Scanner Â· Near ATH, 24h Highs, Strong Trends',
     description: 'Crypto breakout screener across 220+ liquid coins. Five signal modes: near all-time high, 24h breakout, multi-window uptrend, breakdown to ATL, and recovery plays.',
   },
   '/hl-vaults': {
@@ -625,7 +637,7 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: 'Ethereum liquid staking (LST), liquid restaking (LRT), and synthetic yield protocols ranked by TVL. Lido, Rocket Pool, Ether.fi, Renzo, Kelp, Ethena, Usual, and more. Base + reward APY, 30d mean, 7d change.',
   },
   '/options-iv': {
-    title: 'Options IV Dashboard · BTC + ETH',
+    title: 'Options IV Dashboard Â· BTC + ETH',
     description: 'Implied vol term structure, put/call OI ratio, 25-delta skew, and max pain per expiry for BTC and ETH options. Real-time data from Deribit.',
   },
   '/momentum': {
@@ -641,25 +653,25 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: 'New listings and delistings from Binance, Bybit, OKX, Coinbase, Upbit, Kraken, MEXC, KuCoin, and more, aggregated from official announcements. Spot, perps, futures, and earn products.',
   },
   '/trending-tokens': {
-    title: 'Trending Tokens · Memecoin Screener',
+    title: 'Trending Tokens Â· Memecoin Screener',
     description: 'Boosted / promoted tokens across Solana, Ethereum, Base, BNB Chain, and more. Live price, volume, buy/sell ratio, liquidity, and age via DexScreener. Raw memecoin screener for hunters.',
   },
   '/position-size': {
-    title: 'Position Size Calculator · R:R + Kelly',
+    title: 'Position Size Calculator Â· R:R + Kelly',
     description: 'Compute exact position size given account, risk %, entry, and stop. Plus R:R ratio, leverage required, take-profit scenarios, and Kelly sizing for systematic traders.',
   },
   '/trader-watch': {
-    title: 'Trader Watch · Live positions',
-    description: 'Watch traders across GMX, Hyperliquid, and gTrade on one screen. Star any trader and see their open positions, leverage, liq distance, and funding exposure live — no more 5 tabs to copy-trade.',
+    title: 'Trader Watch Â· Live positions',
+    description: 'Watch traders across GMX, Hyperliquid, and gTrade on one screen. Star any trader and see their open positions, leverage, liq distance, and funding exposure live â€” no more 5 tabs to copy-trade.',
   },
   '/invite': {
-    title: 'Invite Friends · Your referral link',
+    title: 'Invite Friends Â· Your referral link',
     description: 'Grab your personal InfoHub invite link and share it with friends. Track signups, see who verified, and unlock early access to upcoming Pro tier features.',
     noIndex: true, // auth-gated page; nothing useful for search engines
   },
   '/invite/leaderboard': {
     title: 'Referral Leaderboard',
-    description: 'Top 20 InfoHub users by verified referrals. Anonymized — entries show only the first 4 chars of each invite code. Want to climb? Grab your link at /invite.',
+    description: 'Top 20 InfoHub users by verified referrals. Anonymized â€” entries show only the first 4 chars of each invite code. Want to climb? Grab your link at /invite.',
   },
 };
 

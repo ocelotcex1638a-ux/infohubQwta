@@ -6,6 +6,7 @@
  */
 
 import postgres from 'postgres';
+import { isLaunchCutoverReached } from '@/lib/launch';
 
 const DATABASE_URL = process.env.DATABASE_URL || '';
 
@@ -424,37 +425,6 @@ async function _doInitDB(): Promise<void> {
   // Both nullable until the affiliate fills in their settings.
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS usdt_payout_wallet TEXT`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS usdt_payout_chain TEXT`;
-  await sql`
-    CREATE TABLE IF NOT EXISTS paymento_checkouts (
-      id BIGSERIAL PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      order_id TEXT NOT NULL UNIQUE,
-      token TEXT UNIQUE,
-      payment_id BIGINT,
-      tier TEXT NOT NULL,
-      period TEXT NOT NULL,
-      fiat_amount NUMERIC(12,2) NOT NULL,
-      fiat_currency TEXT NOT NULL DEFAULT 'USD',
-      status TEXT NOT NULL DEFAULT 'created',
-      order_status SMALLINT,
-      return_url TEXT,
-      callback_url TEXT,
-      email TEXT,
-      additional_data JSONB,
-      request_payload JSONB,
-      verify_payload JSONB,
-      callback_payload JSONB,
-      paid_at TIMESTAMPTZ,
-      verified_at TIMESTAMPTZ,
-      expires_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-  await sql`CREATE INDEX IF NOT EXISTS idx_paymento_checkouts_user_created ON paymento_checkouts(user_id, created_at DESC)`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_paymento_checkouts_token ON paymento_checkouts(token) WHERE token IS NOT NULL`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_paymento_checkouts_status ON paymento_checkouts(status, updated_at DESC)`;
-
   // referral_events — event log for the affiliate flywheel. We record:
   //   'click'      — ?ref=CODE landing-page hit (cookie set, no auth)
   //   'signup'     — referred user completed signup
@@ -2309,14 +2279,40 @@ export async function pruneOldData(keepDays: number = 90): Promise<{ funding: nu
     await sql`DELETE FROM twofa_login_codes WHERE expires_at < NOW()`.catch(e => console.warn('[db] twofa_login cleanup:', e));
     await sql`DELETE FROM rate_limit_events WHERE created_at < NOW() - INTERVAL '1 day'`.catch(e => console.warn('[db] rate_limit cleanup:', e));
     await sql`
-      UPDATE users
-      SET billing_tier = 'free',
-          billing_expires_at = NULL
-      WHERE billing_tier <> 'free'
-        AND billing_expires_at IS NOT NULL
-        AND billing_expires_at < NOW()
-        AND COALESCE(role, 'user') <> 'admin'
+      WITH changed_users AS (
+        UPDATE users
+        SET billing_tier = 'free',
+            billing_expires_at = NULL
+        WHERE billing_tier <> 'free'
+          AND billing_expires_at IS NOT NULL
+          AND billing_expires_at < NOW()
+          AND COALESCE(role, 'user') <> 'admin'
+        RETURNING id
+      )
+      UPDATE api_keys
+      SET tier = 'free'
+      FROM changed_users
+      WHERE api_keys.user_id = changed_users.id
+        AND api_keys.is_active = true
     `.catch(e => console.warn('[db] billing expiry cleanup:', e));
+    if (isLaunchCutoverReached()) {
+      await sql`
+        WITH changed_users AS (
+          UPDATE users
+          SET billing_tier = 'free',
+              billing_expires_at = NULL
+          WHERE billing_tier <> 'free'
+            AND billing_expires_at IS NULL
+            AND COALESCE(role, 'user') <> 'admin'
+          RETURNING id
+        )
+        UPDATE api_keys
+        SET tier = 'free'
+        FROM changed_users
+        WHERE api_keys.user_id = changed_users.id
+          AND api_keys.is_active = true
+      `.catch(e => console.warn('[db] launch cutover cleanup:', e));
+    }
 
     return {
       funding: fr.count ?? 0,
@@ -3771,12 +3767,20 @@ export async function createApiKey(userId: string, name: string = 'Default'): Pr
   // this, every key was 'free' regardless of who owned it — which
   // meant /pricing's "Pro 600/min" promise wasn't actually granted to
   // Pro users.
-  const tierRows = await db`SELECT role, billing_tier FROM users WHERE id = ${userId}` as Array<{ role: string | null; billing_tier: string | null }>;
+  const tierRows = await db`
+    SELECT role, billing_tier, billing_expires_at
+    FROM users
+    WHERE id = ${userId}
+  ` as Array<{ role: string | null; billing_tier: string | null; billing_expires_at: string | Date | null }>;
   const userRole = tierRows[0]?.role ?? null;
   const userBillingTier = tierRows[0]?.billing_tier ?? null;
+  const billingExpiresAt = tierRows[0]?.billing_expires_at ? new Date(tierRows[0].billing_expires_at) : null;
+  const paidTierStillActive = billingExpiresAt
+    ? Number.isFinite(billingExpiresAt.getTime()) && billingExpiresAt.getTime() > Date.now()
+    : !isLaunchCutoverReached();
   const tier = userRole === 'admin'
     ? 'whale'
-    : (userBillingTier === 'trader' || userBillingTier === 'pro' || userBillingTier === 'whale')
+    : paidTierStillActive && (userBillingTier === 'trader' || userBillingTier === 'pro' || userBillingTier === 'whale')
       ? userBillingTier
       : 'free';
 

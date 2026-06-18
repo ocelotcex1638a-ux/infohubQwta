@@ -12,6 +12,7 @@ import Twitter from 'next-auth/providers/twitter';
 import Resend from 'next-auth/providers/resend';
 import bcrypt from 'bcryptjs';
 import { PostgresAdapter, getSQL } from './adapter';
+import { isLaunchCutoverReached } from '@/lib/launch';
 
 // Build providers list — only include OAuth providers with configured credentials
 const providers: any[] = [
@@ -176,6 +177,12 @@ export async function getUserTier(userId: string): Promise<'free' | 'trader' | '
     });
     if (rows[0].role === 'admin') return 'whale';
     const expiresAt = rows[0].billing_expires_at ? new Date(rows[0].billing_expires_at) : null;
+    // Complimentary paid tiers stored without an expiry stay available only
+    // until the launch window ends. After cutover, only real active
+    // subscriptions (future expiry) remain paid.
+    if (!expiresAt && isLaunchCutoverReached()) {
+      return 'free';
+    }
     if (expiresAt && Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() <= Date.now()) {
       return 'free';
     }
@@ -389,7 +396,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.role = rows[0].role || 'user';
             const tier = rows[0].billing_tier as 'free' | 'trader' | 'pro' | 'whale' | null;
             const expiresAt = rows[0].billing_expires_at ? new Date(rows[0].billing_expires_at) : null;
-            const active = !expiresAt || !Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() > Date.now();
+            const active = !expiresAt
+              ? !isLaunchCutoverReached()
+              : !Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() > Date.now();
             token.billingTier = rows[0].role === 'admin'
               ? 'whale'
               : active && (tier === 'trader' || tier === 'pro' || tier === 'whale')

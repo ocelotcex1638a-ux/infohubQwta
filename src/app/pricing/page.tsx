@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
 /**
- * /pricing — public-facing tier comparison page.
+ * /pricing - public-facing tier comparison page.
  *
  * Four tiers: Free / Trader $15 / Pro $49 / Whale $99. Pro is the
  * conversion target (the new $29 middle anchor, "MOST POPULAR" badge).
@@ -21,6 +21,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PageHero from '@/components/PageHero';
+import LaunchCountdown from '@/components/LaunchCountdown';
 import { Sparkles, Compass, Zap, Crown, Check, X as XIcon, ArrowRight, CreditCard, Loader2 } from 'lucide-react';
 import {
   PRICING_CARD_ORDER,
@@ -37,6 +38,7 @@ import {
   type Tier,
   type TierToolList,
 } from '@/lib/constants/tiers';
+import { LAUNCH_CUTOVER_LABEL, LAUNCH_CUTOVER_DAY_LABEL } from '@/lib/launch';
 
 type Period = 'monthly' | 'annual';
 
@@ -108,16 +110,22 @@ export default function PricingPage() {
           accent="hub-yellow"
         />
 
-        {/* ─── Launch notice + Monthly/Annual toggle ─── */}
+        {/* â”€â”€â”€ Launch notice + Monthly/Annual toggle â”€â”€â”€ */}
         <section className="rounded-xl border border-amber-400/30 bg-amber-500/[0.04] px-4 py-3 mb-5 text-center">
           <p className="text-[12px] sm:text-[13px] text-amber-200">
             <Sparkles className="inline w-3.5 h-3.5 -mt-0.5 mr-1.5 text-amber-300" aria-hidden />
-            <span className="font-semibold text-amber-300">Free during launch</span> · Trader,
-            Pro + Whale tiers unlocked while we onboard early users ·
+            <span className="font-semibold text-amber-300">Free during launch</span> / Trader,
+            Pro + Whale tiers unlocked while we onboard early users until {LAUNCH_CUTOVER_LABEL} /
             <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-2 py-[1px] mx-1 font-bold uppercase tracking-wide text-emerald-300 border border-emerald-400/30">
               Annual -17%
             </span>
           </p>
+          <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
+            <LaunchCountdown />
+            <span className="text-[11px] text-neutral-300">
+              Anyone without an active subscription by {LAUNCH_CUTOVER_DAY_LABEL} moves back to Free.
+            </span>
+          </div>
         </section>
 
         <div className="flex justify-center mb-6">
@@ -152,9 +160,9 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* ─── Tier cards (4 cards — Pro is the conversion anchor) ─── */}
+        {/* â”€â”€â”€ Tier cards (4 cards - Pro is the conversion anchor) â”€â”€â”€ */}
         {/* DOM order keeps the paid plans first on every breakpoint so Free
-            doesn't set the benchmark. 2×2 grid on sm, 4-column row on lg. */}
+            doesn't set the benchmark. 2Ã—2 grid on sm, 4-column row on lg. */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10 items-stretch">
           {PRICING_CARD_ORDER.map((t) => (
             <TierCard
@@ -168,9 +176,9 @@ export default function PricingPage() {
           ))}
         </section>
 
-        {/* ─── What's in each tier — four cumulative columns showing
+        {/* â”€â”€â”€ What's in each tier - four cumulative columns showing
             what Free includes, what Trader adds, what Pro adds, what
-            Whale adds. Surfaces the upgrade path concretely. ─── */}
+            Whale adds. Surfaces the upgrade path concretely. â”€â”€â”€ */}
         <section className="mb-12">
           <h2 className="text-base font-bold text-white mb-4 px-1">
             What&apos;s in each tier
@@ -183,7 +191,7 @@ export default function PricingPage() {
           </div>
 
           <p className="text-[11px] text-neutral-500 mt-4 px-1">
-            Plus public API access on every tier ·{' '}
+            Plus public API access on every tier /{' '}
             <Link href="/developers/docs" className="text-emerald-300 hover:underline">
               see API docs
             </Link>
@@ -191,7 +199,7 @@ export default function PricingPage() {
           </p>
         </section>
 
-        {/* ─── Comparison table ─── */}
+        {/* â”€â”€â”€ Comparison table â”€â”€â”€ */}
         <section className="mb-12">
           <h2 className="text-base font-bold text-white mb-3 px-1">Compare all features</h2>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
@@ -199,7 +207,7 @@ export default function PricingPage() {
               <table className="w-full text-[12px]">
                 <thead>
                   <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                    {/* Sticky cell — uses theme-aware `bg-hub-darker` so the
+                    {/* Sticky cell - uses theme-aware `bg-hub-darker` so the
                         column reads correctly in both dark + light mode and
                         body cells stay hidden during horizontal scroll. */}
                     <th scope="col" className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-neutral-500 font-semibold sticky left-0 bg-hub-darker">
@@ -246,7 +254,7 @@ export default function PricingPage() {
                             stripe ? '' : 'bg-white/[0.01]'
                           }`}
                         >
-                          {/* Sticky leftmost cell — theme-aware solid bg
+                          {/* Sticky leftmost cell - theme-aware solid bg
                               (hub-black / hub-dark) so light + dark mode
                               both work and the cells underneath stay
                               hidden during horizontal scroll. `scope="row"`
@@ -276,7 +284,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* ─── FAQ ─── */}
+        {/* â”€â”€â”€ FAQ â”€â”€â”€ */}
         <section className="mb-12">
           <h2 className="text-base font-bold text-white mb-3 px-1">Pricing FAQ</h2>
           <div className="space-y-2">
@@ -286,36 +294,36 @@ export default function PricingPage() {
             />
             <FaqItem
               q="How does payment work?"
-              a="Crypto via MaxelPay — pay in USDT/USDC on Ethereum, Solana, Arbitrum, Base, plus BTC and ETH. Hosted checkout, takes <60s. No card needed, no signup form."
+              a="Crypto via MaxelPay - pay in USDT/USDC on Ethereum, Solana, Arbitrum, Base, plus BTC and ETH. Hosted checkout, takes <60s. No card needed, no signup form."
             />
             <FaqItem
               q="Can I cancel anytime?"
-              a="Yes. Cancel from your profile billing tab — you keep Trader/Pro/Whale access until the end of the current period, then auto-downgrade to Free. No prorated refunds, but no surprises either."
+              a="Yes. Cancel from your profile billing tab - you keep Trader/Pro/Whale access until the end of the current period, then auto-downgrade to Free. No prorated refunds, but no surprises either."
             />
             <FaqItem
               q="What's the difference between Trader, Pro, and Whale?"
-              a={`Trader ($${TIER_PRICE_MONTHLY.trader}) is active retail — every venue real-time, ${TIER_LIMITS.trader.maxAlerts} alerts, ${TIER_LIMITS.trader.maxWatchedWallets} wallets, ${TIER_LIMITS.trader.historyDays}d history, ${TIER_LIMITS.trader.apiPerMinute}/min API. Pro ($${TIER_PRICE_MONTHLY.pro}) is "trade for a living" — adds API archive (1y) + Tax CSV export + Custom dashboards + Setup scanner, plus ${TIER_LIMITS.pro.maxAlerts} alerts, ${TIER_LIMITS.pro.maxWatchedWallets} wallets, 1y history, ${TIER_LIMITS.pro.apiPerMinute}/min API. Whale ($${TIER_PRICE_MONTHLY.whale}) is funds + desks — adds priority alert delivery (dedicated queue), custom alert webhooks, 5y archive, unlimited alerts, unlimited watched wallets, and a 1:1 Telegram channel with the team.`}
+              a={`Trader ($${TIER_PRICE_MONTHLY.trader}) is active retail - every venue real-time, ${TIER_LIMITS.trader.maxAlerts} alerts, ${TIER_LIMITS.trader.maxWatchedWallets} wallets, ${TIER_LIMITS.trader.historyDays}d history, ${TIER_LIMITS.trader.apiPerMinute}/min API. Pro ($${TIER_PRICE_MONTHLY.pro}) is "trade for a living" - adds API archive (1y) + Tax CSV export + Custom dashboards + Setup scanner, plus ${TIER_LIMITS.pro.maxAlerts} alerts, ${TIER_LIMITS.pro.maxWatchedWallets} wallets, 1y history, ${TIER_LIMITS.pro.apiPerMinute}/min API. Whale ($${TIER_PRICE_MONTHLY.whale}) is funds + desks - adds priority alert delivery (dedicated queue), custom alert webhooks, 5y archive, unlimited alerts, unlimited watched wallets, and a 1:1 Telegram channel with the team.`}
             />
             <FaqItem
               q="How far back does historical data go?"
-              a={`Your tier sets the maximum lookback you can query — ${TIER_LIMITS.free.historyDays}d (Free), ${TIER_LIMITS.trader.historyDays}d (Trader), 1y (Pro), 5y (Whale). We keep full-resolution funding/OI for 30 days and a daily-downsampled archive beyond that. That archive has been accumulating since launch and grows every day, so the deepest windows fill in over time rather than being backfilled. The funding-history API reports the actual coverage it returned alongside your requested window, so you always know exactly how much data you got.`}
+              a={`Your tier sets the maximum lookback you can query - ${TIER_LIMITS.free.historyDays}d (Free), ${TIER_LIMITS.trader.historyDays}d (Trader), 1y (Pro), 5y (Whale). We keep full-resolution funding/OI for 30 days and a daily-downsampled archive beyond that. That archive has been accumulating since launch and grows every day, so the deepest windows fill in over time rather than being backfilled. The funding-history API reports the actual coverage it returned alongside your requested window, so you always know exactly how much data you got.`}
             />
             <FaqItem
               q="Do you charge based on usage?"
-              a="No. Flat monthly or annual price — no overage fees, no surprise bills, no metered billing. If you hit a tier limit, the page tells you and offers an upgrade. Nothing breaks silently."
+              a="No. Flat monthly or annual price - no overage fees, no surprise bills, no metered billing. If you hit a tier limit, the page tells you and offers an upgrade. Nothing breaks silently."
             />
             <FaqItem
               q="Is there a free trial?"
-              a="No traditional trial — but right now everyone gets full Trader + Pro + Whale features during launch, which is effectively an open access period for every paid tier. The Free tier itself stays free forever (no card required, no time limit), so you can always test the data terminal without committing to anything."
+              a="No traditional trial - but right now everyone gets full Trader + Pro + Whale features during launch, which is effectively an open access period for every paid tier. The Free tier itself stays free forever (no card required, no time limit), so you can always test the data terminal without committing to anything."
             />
             <FaqItem
               q="Earn 20% commission as an affiliate?"
-              a="Yes — every signed-in user gets a referral code at /settings/referrals. Share it; people who sign up via your link get 10% off forever, and you earn 20% of every paid month they pay, for the life of the account. Payouts in USDT to your wallet (Solana, Arbitrum, or Base) with a $25 minimum. Public details on /referrals."
+              a="Yes - every signed-in user gets a referral code at /settings/referrals. Share it; people who sign up via your link get 10% off forever, and you earn 20% of every paid month they pay, for the life of the account. Payouts in USDT to your wallet (Solana, Arbitrum, or Base) with a $25 minimum. Public details on /referrals."
             />
           </div>
         </section>
 
-        {/* ─── Final CTA ─── */}
+        {/* â”€â”€â”€ Final CTA â”€â”€â”€ */}
         <section className="text-center pb-12">
           <p className="text-[12px] text-neutral-500">
             Questions?{' '}
@@ -334,7 +342,7 @@ export default function PricingPage() {
         </section>
       </main>
 
-      {/* ─── Checkout-coming-soon modal ─── */}
+      {/* â”€â”€â”€ Checkout-coming-soon modal â”€â”€â”€ */}
       {showCheckoutModal && (
         <CheckoutModal
           tier={showCheckoutModal}
@@ -355,7 +363,7 @@ export default function PricingPage() {
   );
 }
 
-/* ─── Sub-components ─────────────────────────────────────────────── */
+/* â”€â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 interface TierCardProps {
   tier: Tier;
@@ -377,7 +385,7 @@ function TierCard({
   const Icon = tierIcon(b.iconName);
   const monthly = TIER_PRICE_MONTHLY[tier];
   const annual = TIER_PRICE_ANNUAL[tier];
-  // Annual / 12 produces $40.8333… for Whale; show two decimals so the
+  // Annual / 12 produces $40.8333â€¦ for Whale; show two decimals so the
   // strikethrough price reads cleanly ($40.83, $10.00) instead of a
   // 14-digit float. Use toFixed only when the value isn't an integer.
   const displayMonthlyRaw = period === 'monthly' ? monthly : annual / 12;
@@ -417,7 +425,7 @@ function TierCard({
             {/* Post-launch price shown struck through; free during launch. */}
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold text-white/90 line-through decoration-[3px] decoration-rose-400/90">${displayMonthly}</span>
-              <span className="text-[12px] text-neutral-500">/mo{period === 'annual' ? ' · billed annually' : ''}</span>
+              <span className="text-[12px] text-neutral-500">/mo{period === 'annual' ? ' / billed annually' : ''}</span>
             </div>
             <p className="text-[11px] uppercase font-bold tracking-wider text-amber-300 mt-1.5">Free during launch</p>
             {period === 'annual' && (
@@ -464,7 +472,7 @@ function TierCard({
         {tier === 'pro' && (
           <>
             <Bullet>API archive (1y) + Tax CSV + Dashboards + Setup scanner</Bullet>
-            <Bullet>Priority email + DM support · 12h response</Bullet>
+            <Bullet>Priority email + DM support / 12h response</Bullet>
           </>
         )}
         {tier === 'trader' && <Bullet>Priority email + DM support</Bullet>}
@@ -507,12 +515,12 @@ function TierCta({
         disabled
         className="w-full py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-wider text-center bg-white/[0.04] border border-white/[0.06] text-neutral-500 cursor-default"
       >
-        <span aria-hidden="true">✓ </span>Your current tier
+        <span aria-hidden="true">OK </span>Your current tier
       </button>
     );
   }
 
-  // Free tier CTA — invite to sign up (if logged out) or just informational
+  // Free tier CTA - invite to sign up (if logged out) or just informational
   if (!isPaid) {
     if (isSignedIn) {
       return (
@@ -535,7 +543,7 @@ function TierCta({
     );
   }
 
-  // CTA color per tier — Whale gets amber gradient, Pro (the conversion
+  // CTA color per tier - Whale gets amber gradient, Pro (the conversion
   // anchor) gets the brand-orange gradient, Trader gets sky. Pulled into a
   // helper so logged-out + signed-in variants stay in sync.
   const ctaColorClass =
@@ -545,7 +553,7 @@ function TierCta({
       ? 'bg-gradient-to-r from-hub-yellow to-hub-yellow-dark text-black hover:opacity-90 focus-visible:ring-hub-yellow/60'
       : 'bg-sky-500 text-black hover:bg-sky-400 focus-visible:ring-sky-400/60';
 
-  // Paid tier (Trader / Pro / Whale) — subscribe button. Logged-out users
+  // Paid tier (Trader / Pro / Whale) - subscribe button. Logged-out users
   // go to signup first so they have somewhere to land after checkout.
   if (!isSignedIn) {
     return (
@@ -558,7 +566,7 @@ function TierCta({
     );
   }
 
-  // Signed-in, paid tier, not current — actual subscribe CTA.
+  // Signed-in, paid tier, not current - actual subscribe CTA.
   return (
     <button
       type="button"
@@ -583,7 +591,7 @@ function Bullet({ children }: { children: React.ReactNode }) {
  * Card for one tier's tool/feature list in the "What's in each tier"
  * grid. Renders the tier badge, heading, description, and items as
  * either clickable links (when `href` present) or plain feature rows
- * (when href omitted — Whale's webhooks, raw WS, etc.).
+ * (when href omitted - Whale's webhooks, raw WS, etc.).
  *
  * Visual treatment is tier-coded: Free is neutral, Trader is sky, Pro
  * is emerald, Whale is amber. Matches the tier cards above so the "this
@@ -616,7 +624,7 @@ function TierToolListCard({ tierList }: { tierList: TierToolList }) {
       <ul className="space-y-2 flex-1">
         {tierList.items.map((item, i) => {
           // Stacked layout (label above, hint below) instead of the old
-          // inline justify-between — long hints like "1 year history ·
+          // inline justify-between - long hints like "1 year history /
           // 500 API req/min" were truncating to "1 year histor..." in
           // the 3-column grid because the row couldn't fit. Two lines
           // costs vertical density but reads cleanly.
@@ -765,3 +773,4 @@ function CheckoutModal({
     </div>
   );
 }
+
