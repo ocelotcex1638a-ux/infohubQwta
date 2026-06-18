@@ -407,7 +407,7 @@ export function renderPaymentFailed(data: PaymentFailedData): { subject: string;
       <p>To keep your tier, head to <a href="https://info-hub.io/profile?tab=billing" style="color:#34d399;">Profile → Billing</a> and start a fresh checkout before that date.</p>
     `,
     ctaLabel: 'Fix payment now',
-    ctaHref: 'https://info-hub.io/settings',
+    ctaHref: 'https://info-hub.io/profile?tab=billing',
   });
   return { subject, html };
 }
