@@ -93,10 +93,10 @@ export default async function MaxelPayReturnPage({ searchParams }: { searchParam
                 {branding ? (
                   <>
                     Your <span className={branding.textColor}>{branding.label}</span> access is live.
-                    {nextRenewal ? <> Next renewal is <span className="text-white font-medium">{nextRenewal}</span>.</> : null}
+                    {nextRenewal ? <> Access is active through <span className="text-white font-medium">{nextRenewal}</span>.</> : null}
                   </>
                 ) : (
-                  'Your subscription is live.'
+                  'Your paid access is live.'
                 )}
               </p>
             ) : (

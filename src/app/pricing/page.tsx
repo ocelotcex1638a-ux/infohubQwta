@@ -298,7 +298,7 @@ export default function PricingPage() {
             />
             <FaqItem
               q="Can I cancel anytime?"
-              a="Yes. Cancel from your profile billing tab - you keep Trader/Pro/Whale access until the end of the current period, then auto-downgrade to Free. No prorated refunds, but no surprises either."
+              a="Each MaxelPay payment unlocks access through the paid-through date shown in Billing. If you do not renew before that date, your account automatically drops back to Free. No hidden auto-renew and no surprise charges."
             />
             <FaqItem
               q="What's the difference between Trader, Pro, and Whale?"

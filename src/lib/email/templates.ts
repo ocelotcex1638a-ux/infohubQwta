@@ -367,9 +367,9 @@ export function renderSubscriptionConfirmed(data: SubscriptionConfirmedData): { 
         <tr><td style="padding:8px 0;color:#737373;">Tier</td><td style="padding:8px 0;text-align:right;color:#fff;">${data.tierLabel}</td></tr>
         <tr><td style="padding:8px 0;color:#737373;border-top:1px solid #262626;">Billing</td><td style="padding:8px 0;text-align:right;color:#fff;text-transform:capitalize;border-top:1px solid #262626;">${data.period}</td></tr>
         <tr><td style="padding:8px 0;color:#737373;border-top:1px solid #262626;">Paid</td><td style="padding:8px 0;text-align:right;color:#34d399;font-family:monospace;font-weight:700;border-top:1px solid #262626;">${fmtUsd(data.amountUsd)}</td></tr>
-        <tr><td style="padding:8px 0;color:#737373;border-top:1px solid #262626;">Next renewal</td><td style="padding:8px 0;text-align:right;color:#fff;font-family:monospace;border-top:1px solid #262626;">${data.nextRenewalIso}</td></tr>
+        <tr><td style="padding:8px 0;color:#737373;border-top:1px solid #262626;">Access through</td><td style="padding:8px 0;text-align:right;color:#fff;font-family:monospace;border-top:1px solid #262626;">${data.nextRenewalIso}</td></tr>
       </table>
-      <p>Cancel anytime from <a href="https://info-hub.io/settings" style="color:#34d399;">Settings → Billing</a>. You keep access until the period ends.</p>
+      <p>Your account stays on ${data.tierLabel} until <strong style="color:#fff;">${data.nextRenewalIso}</strong>. To extend it, open <a href="https://info-hub.io/profile?tab=billing" style="color:#34d399;">Profile → Billing</a> and start a fresh checkout before access expires.</p>
     `,
     // CTA copy interpolates the actual tier label so a Trader user
     // doesn't get a "Explore Pro features" button when they just paid
@@ -398,13 +398,13 @@ export interface PaymentFailedData {
 export function renderPaymentFailed(data: PaymentFailedData): { subject: string; html: string } {
   const subject = 'Action needed: payment failed';
   const html = shell({
-    headline: 'Your renewal payment didn’t go through',
+    headline: 'We could not extend your paid access',
     body: `
-      <p>We tried to renew your <strong style="color:#fff;">${data.tierLabel}</strong> subscription for <strong>${fmtUsd(data.amountUsd)}</strong> and the payment failed.</p>
+      <p>We could not complete the payment needed to extend your <strong style="color:#fff;">${data.tierLabel}</strong> access for <strong>${fmtUsd(data.amountUsd)}</strong>.</p>
       <p style="color:#fbbf24;font-size:13px;background:#fbbf2410;padding:12px;border:1px solid #fbbf2430;border-radius:8px;margin:16px 0;">
         Your ${data.tierLabel} features stay active until <strong>${data.graceEndsIso}</strong>. After that, your account downgrades to Free.
       </p>
-      <p>To keep your tier, head to <a href="https://info-hub.io/settings" style="color:#34d399;">Settings → Billing</a> and update your payment method or fund your USDT wallet for the next renewal.</p>
+      <p>To keep your tier, head to <a href="https://info-hub.io/profile?tab=billing" style="color:#34d399;">Profile → Billing</a> and start a fresh checkout before that date.</p>
     `,
     ctaLabel: 'Fix payment now',
     ctaHref: 'https://info-hub.io/settings',
