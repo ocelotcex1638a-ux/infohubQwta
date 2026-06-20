@@ -52,7 +52,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/hl-vaults',          priority: 0.7, changeFrequency: 'hourly' as const },
     { path: '/gmx-traders',        priority: 0.7, changeFrequency: 'hourly' as const },
     { path: '/smart-money',        priority: 0.7, changeFrequency: 'hourly' as const },
-    { path: '/smart-money/leaderboard', priority: 0.7, changeFrequency: 'hourly' as const },
+    // /smart-money/leaderboard + /smart-money/confluence → /smart-money hub (Jun 2026).
     // /smart-money-composite → /smart-money (consolidated May 2026).
     // /whale-liq → /liquidations (consolidated May 2026). Was still in
     // the sitemap, training Google to keep crawling a 308 — same fix

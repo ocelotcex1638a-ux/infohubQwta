@@ -13,10 +13,10 @@ import { formatCoverageLabel, formatVenueCoverageDetails } from '@/lib/trader-co
 import { computeOpenRiskPct, computeTruePnlUsd, summariseLiveRisk } from '@/lib/trader-risk';
 import Link from 'next/link';
 import {
-  Activity, ExternalLink, Copy, ChevronLeft, Layers,
+  Activity, ExternalLink, Copy, ChevronLeft, Layers, Download,
 } from 'lucide-react';
 
-/* ─── Types shared across three platforms ────────────────────────── */
+/* ─── Types ──────────────────────────────────────────────────────────── */
 
 interface GMXPosition {
   marketSymbol: string;
@@ -96,7 +96,7 @@ interface GMXSparklines {
   days: number;
 }
 
-/* ─── Helpers ─────────────────────────────────────────────────────── */
+/* ─── Helpers ─────────────────────────────────────────────────────────── */
 
 function fmtUSD(n: number, compact = true): string {
   if (!Number.isFinite(n) || n === 0) return '$0';
@@ -108,68 +108,156 @@ function fmtUSD(n: number, compact = true): string {
   if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(1)}K`;
   return `${sign}$${abs.toFixed(0)}`;
 }
-
+function fmtSign(n: number) { return `${n >= 0 ? '+' : ''}${fmtUSD(n)}`; }
 function fmtPct(n: number): string {
   if (!Number.isFinite(n)) return '—';
   return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
 }
-
-function shortAddr(a: string): string {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
+function shortAddr(a: string): string { return `${a.slice(0, 6)}…${a.slice(-4)}`; }
 
 function coverageTone(label: string): string {
-  if (label === 'Cross-platform') return 'bg-emerald-500/12 text-emerald-300 border-emerald-500/25';
-  if (label === 'HL only') return 'bg-purple-500/12 text-purple-300 border-purple-500/25';
-  if (label === 'GMX only') return 'bg-blue-500/12 text-blue-300 border-blue-500/25';
-  if (label === 'gTrade only') return 'bg-cyan-500/12 text-cyan-300 border-cyan-500/25';
+  if (label === 'Cross-platform') return 'bg-emerald-500/[0.12] text-emerald-300 border-emerald-500/25';
+  if (label === 'HL only') return 'bg-purple-500/[0.12] text-purple-300 border-purple-500/25';
+  if (label === 'GMX only') return 'bg-blue-500/[0.12] text-blue-300 border-blue-500/25';
+  if (label === 'gTrade only') return 'bg-cyan-500/[0.12] text-cyan-300 border-cyan-500/25';
   return 'bg-white/[0.04] text-neutral-300 border-white/[0.08]';
 }
 
-/* ─── Venue section ───────────────────────────────────────────────── */
+const VENUE_COLOR: Record<string, string> = {
+  'gmx-arbitrum': '#28a0f0',
+  'gmx-avalanche': '#e84142',
+  hyperliquid: '#a855f7',
+  gtrade: '#22d3ee',
+};
 
-interface VenueProps {
+const VENUE_LABEL: Record<string, string> = {
+  'gmx-arbitrum': 'GMX Arb',
+  'gmx-avalanche': 'GMX Avax',
+  hyperliquid: 'HL',
+  gtrade: 'gTrade',
+};
+
+/* ─── Unified live positions table ────────────────────────────────────── */
+
+interface UnifiedPosition {
+  venue: string;
+  symbol: string;
+  isLong: boolean;
+  sizeUsd: number;
+  entryPrice: number;
+  currentPrice: number;
+  liquidationPrice: number | null;
+  unrealizedPnl: number;
+  roePct: number;
+  leverage: number | null;
+  leverageType?: string | null;
+}
+
+function LivePositionsTable({ positions }: { positions: UnifiedPosition[] }) {
+  if (positions.length === 0) return null;
+  return (
+    <div className="card-premium overflow-x-auto">
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-hub-border-subtle">
+        <span className="eyebrow-pro text-[9px] text-fg-faint">Live positions</span>
+        <span className="text-[10px] num text-fg-subtle">{positions.length}</span>
+      </div>
+      <table className="w-full text-xs">
+        <thead className="bg-hub-secondary/30">
+          <tr className="border-b border-hub-border-subtle">
+            {['Venue', 'Asset', 'Side', 'Size', 'Entry', 'Mark', 'Liq', 'uPnL', 'ROE'].map((h, i) => (
+              <th
+                key={h}
+                className={`px-3 py-2 text-[9px] uppercase tracking-wider text-fg-faint font-bold
+                  ${i === 0 ? 'text-left' : i <= 2 ? 'text-left' : 'text-right'}
+                  ${h === 'Liq' ? 'hidden lg:table-cell' : ''}`}
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {positions.map((p, i) => {
+            const pnlColor = p.unrealizedPnl >= 0 ? 'text-long' : 'text-short';
+            const roeColor = p.roePct >= 0 ? 'text-long' : 'text-short';
+            const vcolor = VENUE_COLOR[p.venue] ?? '#888';
+            return (
+              <tr key={i} className="border-b border-hub-border-subtle row-hover last:border-0">
+                <td className="px-3 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: vcolor }} />
+                    <span className="text-[10px] text-fg-subtle font-medium">{VENUE_LABEL[p.venue] ?? p.venue}</span>
+                  </div>
+                </td>
+                <td className="px-3 py-2.5 font-semibold text-fg-default">{p.symbol}</td>
+                <td className="px-3 py-2.5">
+                  <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                    p.isLong ? 'bg-long/[0.10] text-long' : 'bg-short/[0.10] text-short'
+                  }`}>
+                    {p.isLong ? 'Long' : 'Short'}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-right num">
+                  <div className="font-semibold text-fg-default">{fmtUSD(p.sizeUsd)}</div>
+                  {p.leverage != null && (
+                    <div className="text-[9px] text-hub-yellow/80">
+                      {p.leverage.toFixed(1)}×{p.leverageType ? ` ${p.leverageType}` : ''}
+                    </div>
+                  )}
+                </td>
+                <td className="px-3 py-2.5 text-right num text-fg-subtle text-[11px]">
+                  ${p.entryPrice.toLocaleString('en-US', { maximumFractionDigits: p.entryPrice < 1 ? 4 : 2 })}
+                </td>
+                <td className="px-3 py-2.5 text-right num text-[11px] text-fg-muted">
+                  {p.currentPrice > 0
+                    ? `$${p.currentPrice.toLocaleString('en-US', { maximumFractionDigits: p.currentPrice < 1 ? 4 : 2 })}`
+                    : '—'}
+                </td>
+                <td className="px-3 py-2.5 text-right num text-[11px] text-short hidden lg:table-cell">
+                  {p.liquidationPrice && p.liquidationPrice > 0
+                    ? `$${p.liquidationPrice.toLocaleString('en-US', { maximumFractionDigits: p.liquidationPrice < 1 ? 4 : 2 })}`
+                    : '—'}
+                </td>
+                <td className={`px-3 py-2.5 text-right num font-bold text-[12px] ${pnlColor}`}>
+                  {fmtSign(p.unrealizedPnl)}
+                </td>
+                <td className={`px-3 py-2.5 text-right num text-[11px] ${roeColor}`}>
+                  {fmtPct(p.roePct)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ─── Per-venue stat card (compact) ──────────────────────────────────── */
+
+interface VenueStatCardProps {
   label: string;
   accent: string;
   href?: string | null;
   explorerUrl?: string | null;
   isLoading: boolean;
-  error: unknown;
   hasActivity: boolean;
-  children: React.ReactNode;
   stats?: { label: string; value: string; positive?: boolean }[];
-  /** When true, render a compact "no activity" row instead of a full card */
   compactWhenEmpty?: boolean;
 }
 
-function VenueSection({
-  label, accent, href, explorerUrl, isLoading, error,
-  hasActivity, children, stats, compactWhenEmpty,
-}: VenueProps) {
-  const shouldCompact = compactWhenEmpty && !isLoading && !hasActivity;
-
-  // Compact no-activity row — takes minimal vertical space, only shows the
-  // venue label + "no activity" + the view-on link. Prevents empty venues
-  // from eating equal visual weight when a trader is, say, HL-only.
-  if (shouldCompact) {
+function VenueStatCard({ label, accent, href, explorerUrl, isLoading, hasActivity, stats, compactWhenEmpty }: VenueStatCardProps) {
+  if (compactWhenEmpty && !isLoading && !hasActivity) {
     return (
       <div className="card-premium p-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span
-            className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
-            style={{ backgroundColor: accent }}
-            aria-hidden
-          />
-          <span className="text-xs font-medium text-neutral-400 truncate">{label}</span>
-          <span className="text-[10px] text-neutral-600 font-mono">no activity</span>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+          <span className="text-[11px] text-fg-subtle font-medium">{label}</span>
+          <span className="text-[10px] text-fg-faint">no activity</span>
         </div>
         {href && (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[10px] text-neutral-500 hover:text-hub-yellow flex-shrink-0"
-          >
+          <a href={href} target="_blank" rel="noopener noreferrer"
+            className="text-[10px] text-fg-subtle hover:text-hub-yellow inline-flex items-center gap-1">
             View <ExternalLink className="w-2.5 h-2.5" />
           </a>
         )}
@@ -181,177 +269,50 @@ function VenueSection({
     <div className="card-premium p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span
-            className="inline-block w-2 h-2 rounded-full"
-            style={{ backgroundColor: accent }}
-            aria-hidden
-          />
-          <h2 className="text-sm font-semibold text-white">{label}</h2>
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+          <span className="text-[12px] font-semibold text-fg-default">{label}</span>
         </div>
         <div className="flex items-center gap-3 text-[10px]">
           {href && (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-hub-yellow/70 hover:text-hub-yellow inline-flex items-center gap-1">
+            <a href={href} target="_blank" rel="noopener noreferrer"
+              className="text-hub-yellow/70 hover:text-hub-yellow inline-flex items-center gap-1">
               View <ExternalLink className="w-2.5 h-2.5" />
             </a>
           )}
           {explorerUrl && (
-            <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white inline-flex items-center gap-1">
+            <a href={explorerUrl} target="_blank" rel="noopener noreferrer"
+              className="text-fg-subtle hover:text-fg-default inline-flex items-center gap-1">
               Explorer <ExternalLink className="w-2.5 h-2.5" />
             </a>
           )}
         </div>
       </div>
 
-      {stats && stats.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
+      {isLoading && (
+        <div className="text-[11px] text-fg-faint text-center py-4 animate-pulse">Loading {label}…</div>
+      )}
+
+      {!isLoading && stats && stats.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {stats.map(s => (
-            <div key={s.label} className="bg-white/[0.02] rounded-lg p-2">
-              <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">{s.label}</div>
-              <div className={`font-mono text-xs tabular-nums font-semibold ${
-                s.positive === true ? 'text-green-400' : s.positive === false ? 'text-red-400' : 'text-white'
+            <div key={s.label} className="bg-hub-secondary/50 rounded-lg p-2">
+              <div className="text-[9px] text-fg-faint uppercase tracking-wider mb-0.5">{s.label}</div>
+              <div className={`num text-[12px] font-semibold ${
+                s.positive === true ? 'text-long' : s.positive === false ? 'text-short' : 'text-fg-default'
               }`}>{s.value}</div>
             </div>
           ))}
         </div>
       )}
 
-      {isLoading && (
-        <div className="text-[11px] text-neutral-500 font-mono py-4 text-center">Loading {label}…</div>
+      {!isLoading && !hasActivity && (
+        <div className="text-[11px] text-fg-faint text-center py-3">No {label} activity</div>
       )}
-
-      {!isLoading && !!error && (
-        <div className="text-[11px] text-neutral-600 font-mono py-4 text-center">No {label} activity</div>
-      )}
-
-      {!isLoading && !error && children}
     </div>
   );
 }
 
-/* ─── Position rows (one per venue, compact) ──────────────────────── */
-
-function GMXPositionList({ positions, chain }: { positions: GMXPosition[]; chain: string }) {
-  if (positions.length === 0) {
-    return <div className="text-[11px] text-neutral-600 text-center py-3">No open positions on GMX {chain}</div>;
-  }
-  return (
-    <div>
-      {positions.map((p, i) => (
-        <div key={i} className="flex items-center gap-3 py-2 border-b border-white/[0.04] last:border-0">
-          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-            p.isLong ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'
-          }`}>
-            {p.isLong ? 'L' : 'S'}
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-white font-semibold">{p.marketSymbol}</span>
-              {p.leverage !== null && (
-                <span className="text-[10px] font-mono text-hub-yellow/80 bg-hub-yellow/[0.08] px-1 rounded">{p.leverage.toFixed(1)}×</span>
-              )}
-            </div>
-            <div className="text-[10px] text-neutral-600 font-mono">
-              {fmtUSD(p.sizeUsd)} · entry ${p.entryPrice.toLocaleString('en-US', { maximumFractionDigits: p.entryPrice < 1 ? 4 : 2 })}
-              {p.livePrice > 0 && <> · now ${p.livePrice.toLocaleString('en-US', { maximumFractionDigits: p.livePrice < 1 ? 4 : 2 })}</>}
-            </div>
-          </div>
-          <div className="text-right whitespace-nowrap">
-            <div className={`text-xs font-mono font-semibold tabular-nums ${p.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {p.unrealizedPnl >= 0 ? '+' : ''}{fmtUSD(p.unrealizedPnl)}
-            </div>
-            <div className={`text-[9px] font-mono tabular-nums ${p.pnlPct >= 0 ? 'text-green-400/70' : 'text-red-400/70'}`}>
-              {fmtPct(p.pnlPct)}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function GTradePositionList({ positions }: { positions: GTradePosition[] }) {
-  if (positions.length === 0) {
-    return <div className="text-[11px] text-neutral-600 text-center py-3">No open positions on gTrade</div>;
-  }
-  return (
-    <div>
-      {positions.map((p, i) => (
-        <div key={i} className="flex items-center gap-3 py-2 border-b border-white/[0.04] last:border-0">
-          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-            p.isLong ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'
-          }`}>
-            {p.isLong ? 'L' : 'S'}
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-white font-semibold">{p.symbol}</span>
-              {p.leverage !== null && (
-                <span className="text-[10px] font-mono text-hub-yellow/80 bg-hub-yellow/[0.08] px-1 rounded">{p.leverage.toFixed(1)}×</span>
-              )}
-            </div>
-            <div className="text-[10px] text-neutral-600 font-mono">
-              {fmtUSD(p.sizeUsd)} · entry ${p.entryPrice.toLocaleString('en-US', { maximumFractionDigits: p.entryPrice < 1 ? 4 : 2 })}
-              {p.markPrice > 0 && <> · now ${p.markPrice.toLocaleString('en-US', { maximumFractionDigits: p.markPrice < 1 ? 4 : 2 })}</>}
-              {p.liquidationPrice != null && p.liquidationPrice > 0 && (
-                <> · liq ${p.liquidationPrice.toLocaleString('en-US', { maximumFractionDigits: p.liquidationPrice < 1 ? 4 : 2 })}</>
-              )}
-            </div>
-          </div>
-          <div className="text-right whitespace-nowrap">
-            <div className={`text-xs font-mono font-semibold tabular-nums ${p.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {p.unrealizedPnl >= 0 ? '+' : ''}{fmtUSD(p.unrealizedPnl)}
-            </div>
-            <div className={`text-[9px] font-mono tabular-nums ${p.roePct >= 0 ? 'text-green-400/70' : 'text-red-400/70'}`}>
-              {fmtPct(p.roePct)}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function HLPositionList({ positions }: { positions: HLPosition[] }) {
-  if (positions.length === 0) {
-    return <div className="text-[11px] text-neutral-600 text-center py-3">No open positions on Hyperliquid</div>;
-  }
-  return (
-    <div>
-      {positions.map((p, i) => (
-        <div key={i} className="flex items-center gap-3 py-2 border-b border-white/[0.04] last:border-0">
-          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-            p.isLong ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'
-          }`}>
-            {p.isLong ? 'L' : 'S'}
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-white font-semibold">{p.coin}</span>
-              {p.leverage !== null && (
-                <span className="text-[10px] font-mono text-hub-yellow/80 bg-hub-yellow/[0.08] px-1 rounded">{p.leverage}×</span>
-              )}
-              {p.leverageType && <span className="text-[9px] text-neutral-500 uppercase tracking-wider">{p.leverageType}</span>}
-            </div>
-            <div className="text-[10px] text-neutral-600 font-mono">
-              {fmtUSD(p.sizeUsd)} · entry ${p.entryPrice.toLocaleString('en-US', { maximumFractionDigits: p.entryPrice < 1 ? 4 : 2 })}
-              {p.liquidationPrice > 0 && <> · liq ${p.liquidationPrice.toLocaleString('en-US', { maximumFractionDigits: p.liquidationPrice < 1 ? 4 : 2 })}</>}
-            </div>
-          </div>
-          <div className="text-right whitespace-nowrap">
-            <div className={`text-xs font-mono font-semibold tabular-nums ${p.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {p.unrealizedPnl >= 0 ? '+' : ''}{fmtUSD(p.unrealizedPnl)}
-            </div>
-            <div className={`text-[9px] font-mono tabular-nums ${p.roePct >= 0 ? 'text-green-400/70' : 'text-red-400/70'}`}>
-              {fmtPct(p.roePct)}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Page ───────────────────────────────────────────────────────── */
+/* ─── Page ───────────────────────────────────────────────────────────── */
 
 export default function TraderUnifiedPage() {
   const params = useParams<{ address: string }>();
@@ -367,8 +328,6 @@ export default function TraderUnifiedPage() {
     }
   };
 
-  // Three parallel fetches — GMX Arbitrum, GMX Avalanche, HL. All share
-  // the same address. useApi deduplicates via the `enabled` gate.
   const gmxArb = useApi<GMXDossier>({
     key: address ? `trader-gmx-arbitrum-${address}` : null,
     refreshInterval: 60_000,
@@ -413,13 +372,8 @@ export default function TraderUnifiedPage() {
     enabled: !!address,
   });
 
-  // Auto-log the visit once we know the trader exists. Displayed name from HL
-  // (if available) gets stored so the recents strip can show a friendly label.
   useRecordTraderVisit(address, hl.data?.displayName);
 
-  // Batched 30-day daily-PnL sparkline data for GMX Arb + Avax. We hit the
-  // batch endpoint once per chain instead of per-trader — it's built to
-  // accept a comma-separated address list.
   const gmxArbSpark = useApi<GMXSparklines>({
     key: address ? `spark-arb-${address}` : null,
     fetcher: async () => {
@@ -444,7 +398,6 @@ export default function TraderUnifiedPage() {
     enabled: !!address,
   });
 
-  // Build the multi-series chart payload — only include venues with real data
   const chartSeries: PnlSeries[] = useMemo(() => {
     if (!address) return [];
     const out: PnlSeries[] = [];
@@ -463,41 +416,31 @@ export default function TraderUnifiedPage() {
     return out;
   }, [address, hl.data, gmxArbSpark.data, gmxAvaxSpark.data]);
 
-  // Aggregate rollup across all venues
   const rollup = useMemo(() => {
     const risk = summariseLiveRisk([
-      ...(gmxArb.data?.openPositions ?? []).map((position) => ({
-        symbol: position.marketSymbol,
-        sizeUsd: position.sizeUsd,
-        unrealizedPnl: position.unrealizedPnl,
-      })),
-      ...(gmxAvax.data?.openPositions ?? []).map((position) => ({
-        symbol: position.marketSymbol,
-        sizeUsd: position.sizeUsd,
-        unrealizedPnl: position.unrealizedPnl,
-      })),
-      ...(hl.data?.openPositions ?? []).map((position) => ({
-        symbol: position.coin,
-        sizeUsd: position.sizeUsd,
-        unrealizedPnl: position.unrealizedPnl,
-      })),
-      ...(gtrade.data?.openPositions ?? []).map((position) => ({
-        symbol: position.symbol,
-        sizeUsd: position.sizeUsd,
-        unrealizedPnl: position.unrealizedPnl,
-      })),
+      ...(gmxArb.data?.openPositions ?? []).map(p => ({ symbol: p.marketSymbol, sizeUsd: p.sizeUsd, unrealizedPnl: p.unrealizedPnl })),
+      ...(gmxAvax.data?.openPositions ?? []).map(p => ({ symbol: p.marketSymbol, sizeUsd: p.sizeUsd, unrealizedPnl: p.unrealizedPnl })),
+      ...(hl.data?.openPositions ?? []).map(p => ({ symbol: p.coin, sizeUsd: p.sizeUsd, unrealizedPnl: p.unrealizedPnl })),
+      ...(gtrade.data?.openPositions ?? []).map(p => ({ symbol: p.symbol, sizeUsd: p.sizeUsd, unrealizedPnl: p.unrealizedPnl })),
     ]);
 
     const lifetimeRealized =
       (gmxArb.data?.summary?.realizedPnl ?? 0) +
       (gmxAvax.data?.summary?.realizedPnl ?? 0) +
-      // HL doesn't report a lifetime realized — use allTime window as proxy
       (hl.data?.summary?.performance?.allTime?.pnl ?? 0);
 
-    const accountValue = (hl.data?.summary?.accountValue ?? 0);
-    const withdrawable = (hl.data?.summary?.withdrawable ?? 0);
+    const accountValue = hl.data?.summary?.accountValue ?? 0;
+    const withdrawable = hl.data?.summary?.withdrawable ?? 0;
     const truePnl = computeTruePnlUsd(lifetimeRealized, risk.liveUnrealizedPnlUsd);
     const openRiskPct = computeOpenRiskPct(risk.openNotionalUsd, accountValue);
+
+    const totalTrades =
+      (gmxArb.data?.summary?.totalTrades ?? 0) +
+      (gmxAvax.data?.summary?.totalTrades ?? 0);
+    const totalWins =
+      (gmxArb.data?.summary?.wins ?? 0) +
+      (gmxAvax.data?.summary?.wins ?? 0);
+    const winRate = totalTrades > 0 ? (totalWins / totalTrades) * 100 : null;
 
     const openPositionCount =
       (gmxArb.data?.openPositions?.length ?? 0) +
@@ -517,8 +460,6 @@ export default function TraderUnifiedPage() {
       ...(venuesActive[2] ? ['hyperliquid'] : []),
       ...(venuesActive[3] ? ['gtrade'] : []),
     ];
-    const coverageLabel = formatCoverageLabel(venues);
-    const coverageDetails = formatVenueCoverageDetails(venues);
 
     return {
       openUnrealized: risk.liveUnrealizedPnlUsd,
@@ -531,13 +472,54 @@ export default function TraderUnifiedPage() {
       truePnl,
       openRiskPct,
       openPositionCount,
+      totalTrades,
+      winRate,
       venuesActive: venues.length,
-      coverageLabel,
-      coverageDetails,
+      coverageLabel: formatCoverageLabel(venues),
+      coverageDetails: formatVenueCoverageDetails(venues),
       activeAssets: risk.activeAssets,
       venues,
     };
   }, [gmxArb.data, gmxAvax.data, hl.data, gtrade.data]);
+
+  /* Unified live positions list (all venues, sorted by |unrealizedPnl|) */
+  const livePositions: UnifiedPosition[] = useMemo(() => {
+    const out: UnifiedPosition[] = [];
+    for (const p of hl.data?.openPositions ?? []) {
+      out.push({
+        venue: 'hyperliquid', symbol: p.coin, isLong: p.isLong,
+        sizeUsd: p.sizeUsd, entryPrice: p.entryPrice, currentPrice: 0,
+        liquidationPrice: p.liquidationPrice > 0 ? p.liquidationPrice : null,
+        unrealizedPnl: p.unrealizedPnl, roePct: p.roePct,
+        leverage: p.leverage, leverageType: p.leverageType,
+      });
+    }
+    for (const p of gmxArb.data?.openPositions ?? []) {
+      out.push({
+        venue: 'gmx-arbitrum', symbol: p.marketSymbol, isLong: p.isLong,
+        sizeUsd: p.sizeUsd, entryPrice: p.entryPrice, currentPrice: p.livePrice,
+        liquidationPrice: null, unrealizedPnl: p.unrealizedPnl, roePct: p.pnlPct,
+        leverage: p.leverage,
+      });
+    }
+    for (const p of gmxAvax.data?.openPositions ?? []) {
+      out.push({
+        venue: 'gmx-avalanche', symbol: p.marketSymbol, isLong: p.isLong,
+        sizeUsd: p.sizeUsd, entryPrice: p.entryPrice, currentPrice: p.livePrice,
+        liquidationPrice: null, unrealizedPnl: p.unrealizedPnl, roePct: p.pnlPct,
+        leverage: p.leverage,
+      });
+    }
+    for (const p of gtrade.data?.openPositions ?? []) {
+      out.push({
+        venue: 'gtrade', symbol: p.symbol, isLong: p.isLong,
+        sizeUsd: p.sizeUsd, entryPrice: p.entryPrice, currentPrice: p.markPrice,
+        liquidationPrice: p.liquidationPrice, unrealizedPnl: p.unrealizedPnl,
+        roePct: p.roePct, leverage: p.leverage,
+      });
+    }
+    return out.sort((a, b) => Math.abs(b.unrealizedPnl) - Math.abs(a.unrealizedPnl));
+  }, [hl.data, gmxArb.data, gmxAvax.data, gtrade.data]);
 
   if (!address) {
     return (
@@ -545,12 +527,12 @@ export default function TraderUnifiedPage() {
         <Header />
         <main className="max-w-[900px] mx-auto w-full px-4 py-10">
           <div className="card-premium p-6 text-center">
-            <div className="text-white font-semibold mb-2">Invalid address</div>
-            <p className="text-sm text-neutral-500 mb-4">
+            <div className="text-fg-default font-semibold mb-2">Invalid address</div>
+            <p className="text-sm text-fg-subtle mb-4">
               This page expects a valid 0x-prefixed 40-character address.
             </p>
-            <Link href="/gmx-traders" className="text-hub-yellow text-xs hover:underline">
-              ← Back to GMX Traders
+            <Link href="/smart-money" className="text-hub-yellow text-xs hover:underline">
+              ← Smart Money
             </Link>
           </div>
         </main>
@@ -559,276 +541,292 @@ export default function TraderUnifiedPage() {
     );
   }
 
+  const displayName = hl.data?.displayName ?? null;
+  const truePnlColor = rollup.truePnl >= 0 ? 'text-long' : 'text-short';
+  const uPnlColor = rollup.openUnrealized >= 0 ? 'text-long' : 'text-short';
+
+  const arbActive = !!gmxArb.data && (gmxArb.data.openPositions.length > 0 || gmxArb.data.summary.totalTrades > 0);
+  const avaxActive = !!gmxAvax.data && (gmxAvax.data.openPositions.length > 0 || gmxAvax.data.summary.totalTrades > 0);
+  const hlActive = !!hl.data && (hl.data.openPositions.length > 0 || Object.keys(hl.data.summary.performance ?? {}).length > 0);
+  const gtradeActive = !!gtrade.data && ((gtrade.data.openPositions?.length ?? 0) > 0 || (gtrade.data.summary?.openCount ?? 0) > 0);
+
   return (
     <div className="min-h-screen bg-hub-black">
       <Header />
 
-      <main className="max-w-[1400px] mx-auto w-full px-4 py-6">
+      <main className="max-w-[1400px] mx-auto w-full px-4 py-6 space-y-4">
+
         {/* Back nav */}
-        <div className="flex items-center gap-3 mb-4">
-          <Link
-            href="/gmx-traders"
-            className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-white"
-          >
-            <ChevronLeft className="w-3 h-3" /> GMX Traders
+        <div className="flex items-center gap-2 text-[11px]">
+          <Link href="/smart-money" className="inline-flex items-center gap-1 text-fg-subtle hover:text-hub-yellow transition-colors">
+            <ChevronLeft className="w-3 h-3" /> Smart Money
           </Link>
-          <span className="text-neutral-700">·</span>
-          <Link
-            href="/hl-traders"
-            className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-white"
-          >
-            HL Traders
-          </Link>
+          {rollup.venues.length > 0 && (
+            <>
+              <span className="text-fg-faint">·</span>
+              <div className="flex items-center gap-2">
+                {rollup.venues.map(v => (
+                  <span key={v} className="inline-flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full" style={{ backgroundColor: VENUE_COLOR[v] }} />
+                    <span className="text-fg-faint">{VENUE_LABEL[v]}</span>
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Header — modernized with gradient surround + bigger title +
-            prominent BookmarkStar. Was a flat card with a small label
-            and tiny star icon; users missed the bookmark affordance. */}
-        <div className="relative overflow-hidden rounded-2xl border border-hub-yellow/15 bg-gradient-to-br from-hub-yellow/[0.04] via-white/[0.02] to-transparent p-4 mb-4">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+        {/* ─── Identity hero ─────────────────────────────────────────── */}
+        <div className="relative overflow-hidden rounded-2xl border border-hub-yellow/[0.12] bg-gradient-to-br from-hub-yellow/[0.04] via-transparent to-transparent p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+
+            {/* Left: name + address + badges + CTAs */}
             <div className="min-w-0 flex-1">
-              <div className="inline-flex items-center gap-2 mb-2">
-                <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-hub-yellow/25 to-hub-yellow/[0.06] border border-hub-yellow/25 flex items-center justify-center">
+              <div className="inline-flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-hub-yellow/[0.10] border border-hub-yellow/20 flex items-center justify-center">
                   <Layers className="w-4 h-4 text-hub-yellow" />
                 </div>
-                <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-500 font-bold">
-                  Coverage · {rollup.coverageLabel}
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-white leading-[1.1]">
-                {hl.data?.displayName ?? (
-                  <span className="font-mono text-xl sm:text-[24px]">{address.slice(0, 10)}…{address.slice(-6)}</span>
-                )}
-              </h1>
-              <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                <BookmarkStar
-                  address={address}
-                  displayName={hl.data?.displayName}
-                  venues={rollup.venues}
-                  size={16}
-                  className="!p-1.5 !rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]"
-                />
-                <span className={`inline-flex items-center rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${coverageTone(rollup.coverageLabel)}`}>
+                <span className={`text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border ${coverageTone(rollup.coverageLabel)}`}>
                   {rollup.coverageLabel}
                 </span>
-                <span className="font-mono text-[11px] text-neutral-300 px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.06]">{address}</span>
+                {rollup.activeAssets.length > 0 && (
+                  <span className="text-[10px] text-long font-semibold num">
+                    live: {rollup.activeAssets.join(' · ')}
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-[26px] sm:text-[32px] font-black tracking-tight text-fg-default leading-[1.05] mb-2">
+                {displayName ?? (
+                  <span className="num">{shortAddr(address)}</span>
+                )}
+              </h1>
+
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                <code className="num text-[11px] text-fg-subtle bg-hub-secondary px-2 py-1 rounded-lg border border-hub-border">
+                  {address}
+                </code>
                 <button
                   onClick={copyAddr}
-                  className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-hub-yellow transition-colors px-2 py-1 rounded-md hover:bg-white/[0.04]"
-                  aria-label="Copy address"
+                  className="inline-flex items-center gap-1 text-[11px] text-fg-subtle hover:text-hub-yellow transition-colors px-2 py-1 rounded-lg hover:bg-hub-secondary"
                 >
                   <Copy className="w-3 h-3" />
-                  {copied ? <span className="text-green-400 font-mono">copied</span> : 'Copy'}
+                  {copied ? <span className="text-long">copied</span> : 'Copy'}
                 </button>
               </div>
-              <div className="flex items-center gap-3 mt-2 text-[11px] flex-wrap">
-                <span className="text-neutral-500">
-                  {rollup.coverageDetails}{rollup.activeAssets.length > 0 ? ` · live ${rollup.activeAssets.join(' · ')}` : ''}
-                </span>
-                <span className="text-neutral-700">·</span>
-                <a href={`https://debank.com/profile/${address}`} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white inline-flex items-center gap-1">
-                  DeBank <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-                <span className="text-neutral-700">·</span>
-                <a href={`https://arbiscan.io/address/${address}`} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white inline-flex items-center gap-1">
-                  Arbiscan <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-                <span className="text-neutral-700">·</span>
-                <a href={`https://snowtrace.io/address/${address}`} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white inline-flex items-center gap-1">
-                  Snowtrace <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-                <span className="text-neutral-700">·</span>
-                {/* "Track wallet" → /wallet-tracker?address=X was dead:
-                    /wallet-tracker now 308-redirects to /watch and the
-                    query string drops in transit. "Watch positions"
-                    below already routes correctly with ?add= which the
-                    /watch page consumes. Single CTA, no broken alias. */}
+
+              {/* Action row */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <BookmarkStar
+                  address={address}
+                  displayName={displayName}
+                  venues={rollup.venues}
+                  size={14}
+                  className="!p-1.5 !rounded-lg bg-hub-secondary border border-hub-border hover:bg-hub-secondary-medium"
+                />
                 <Link
-                  href={`/watch?add=${address}${hl.data?.displayName ? `&label=${encodeURIComponent(hl.data.displayName)}` : ''}`}
-                  className="inline-flex items-center gap-1 font-semibold text-[11px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200 transition-colors"
+                  href={`/watch?add=${address}${displayName ? `&label=${encodeURIComponent(displayName)}` : ''}`}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg bg-emerald-500/[0.12] text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/[0.20] transition-colors"
                 >
                   + Follow trader
                 </Link>
+                <a
+                  href={`/api/trader/${address}/closed-trades?days=90&format=csv`}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-hub-secondary text-fg-subtle border border-hub-border hover:text-hub-yellow hover:border-hub-yellow/20 transition-colors"
+                >
+                  <Download className="w-3 h-3" /> Export 90d CSV
+                </a>
+                <div className="flex items-center gap-2 ml-1">
+                  <a href={`https://debank.com/profile/${address}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] text-fg-subtle hover:text-fg-default inline-flex items-center gap-0.5">
+                    DeBank <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                  <span className="text-fg-faint">·</span>
+                  <a href={`https://arbiscan.io/address/${address}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] text-fg-subtle hover:text-fg-default inline-flex items-center gap-0.5">
+                    Arbiscan <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                  <span className="text-fg-faint">·</span>
+                  <a href={`https://snowtrace.io/address/${address}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] text-fg-subtle hover:text-fg-default inline-flex items-center gap-0.5">
+                    Snowtrace <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
               </div>
             </div>
 
-            {/* Rollup strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto">
-              <div className="bg-white/[0.02] rounded-lg p-2 min-w-[110px]">
-                <div className="text-[9px] text-neutral-500 uppercase tracking-wider">HL NAV</div>
-                <div className="font-mono text-sm tabular-nums text-white font-semibold">{fmtUSD(rollup.accountValue)}</div>
-                <div className="text-[9px] text-neutral-600 mt-0.5">withdrawable {fmtUSD(rollup.withdrawable)}</div>
+            {/* Right: True P&L hero */}
+            <div className="flex flex-col gap-2 lg:items-end">
+              <div className="eyebrow-pro text-[9px] text-fg-faint">True P&L (all venues)</div>
+              <div className={`text-[42px] sm:text-[52px] font-black tracking-tight leading-none num ${truePnlColor}`}>
+                {rollup.truePnl >= 0 ? '+' : ''}{fmtUSD(rollup.truePnl)}
               </div>
-              <div className="bg-white/[0.02] rounded-lg p-2 min-w-[110px]">
-                <div className="text-[9px] text-neutral-500 uppercase tracking-wider">Open Notional</div>
-                <div className="font-mono text-sm tabular-nums text-white font-semibold">{fmtUSD(rollup.openNotional)}</div>
-                <div className="text-[9px] text-neutral-600 mt-0.5">
-                  {rollup.openRiskPct == null ? `${rollup.openPositionCount} positions` : `${fmtPct(rollup.openRiskPct)} risk · ${rollup.openPositionCount} pos`}
-                </div>
-              </div>
-              <div className="bg-white/[0.02] rounded-lg p-2 min-w-[110px]">
-                <div className="text-[9px] text-neutral-500 uppercase tracking-wider">Unrealized</div>
-                <div className={`font-mono text-sm tabular-nums font-semibold ${rollup.openUnrealized >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {rollup.openUnrealized >= 0 ? '+' : ''}{fmtUSD(rollup.openUnrealized)}
-                </div>
-                <div className="text-[9px] text-neutral-600 mt-0.5">
-                  +{fmtUSD(rollup.openPositiveUnrealized)} / {fmtUSD(rollup.openNegativeUnrealized)}
-                </div>
-              </div>
-              <div className="bg-white/[0.02] rounded-lg p-2 min-w-[110px]">
-                <div className="text-[9px] text-neutral-500 uppercase tracking-wider">True P&amp;L</div>
-                <div className={`font-mono text-sm tabular-nums font-semibold ${rollup.truePnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {rollup.truePnl >= 0 ? '+' : ''}{fmtUSD(rollup.truePnl)}
-                </div>
-                <div className="text-[9px] text-neutral-600 mt-0.5">
-                  {rollup.lifetimeRealized >= 0 ? '+' : ''}{fmtUSD(rollup.lifetimeRealized)} realized
-                </div>
+              <div className="text-[11px] text-fg-subtle num">
+                {fmtSign(rollup.lifetimeRealized)} realized · {fmtSign(rollup.openUnrealized)} live
               </div>
             </div>
           </div>
         </div>
 
-        {/* Historical PnL chart — only shown when we have ≥1 venue with data */}
+        {/* ─── Stats band ────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="card-premium p-4">
+            <div className="eyebrow-pro text-[9px] mb-2">HL Account NAV</div>
+            <div className="text-[20px] font-black text-fg-default num">{fmtUSD(rollup.accountValue)}</div>
+            <div className="text-[10px] text-fg-subtle num mt-0.5">
+              {fmtUSD(rollup.withdrawable)} withdrawable
+            </div>
+          </div>
+          <div className="card-premium p-4">
+            <div className="eyebrow-pro text-[9px] mb-2">Open Risk</div>
+            <div className="text-[20px] font-black text-fg-default num">{fmtUSD(rollup.openNotional)}</div>
+            <div className="text-[10px] text-fg-subtle num mt-0.5">
+              {rollup.openRiskPct != null ? `${rollup.openRiskPct.toFixed(1)}% of NAV · ` : ''}{rollup.openPositionCount} pos
+            </div>
+          </div>
+          <div className="card-premium p-4">
+            <div className="eyebrow-pro text-[9px] mb-2">Unrealized</div>
+            <div className={`text-[20px] font-black num ${uPnlColor}`}>{fmtSign(rollup.openUnrealized)}</div>
+            <div className="text-[10px] text-fg-subtle num mt-0.5">
+              +{fmtUSD(rollup.openPositiveUnrealized)} / {fmtUSD(rollup.openNegativeUnrealized)}
+            </div>
+          </div>
+          <div className="card-premium p-4">
+            <div className="eyebrow-pro text-[9px] mb-2">GMX Win Rate</div>
+            {rollup.winRate != null ? (
+              <>
+                <div className={`text-[20px] font-black num ${rollup.winRate >= 60 ? 'text-long' : rollup.winRate >= 45 ? 'text-fg-default' : 'text-short'}`}>
+                  {rollup.winRate.toFixed(0)}%
+                </div>
+                <div className="text-[10px] text-fg-subtle num mt-0.5">{rollup.totalTrades} trades</div>
+              </>
+            ) : (
+              <div className="text-[20px] font-black text-fg-faint">—</div>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Live positions table ──────────────────────────────────── */}
+        {livePositions.length > 0 && <LivePositionsTable positions={livePositions} />}
+
+        {/* ─── PnL chart ─────────────────────────────────────────────── */}
         {chartSeries.length > 0 && (
-          <div className="card-premium p-4 mb-4">
+          <div className="card-premium p-4">
+            <div className="eyebrow-pro text-[9px] text-fg-faint mb-3">Cumulative PnL · 30d</div>
             <TraderHistoryChart series={chartSeries} height={200} days={30} />
           </div>
         )}
 
-        {/* Three venue sections — active venues render full-size, empty venues
-            collapse to compact rows stacked below so they don't waste half the
-            viewport when a wallet is single-venue. */}
-        {(() => {
-          const arbActive = !!gmxArb.data && (gmxArb.data.openPositions.length > 0 || gmxArb.data.summary.totalTrades > 0);
-          const avaxActive = !!gmxAvax.data && (gmxAvax.data.openPositions.length > 0 || gmxAvax.data.summary.totalTrades > 0);
-          const hlActive = !!hl.data && (hl.data.openPositions.length > 0 || Object.keys(hl.data.summary.performance ?? {}).length > 0);
-          const gtradeActive = !!gtrade.data && (gtrade.data.openPositions.length > 0);
+        {/* ─── Per-venue stat cards ──────────────────────────────────── */}
+        <div className="space-y-2">
+          <div className="eyebrow-pro text-[9px] text-fg-faint mb-1">Venue breakdown</div>
 
-          const renderArb = (compact = false) => (
-            <VenueSection
-              label="GMX V2 · Arbitrum"
-              accent="#28a0f0"
-              href={`https://app.gmx.io/#/accounts/${address}?network=arbitrum&v=2`}
-              explorerUrl={`https://arbiscan.io/address/${address}`}
-              isLoading={gmxArb.isLoading}
-              error={gmxArb.error}
-              hasActivity={arbActive}
-              compactWhenEmpty={compact}
-              stats={gmxArb.data && arbActive ? [
-                { label: 'Realized PnL', value: fmtUSD(gmxArb.data.summary.realizedPnl), positive: gmxArb.data.summary.realizedPnl >= 0 },
-                { label: 'Volume', value: fmtUSD(gmxArb.data.summary.volume) },
-                { label: 'Win Rate', value: `${gmxArb.data.summary.winRate.toFixed(1)}%` },
-                { label: 'Trades', value: `${gmxArb.data.summary.totalTrades}` },
-              ] : undefined}
-            >
-              <GMXPositionList positions={gmxArb.data?.openPositions ?? []} chain="Arbitrum" />
-            </VenueSection>
-          );
+          {/* Active venues in a responsive grid */}
+          {(() => {
+            type VenueConfig = {
+              id: string;
+              label: string;
+              accent: string;
+              href: string;
+              explorerUrl: string | null;
+              isLoading: boolean;
+              hasActivity: boolean;
+              stats?: { label: string; value: string; positive?: boolean }[];
+            };
 
-          const renderAvax = (compact = false) => (
-            <VenueSection
-              label="GMX V2 · Avalanche"
-              accent="#e84142"
-              href={`https://app.gmx.io/#/accounts/${address}?network=avalanche&v=2`}
-              explorerUrl={`https://snowtrace.io/address/${address}`}
-              isLoading={gmxAvax.isLoading}
-              error={gmxAvax.error}
-              hasActivity={avaxActive}
-              compactWhenEmpty={compact}
-              stats={gmxAvax.data && avaxActive ? [
-                { label: 'Realized PnL', value: fmtUSD(gmxAvax.data.summary.realizedPnl), positive: gmxAvax.data.summary.realizedPnl >= 0 },
-                { label: 'Volume', value: fmtUSD(gmxAvax.data.summary.volume) },
-                { label: 'Win Rate', value: `${gmxAvax.data.summary.winRate.toFixed(1)}%` },
-                { label: 'Trades', value: `${gmxAvax.data.summary.totalTrades}` },
-              ] : undefined}
-            >
-              <GMXPositionList positions={gmxAvax.data?.openPositions ?? []} chain="Avalanche" />
-            </VenueSection>
-          );
+            const configs: VenueConfig[] = [
+              {
+                id: 'arb', label: 'GMX V2 · Arbitrum', accent: '#28a0f0',
+                href: `https://app.gmx.io/#/accounts/${address}?network=arbitrum&v=2`,
+                explorerUrl: `https://arbiscan.io/address/${address}`,
+                isLoading: gmxArb.isLoading, hasActivity: arbActive,
+                stats: gmxArb.data && arbActive ? [
+                  { label: 'Realized PnL', value: fmtUSD(gmxArb.data.summary.realizedPnl), positive: gmxArb.data.summary.realizedPnl >= 0 },
+                  { label: 'Volume', value: fmtUSD(gmxArb.data.summary.volume) },
+                  { label: 'Win Rate', value: `${gmxArb.data.summary.winRate.toFixed(1)}%` },
+                  { label: 'Trades', value: `${gmxArb.data.summary.totalTrades}` },
+                ] : undefined,
+              },
+              {
+                id: 'avax', label: 'GMX V2 · Avalanche', accent: '#e84142',
+                href: `https://app.gmx.io/#/accounts/${address}?network=avalanche&v=2`,
+                explorerUrl: `https://snowtrace.io/address/${address}`,
+                isLoading: gmxAvax.isLoading, hasActivity: avaxActive,
+                stats: gmxAvax.data && avaxActive ? [
+                  { label: 'Realized PnL', value: fmtUSD(gmxAvax.data.summary.realizedPnl), positive: gmxAvax.data.summary.realizedPnl >= 0 },
+                  { label: 'Volume', value: fmtUSD(gmxAvax.data.summary.volume) },
+                  { label: 'Win Rate', value: `${gmxAvax.data.summary.winRate.toFixed(1)}%` },
+                  { label: 'Trades', value: `${gmxAvax.data.summary.totalTrades}` },
+                ] : undefined,
+              },
+              {
+                id: 'hl', label: 'Hyperliquid', accent: '#a855f7',
+                href: `https://app.hyperliquid.xyz/address/${address}`,
+                explorerUrl: null,
+                isLoading: hl.isLoading, hasActivity: hlActive,
+                stats: hl.data && hlActive ? [
+                  { label: 'Account Value', value: fmtUSD(hl.data.summary.accountValue) },
+                  { label: 'All-Time PnL', value: fmtUSD(hl.data.summary.performance.allTime?.pnl ?? 0), positive: (hl.data.summary.performance.allTime?.pnl ?? 0) >= 0 },
+                  { label: '30D PnL', value: fmtUSD(hl.data.summary.performance.month?.pnl ?? 0), positive: (hl.data.summary.performance.month?.pnl ?? 0) >= 0 },
+                  { label: 'Margin Used', value: fmtUSD(hl.data.summary.marginUsed) },
+                ] : undefined,
+              },
+              {
+                id: 'gtrade', label: 'gTrade', accent: '#22d3ee',
+                href: `https://gains.trade/trader#${address}`,
+                explorerUrl: `https://arbiscan.io/address/${address}`,
+                isLoading: gtrade.isLoading, hasActivity: gtradeActive,
+                stats: gtrade.data && gtradeActive ? [
+                  { label: 'Open Notional', value: fmtUSD(gtrade.data.summary.totalNotional) },
+                  { label: 'Unrealized', value: fmtUSD(gtrade.data.summary.totalUnrealized), positive: gtrade.data.summary.totalUnrealized >= 0 },
+                  { label: 'Positions', value: `${gtrade.data.summary.openCount}` },
+                  { label: 'Margin', value: fmtUSD(gtrade.data.summary.totalMargin ?? 0) },
+                ] : undefined,
+              },
+            ];
 
-          const renderHL = (compact = false) => (
-            <VenueSection
-              label="Hyperliquid"
-              accent="#a855f7"
-              href={`https://app.hyperliquid.xyz/address/${address}`}
-              explorerUrl={null}
-              isLoading={hl.isLoading}
-              error={hl.error}
-              hasActivity={hlActive}
-              compactWhenEmpty={compact}
-              stats={hl.data && hlActive ? [
-                { label: 'Account Value', value: fmtUSD(hl.data.summary.accountValue) },
-                { label: 'All-Time PnL', value: fmtUSD(hl.data.summary.performance.allTime?.pnl ?? 0), positive: (hl.data.summary.performance.allTime?.pnl ?? 0) >= 0 },
-                { label: '30D PnL', value: fmtUSD(hl.data.summary.performance.month?.pnl ?? 0), positive: (hl.data.summary.performance.month?.pnl ?? 0) >= 0 },
-                { label: 'Margin Used', value: fmtUSD(hl.data.summary.marginUsed) },
-              ] : undefined}
-            >
-              <HLPositionList positions={hl.data?.openPositions ?? []} />
-            </VenueSection>
-          );
+            const active = configs.filter(c => c.hasActivity || c.isLoading);
+            const inactive = configs.filter(c => !c.hasActivity && !c.isLoading);
 
-          const renderGTrade = (compact = false) => (
-            <VenueSection
-              label="gTrade"
-              accent="#22d3ee"
-              href={`https://gains.trade/trader#${address}`}
-              explorerUrl={`https://arbiscan.io/address/${address}`}
-              isLoading={gtrade.isLoading}
-              error={gtrade.error}
-              hasActivity={gtradeActive}
-              compactWhenEmpty={compact}
-              stats={gtrade.data && gtradeActive ? [
-                { label: 'Open Notional', value: fmtUSD(gtrade.data.summary.totalNotional) },
-                { label: 'Unrealized', value: fmtUSD(gtrade.data.summary.totalUnrealized), positive: gtrade.data.summary.totalUnrealized >= 0 },
-                { label: 'Positions', value: `${gtrade.data.summary.openCount}` },
-                { label: 'Margin', value: fmtUSD(gtrade.data.summary.totalMargin ?? 0) },
-              ] : undefined}
-            >
-              <GTradePositionList positions={gtrade.data?.openPositions ?? []} />
-            </VenueSection>
-          );
-
-          const activeRenderers: React.ReactNode[] = [];
-          const emptyRenderers: React.ReactNode[] = [];
-          if (arbActive || gmxArb.isLoading) activeRenderers.push(<div key="arb">{renderArb(false)}</div>);
-          else emptyRenderers.push(<div key="arb-empty">{renderArb(true)}</div>);
-          if (avaxActive || gmxAvax.isLoading) activeRenderers.push(<div key="avax">{renderAvax(false)}</div>);
-          else emptyRenderers.push(<div key="avax-empty">{renderAvax(true)}</div>);
-          if (gtradeActive || gtrade.isLoading) activeRenderers.push(<div key="gtrade">{renderGTrade(false)}</div>);
-          else emptyRenderers.push(<div key="gtrade-empty">{renderGTrade(true)}</div>);
-          if (hlActive || hl.isLoading) activeRenderers.push(<div key="hl">{renderHL(false)}</div>);
-          else emptyRenderers.push(<div key="hl-empty">{renderHL(true)}</div>);
-
-          const activeCount = activeRenderers.length;
-          const gridCls = activeCount >= 4
-            ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3'
-            : activeCount >= 3
-            ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3'
-            : activeCount === 2
-              ? 'grid grid-cols-1 md:grid-cols-2 gap-3'
+            const gridCls = active.length >= 3 ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3'
+              : active.length === 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-3'
               : 'grid grid-cols-1 gap-3';
 
-          return (
-            <>
-              <div className={gridCls}>
-                {activeRenderers}
-              </div>
-              {emptyRenderers.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
-                  {emptyRenderers}
-                </div>
-              )}
-            </>
-          );
-        })()}
+            return (
+              <>
+                {active.length > 0 && (
+                  <div className={gridCls}>
+                    {active.map(c => (
+                      <VenueStatCard key={c.id} {...c} />
+                    ))}
+                  </div>
+                )}
+                {inactive.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                    {inactive.map(c => (
+                      <VenueStatCard key={c.id} {...c} compactWhenEmpty />
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
 
         {/* Footer meta */}
-        <div className="mt-4 flex items-center gap-3 text-[10px] text-neutral-600 font-mono flex-wrap">
+        <div className="flex items-center gap-3 text-[10px] text-fg-faint num flex-wrap">
           <span className="inline-flex items-center gap-1">
-            <Activity className="w-2.5 h-2.5" /> Pulled in parallel from GMX V2 subgraphs, gTrade on-chain, and Hyperliquid mainnet
+            <Activity className="w-2.5 h-2.5" />
+            GMX V2 subgraphs · gTrade on-chain · Hyperliquid mainnet
           </span>
           <span>·</span>
           <span>Auto-refreshes every 60s</span>
+          {rollup.openPositionCount > 0 && (
+            <>
+              <span>·</span>
+              <span>{rollup.openPositionCount} open positions across {rollup.venuesActive} venue{rollup.venuesActive !== 1 ? 's' : ''}</span>
+            </>
+          )}
         </div>
       </main>
 

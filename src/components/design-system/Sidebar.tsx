@@ -168,9 +168,9 @@ const DEFAULT_SECTIONS: SidebarSection[] = [
     // /restaking + /restaking-delta consolidated into /staking (May 2026)
   ]},
   { id: 'whales', label: 'Smart Money', items: [
-    { href: '/smart-money',       label: 'Smart Money',    color: PUR,  icon: I.signal },
-    { href: '/smart-money/leaderboard', label: 'Top Traders',  color: ACC, icon: I.trophy },
-    // /smart-money-composite folded into /smart-money (May 2026)
+    { href: '/smart-money',              label: 'Smart Money',    color: PUR,  icon: I.signal },
+    { href: '/smart-money?tab=confluence', label: 'Confluence',   color: ACC,  icon: I.trophy },
+    // /smart-money/leaderboard + /smart-money/confluence folded into /smart-money hub (Jun 2026)
     { href: '/hl-traders',        label: 'HL Traders',     color: PUR,  icon: I.user },
     { href: '/hl-vaults',         label: 'HL Vaults',      color: PUR,  icon: I.shield },
     { href: '/hl-whales',         label: 'HL Whales',      color: PUR,  icon: I.whale },
