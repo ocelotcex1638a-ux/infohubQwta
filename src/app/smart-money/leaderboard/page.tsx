@@ -1,6 +1,10 @@
-import { redirect } from 'next/navigation';
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Folded into the unified /smart-money hub (Jun 2026) — leaderboard is the default tab
 export default function Page() {
-  redirect('/smart-money');
+  const router = useRouter();
+  useEffect(() => { router.replace('/smart-money'); }, [router]);
+  return null;
 }

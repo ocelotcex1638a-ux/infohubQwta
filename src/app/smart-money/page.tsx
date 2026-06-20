@@ -969,9 +969,23 @@ function SmartMoneyContent() {
   );
 }
 
+function SmartMoneyFallback() {
+  return (
+    <div className="min-h-screen bg-hub-black">
+      <div className="max-w-[1400px] mx-auto w-full px-4 py-6 space-y-4">
+        <div className="h-8 w-48 bg-hub-secondary rounded animate-pulse" />
+        <div className="h-32 bg-hub-secondary rounded-xl animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[1, 2, 3].map(i => <div key={i} className="h-48 bg-hub-secondary rounded-xl animate-pulse" />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SmartMoneyPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<SmartMoneyFallback />}>
       <SmartMoneyContent />
     </Suspense>
   );
