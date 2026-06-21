@@ -183,6 +183,137 @@ function StatTile({
 }
 
 // ────────────────────────────────────────────────────────────────────
+// Market Pulse Bar — live ticker strip at the top of the page
+// Reads from existing page state, zero extra fetches.
+// ────────────────────────────────────────────────────────────────────
+function MarketPulseBar({
+  tickers,
+  marketStats,
+  fearGreed,
+  liqAgg,
+}: {
+  tickers: TickerData[];
+  marketStats: MarketsResp | null;
+  fearGreed: FearGreedResp | null;
+  liqAgg: LiqAggResp | null;
+}) {
+  const findTicker = (sym: string) =>
+    tickers.find(t => {
+      const s = (t.symbol ?? '').toUpperCase();
+      return s === sym || s === `${sym}USDT`;
+    });
+
+  const getPrice = (sym: string) => {
+    const t = findTicker(sym);
+    return t ? (t.lastPrice ?? t.price ?? null) : null;
+  };
+  const getChange = (sym: string) => {
+    const t = findTicker(sym);
+    return t ? (t.priceChangePercent24h ?? t.change24h ?? null) : null;
+  };
+
+  const fgVal = fearGreed?.value ?? fearGreed?.data?.value ?? null;
+  const fgClass = fearGreed?.classification ?? fearGreed?.data?.classification ?? null;
+  const fgColor = fgVal == null ? 'var(--fg-muted)'
+    : fgVal >= 75 ? '#f59e0b'
+    : fgVal >= 55 ? '#34d399'
+    : fgVal >= 45 ? '#94a3b8'
+    : fgVal >= 25 ? '#f97316'
+    : '#ef4444';
+
+  const coins = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP'];
+
+  const Divider = () => (
+    <div aria-hidden style={{ width: 1, height: 16, background: 'var(--hub-border-subtle)', margin: '0 10px', flexShrink: 0 }} />
+  );
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center',
+      background: 'var(--hub-darker)',
+      border: '1px solid var(--hub-border-subtle)',
+      borderRadius: 10,
+      padding: '0 12px',
+      marginBottom: 12,
+      height: 34,
+      overflowX: 'auto',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      gap: 0,
+    } as React.CSSProperties}>
+      {/* Live indicator */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, marginRight: 12 }}>
+        <SatPing size={7} color="var(--pump-mild)" />
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)' }}>
+          Live
+        </span>
+      </div>
+
+      {/* Coin prices */}
+      {coins.map((sym, i) => {
+        const price = getPrice(sym);
+        const change = getChange(sym);
+        const isPos = change != null && change >= 0;
+        const changeColor = change == null ? 'var(--fg-muted)' : isPos ? 'var(--pump-mild)' : 'var(--rekt-mild)';
+        return (
+          <div key={sym} style={{
+            display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+            padding: '0 10px',
+            borderLeft: i === 0 ? 'none' : '1px solid var(--hub-border-subtle)',
+          }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>{sym}</span>
+            {price != null ? (
+              <>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-default)', fontFamily: 'var(--font-mono)' }}>
+                  {formatPrice(price)}
+                </span>
+                {change != null && (
+                  <span style={{ fontSize: 9, fontWeight: 700, color: changeColor, fontFamily: 'var(--font-mono)' }}>
+                    {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                  </span>
+                )}
+              </>
+            ) : (
+              <span style={{ width: 52, height: 10, borderRadius: 3, background: 'rgba(255,255,255,0.06)', display: 'inline-block', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            )}
+          </div>
+        );
+      })}
+
+      <Divider />
+
+      {/* Market Cap */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-muted)' }}>Cap</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-default)', fontFamily: 'var(--font-mono)' }}>
+          {marketStats?.total_market_cap?.usd ? fmtUSD(marketStats.total_market_cap.usd) : '—'}
+        </span>
+      </div>
+
+      <Divider />
+
+      {/* Fear & Greed */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-muted)' }}>F&G</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: fgColor, fontFamily: 'var(--font-mono)' }}>
+          {fgVal != null ? `${fgVal}${fgClass ? ' · ' + fgClass : ''}` : '—'}
+        </span>
+      </div>
+
+      <Divider />
+
+      {/* 24h Liquidations */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-muted)' }}>24h Liqs</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--rekt-mild)', fontFamily: 'var(--font-mono)' }}>
+          {liqAgg?.totals?.totalValue ? fmtUSD(liqAgg.totals.totalValue) : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
 // Quick actions row (compact, mobile-friendly)
 // ────────────────────────────────────────────────────────────────────
 const QUICK_LINKS = [
@@ -434,6 +565,10 @@ export default function HomePage() {
           itself. Without this, screen readers can't tell users what page
           they're on and Lighthouse / Google flag a structural SEO miss. */}
       <h1 className="sr-only">InfoHub · Live Crypto Derivatives Dashboard</h1>
+
+      {/* Live market pulse ticker — visible to all users, zero extra fetches.
+          Reads from state already loaded below. */}
+      <MarketPulseBar tickers={tickers} marketStats={marketStats} fearGreed={fearGreed} liqAgg={liqAgg} />
 
       {/* Logged-out hero / value-prop band — the page's only above-the-fold
           conversion surface. Hidden for signed-in users (dashboard view). */}
