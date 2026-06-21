@@ -2,13 +2,15 @@
  * GET /api/account/tax/csv
  *
  * Streams the user's FIFO cost-basis summary as a downloadable CSV.
- * Three CSV sections concatenated (Excel-friendly — opens each as a
+ * Five CSV sections concatenated (Excel-friendly — opens each as a
  * separate sheet via the empty-row separators):
  *
- *   1. Summary   — single row: total realized PnL, fees, net, YTD
- *   2. ByYear    — one row per tax year (year, realised, fees, trades)
- *   3. Open      — one row per still-open position (symbol, exchange,
- *                  side, size, avg cost basis, total cost USD, lots)
+ *   1. Summary     — total realized PnL, fees, net, YTD
+ *   2. By year     — one row per tax year (year, realised, fees, trades)
+ *   3. Open        — one row per still-open position (symbol, exchange,
+ *                    side, size, avg cost basis, total cost USD, lots)
+ *   4. Top winners — top-N symbols by PnL
+ *   5. Top losers  — bottom-N symbols by PnL
  *
  * Authenticated. CSV intentionally plain — opens in Excel, Numbers,
  * Sheets without any reshaping.
