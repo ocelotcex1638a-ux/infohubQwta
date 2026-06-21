@@ -501,7 +501,8 @@ export default function FundingPage() {
         </header>
 
         {/* Asset Class Tabs */}
-        <div className="flex items-center gap-1 mb-5 p-1 rounded-xl w-fit" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)' }} role="tablist" aria-label="Asset class">
+        <div className="overflow-x-auto scrollbar-none mb-5">
+        <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)' }} role="tablist" aria-label="Asset class">
           {ASSET_CLASS_TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -523,6 +524,7 @@ export default function FundingPage() {
               )}
             </button>
           ))}
+        </div>
         </div>
 
         {/* Stats */}
@@ -578,7 +580,7 @@ export default function FundingPage() {
 
         {/* Controls */}
         <div className="flex flex-col lg:flex-row gap-3 mb-5">
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5 -mb-0.5">
             {categoryKeys.map((cat) => {
               const IconComponent = activeCategoryIcons[cat];
               const isActive = categoryFilter === cat;

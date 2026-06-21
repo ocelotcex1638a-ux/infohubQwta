@@ -54,7 +54,7 @@ function buildTelegramMsg(signals: MarketSignal[]): string {
 
 ${s.detail}
 
-📊 <a href="https://info-hub.io/signals">View all signals</a> · <a href="https://info-hub.io">InfoHub</a>`;
+📊 <a href="https://info-hub.io/signals">View signals</a> · <a href="https://info-hub.io/today">Daily digest</a> · <a href="https://info-hub.io">InfoHub</a>`;
   }
 
   const tierEmoji = (t: SignalTier) => t === 'critical' ? '🚨' : '⚡';
@@ -67,7 +67,7 @@ ${s.detail}
 
 ${lines}
 
-📊 <a href="https://info-hub.io/signals">View all signals</a> · <a href="https://info-hub.io">InfoHub</a>`;
+📊 <a href="https://info-hub.io/signals">View signals</a> · <a href="https://info-hub.io/today">Daily digest</a> · <a href="https://info-hub.io">InfoHub</a>`;
 }
 
 function deriveOISignals(): MarketSignal[] {

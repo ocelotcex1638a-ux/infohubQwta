@@ -377,9 +377,9 @@ export default function WhalesPage() {
         </div>
 
         {/* Controls */}
-        <div className="flex flex-wrap items-center gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-5 overflow-x-auto scrollbar-none pb-0.5 -mb-0.5">
           {/* Coin tabs */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex gap-1.5 shrink-0">
             {COINS.map((c) => (
               <button
                 key={c}
@@ -399,7 +399,7 @@ export default function WhalesPage() {
 
           {/* Min size filter */}
           <div
-            className="flex rounded-lg overflow-hidden"
+            className="flex rounded-lg overflow-hidden shrink-0"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
           >
             {MIN_SIZES.map(({ label, value }) => (

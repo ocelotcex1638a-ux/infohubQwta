@@ -44,7 +44,7 @@ const STYLES = [
     accentClass: 'border-amber-500/30 bg-amber-500/[0.04] hover:border-amber-500/50',
     iconClass: 'text-amber-400',
     tagClass: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-    tags: ['Trade Tape', 'Scalper Cockpit', 'Liquidations', 'Long/Short'],
+    tags: ['Trade Tape', 'DEX Whales', 'Scalper Cockpit', 'Liquidations', 'Long/Short'],
   },
   {
     id: 'options',

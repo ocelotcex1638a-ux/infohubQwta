@@ -8,8 +8,9 @@ import { getExchangeTradeUrl } from '@/lib/constants';
 import type { FundingRateData } from '@/lib/api/types';
 import {
   Zap, TrendingUp, TrendingDown, AlertTriangle, DollarSign,
-  Activity, RefreshCw, ExternalLink, Filter,
+  Activity, RefreshCw, ExternalLink, Filter, Send,
 } from 'lucide-react';
+import Link from 'next/link';
 import { SkeletonCard } from '@/components/Skeleton';
 
 // ── Signal types ──────────────────────────────────────────────────────────────
@@ -425,6 +426,34 @@ export default function SignalsPage() {
             Extreme carry signals flag elevated funding rates, not necessarily trading opportunities.
           </p>
         )}
+
+        {/* Telegram CTA */}
+        <div className="mt-8 rounded-2xl border border-[#229ED9]/20 bg-[#229ED9]/[0.05] p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#229ED9]/15 shrink-0">
+            <Send className="w-5 h-5 text-[#229ED9]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-white mb-0.5">Get signals pushed to Telegram</div>
+            <div className="text-xs text-neutral-400 leading-snug">
+              Connect your Telegram and receive extreme carry, OI surge, and negative funding alerts
+              the moment they fire — no need to watch the page.
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/settings#telegram"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-[#229ED9]/20 border border-[#229ED9]/30 text-[#229ED9] hover:bg-[#229ED9]/30 transition-colors"
+            >
+              Connect Telegram
+            </Link>
+            <Link
+              href="/alerts"
+              className="px-4 py-2 rounded-xl text-xs font-bold border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+            >
+              Manage Alerts
+            </Link>
+          </div>
+        </div>
       </main>
       <Footer />
     </div>

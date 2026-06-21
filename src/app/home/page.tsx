@@ -1179,6 +1179,64 @@ export default function HomePage() {
         </Card>
       </section>
 
+      {/* ── Community CTA ── */}
+      <section style={{ marginBottom: 14 }}>
+        <div style={{
+          borderRadius: 14,
+          border: '1px solid rgba(34,158,217,0.18)',
+          background: 'linear-gradient(135deg, rgba(34,158,217,0.07) 0%, rgba(34,158,217,0.03) 100%)',
+          padding: '18px 20px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 16,
+        }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-default)', marginBottom: 4 }}>
+              Join the InfoHub community
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
+              Get market alerts, signal notifications, and trading discussion in real time.
+              Free to join — no email required.
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <a
+              href="https://t.me/+Z6SQGJ57SlwyY2Rk"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                height: 34, padding: '0 14px', borderRadius: 8,
+                background: 'rgba(34,158,217,0.18)', border: '1px solid rgba(34,158,217,0.28)',
+                color: '#229ED9', fontSize: 12, fontWeight: 700, textDecoration: 'none',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.96 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+              </svg>
+              Join Telegram
+            </a>
+            <a
+              href="https://x.com/info_hub69"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                height: 34, padding: '0 14px', borderRadius: 8,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                color: 'var(--fg-muted)', fontSize: 12, fontWeight: 700, textDecoration: 'none',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.265 5.638L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/>
+              </svg>
+              Follow on X
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ── Competitor comparison ──
           Conversion-lift section for the upcoming ad spend. Anchors
           InfoHub's free-tier advantage against the three names users

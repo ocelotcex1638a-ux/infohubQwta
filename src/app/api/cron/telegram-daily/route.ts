@@ -209,6 +209,7 @@ export async function GET(request: NextRequest) {
 
   // Footer
   lines.push('');
+  lines.push(`📋 <a href="https://info-hub.io/today">View interactive digest</a>`);
   lines.push('Type anything to ask me about the market.');
 
   const msg = lines.join('\n');
@@ -232,7 +233,7 @@ export async function GET(request: NextRequest) {
   let channelSent = false;
   if (broadcastChannelId) {
     // Append channel-specific CTA footer
-    const channelMsg = msg + '\n\n📊 <a href="https://info-hub.io">Open InfoHub dashboard</a>';
+    const channelMsg = msg + '\n\n📋 <a href="https://info-hub.io/today">Full interactive digest</a> · <a href="https://info-hub.io">Open dashboard</a>';
     channelSent = await sendMessage(broadcastChannelId, channelMsg, 'HTML');
     if (!channelSent) {
       console.error('[telegram-daily] failed to send to broadcast channel');

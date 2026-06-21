@@ -387,6 +387,136 @@ function MoversSection({ data, loading }: { data: DigestData['movers']; loading:
   );
 }
 
+/* ── Trade Ideas ─────────────────────────────────────────────────────── */
+
+interface TradeIdea {
+  type: 'carry_short' | 'neg_carry_long' | 'momentum_caution' | 'deleveraging' | 'oi_surge';
+  symbol: string;
+  headline: string;
+  rationale: string;
+  risk: string;
+  href: string;
+  tone: 'red' | 'green' | 'amber' | 'violet';
+}
+
+function deriveTradeIdeas(digest: DigestData): TradeIdea[] {
+  const ideas: TradeIdea[] = [];
+
+  // Hot carry → short the perp to capture premium
+  if (digest.funding.hot && digest.funding.hot.apr >= 50) {
+    const h = digest.funding.hot;
+    ideas.push({
+      type: 'carry_short',
+      symbol: h.symbol,
+      headline: `Capture ${h.apr.toFixed(0)}% APR carry on ${h.symbol}`,
+      rationale: `Longs on ${h.exchange} are paying ${h.apr.toFixed(0)}% APR (${(h.rate * 100).toFixed(4)}%/8h). Shorting the perp while hedging spot delta captures this as income.`,
+      risk: 'Squeeze risk if price rips. Requires delta-neutral hedge and active rate monitoring.',
+      href: '/signals',
+      tone: 'red',
+    });
+  }
+
+  // Negative carry → free to hold longs
+  if (digest.funding.cold && digest.funding.cold.apr >= 20) {
+    const c = digest.funding.cold;
+    ideas.push({
+      type: 'neg_carry_long',
+      symbol: c.symbol,
+      headline: `Free longs on ${c.symbol} — shorts paying ${c.apr.toFixed(0)}% APR`,
+      rationale: `Shorts on ${c.exchange} are paying longs ${c.apr.toFixed(0)}% APR. Holding longs while this persists costs nothing and earns carry.`,
+      risk: 'Funding can flip quickly. Rate normalizing would remove the edge.',
+      href: '/signals',
+      tone: 'green',
+    });
+  }
+
+  // OI surge — fresh positioning signal
+  if (digest.oi?.topSurge && digest.oi.topSurge.pct >= 20) {
+    const s = digest.oi.topSurge;
+    ideas.push({
+      type: 'oi_surge',
+      symbol: s.symbol,
+      headline: `${s.symbol} OI surged +${s.pct.toFixed(0)}% — fresh positioning`,
+      rationale: `Rapid open interest build suggests new money entering. Often precedes directional moves — confirm with price action and funding direction before entry.`,
+      risk: 'High OI can mean crowded positioning — large moves possible in either direction.',
+      href: '/open-interest',
+      tone: 'violet',
+    });
+  }
+
+  // OI dump — deleveraging caution
+  if (digest.oi?.topDump && digest.oi.topDump.pct <= -20) {
+    const d = digest.oi.topDump;
+    ideas.push({
+      type: 'deleveraging',
+      symbol: d.symbol,
+      headline: `${d.symbol} deleveraging — OI fell ${d.pct.toFixed(0)}%`,
+      rationale: `Rapid position unwinding often signals a trend exhaustion or forced liquidations. Fade caution until OI stabilizes.`,
+      risk: 'Deleveraging can create oversold bounces. Watch for reversal if price holds key support.',
+      href: '/open-interest',
+      tone: 'amber',
+    });
+  }
+
+  return ideas.slice(0, 3);
+}
+
+const TONE_COLORS = {
+  red:    { bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.15)', label: 'var(--rekt-mild)', badge: 'bg-red-500/15 text-red-400' },
+  green:  { bg: 'rgba(52,211,153,0.07)', border: 'rgba(52,211,153,0.15)', label: 'var(--pump-mild)', badge: 'bg-emerald-500/15 text-emerald-400' },
+  amber:  { bg: 'rgba(245,158,11,0.07)', border: 'rgba(245,158,11,0.15)', label: '#f59e0b', badge: 'bg-amber-500/15 text-amber-400' },
+  violet: { bg: 'rgba(139,92,246,0.07)', border: 'rgba(139,92,246,0.15)', label: '#a78bfa', badge: 'bg-violet-500/15 text-violet-400' },
+};
+
+function TradeIdeasSection({ digest, loading }: { digest: DigestData; loading: boolean }) {
+  const ideas = useMemo(() => deriveTradeIdeas(digest), [digest]);
+  if (!loading && ideas.length === 0) return null;
+
+  return (
+    <div className="md:col-span-2">
+      <DigestCard
+        title={loading ? 'Trade Ideas' : `Trade Ideas · ${ideas.length} today`}
+        icon={<Zap size={12} style={{ color: '#f59e0b' }} />}
+        accent="#f59e0b"
+      >
+        {loading ? (
+          <div className="flex flex-col gap-3"><SkeletonBar /><SkeletonBar w="80%" /><SkeletonBar w="60%" /></div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {ideas.map((idea, i) => {
+              const tc = TONE_COLORS[idea.tone];
+              return (
+                <div
+                  key={i}
+                  className="rounded-lg p-3"
+                  style={{ background: tc.bg, border: `1px solid ${tc.border}` }}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${tc.badge}`}>
+                        {idea.type === 'carry_short' ? 'Carry trade' : idea.type === 'neg_carry_long' ? 'Free longs' : idea.type === 'oi_surge' ? 'OI surge' : idea.type === 'deleveraging' ? 'Deleverage' : 'Signal'}
+                      </span>
+                      <span className="text-xs font-bold text-white">{idea.headline}</span>
+                    </div>
+                    <Link href={idea.href} className="text-[10px] font-semibold shrink-0 no-underline" style={{ color: tc.label }}>
+                      Details →
+                    </Link>
+                  </div>
+                  <p className="text-[11px] text-neutral-400 leading-snug mb-1">{idea.rationale}</p>
+                  <p className="text-[10px] text-neutral-600">⚠️ {idea.risk}</p>
+                </div>
+              );
+            })}
+            <p className="text-[10px] text-neutral-600 text-center">
+              Not financial advice. Always manage risk and DYOR.
+            </p>
+          </div>
+        )}
+      </DigestCard>
+    </div>
+  );
+}
+
 /* ── Share button ────────────────────────────────────────────────────── */
 
 function ShareButton() {
@@ -594,6 +724,7 @@ export default function TodayPage() {
           <FundingSection data={digest.funding} loading={loading} />
           <OISection data={digest.oi} loading={loading} />
           <MoversSection data={digest.movers} loading={loading} />
+          <TradeIdeasSection digest={digest} loading={loading} />
         </div>
 
         {/* Footer CTA */}

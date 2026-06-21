@@ -257,8 +257,8 @@ export default function FundingHeatmapPage() {
           )}
 
           {/* Search + Sort controls */}
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <div className="relative min-w-[140px] max-w-[180px]">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+            <div className="relative w-full sm:w-auto sm:min-w-[140px] sm:max-w-[180px]">
               <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -268,26 +268,28 @@ export default function FundingHeatmapPage() {
                 className="w-full pl-8 pr-3 py-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg text-white text-xs placeholder-neutral-500 focus:outline-none focus:border-hub-yellow/40"
               />
             </div>
-            <span className="text-xs text-neutral-500">Sort:</span>
-            {([
-              ['default', 'Default'],
-              ['avg-desc', 'Avg ↓'],
-              ['avg-asc', 'Avg ↑'],
-              ['latest-desc', 'Latest ↓'],
-              ['latest-asc', 'Latest ↑'],
-            ] as [SortMode, string][]).map(([mode, label]) => (
-              <button
-                key={mode}
-                onClick={() => setSortMode(mode)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                  sortMode === mode
-                    ? 'bg-hub-yellow/20 text-hub-yellow border border-hub-yellow/30'
-                    : 'bg-white/[0.04] text-neutral-400 hover:text-white border border-transparent'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mb-0.5 scrollbar-none">
+              <span className="text-xs text-neutral-500 shrink-0">Sort:</span>
+              {([
+                ['default', 'Default'],
+                ['avg-desc', 'Avg ↓'],
+                ['avg-asc', 'Avg ↑'],
+                ['latest-desc', 'Latest ↓'],
+                ['latest-asc', 'Latest ↑'],
+              ] as [SortMode, string][]).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  onClick={() => setSortMode(mode)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
+                    sortMode === mode
+                      ? 'bg-hub-yellow/20 text-hub-yellow border border-hub-yellow/30'
+                      : 'bg-white/[0.04] text-neutral-400 hover:text-white border border-transparent'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Tooltip */}
