@@ -58,7 +58,7 @@ export async function fetchMarketDataServer(
 
   const [tickerRes, fundingRes, oiRes, liqRes] = await Promise.all([
     fetchJSON<{ data: any[] }>(`${origin}/api/tickers`),
-    fetchJSON<{ data: any[] }>(`${origin}/api/funding`),
+    fetchJSON<{ data: any[] }>(`${origin}/api/funding?assetClass=crypto`),
     fetchJSON<{ data: any[] }>(`${origin}/api/openinterest`),
     fetchJSON<{ topSymbols: any[] }>(`${origin}/api/liquidation-heatmap?timeframe=24h`),
   ]);

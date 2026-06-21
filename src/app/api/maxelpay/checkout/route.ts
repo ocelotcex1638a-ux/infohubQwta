@@ -164,6 +164,23 @@ export async function POST(request: NextRequest) {
   await db`CREATE INDEX IF NOT EXISTS idx_maxelpay_checkouts_user_created ON maxelpay_checkouts(user_id, created_at DESC)`;
   await db`CREATE INDEX IF NOT EXISTS idx_maxelpay_checkouts_session ON maxelpay_checkouts(session_id) WHERE session_id IS NOT NULL`;
   await db`CREATE INDEX IF NOT EXISTS idx_maxelpay_checkouts_status ON maxelpay_checkouts(status, updated_at DESC)`;
+
+  // Validate promo code against wheel_spins — prevents brute-force use of
+  // codes that were never actually issued by the Lucky Wheel.
+  let wheelSpinRowId: number | null = null;
+  if (rawPromo && effectivePromo) {
+    const spinRows = await db`
+      SELECT id, used_at FROM wheel_spins WHERE promo_code = ${rawPromo}
+    `;
+    if (spinRows.length === 0) {
+      return NextResponse.json({ error: 'Invalid promo code' }, { status: 400, headers: NO_STORE });
+    }
+    if (spinRows[0].used_at) {
+      return NextResponse.json({ error: 'Promo code already redeemed' }, { status: 400, headers: NO_STORE });
+    }
+    wheelSpinRowId = Number(spinRows[0].id);
+  }
+
   await db`
     INSERT INTO maxelpay_checkouts (
       user_id,
@@ -246,6 +263,13 @@ export async function POST(request: NextRequest) {
         WHERE user_id = ${session.user.id}
           AND is_active = true
       `;
+      if (wheelSpinRowId) {
+        await tx`
+          UPDATE wheel_spins
+          SET used_at = NOW(), used_by_user_id = ${session.user.id}
+          WHERE id = ${wheelSpinRowId} AND used_at IS NULL
+        `;
+      }
     });
     if (email) {
       sendSubscriptionConfirmed({
@@ -292,6 +316,15 @@ export async function POST(request: NextRequest) {
         { error: maxelPayResponse.message || maxelPayResponse.error || 'MaxelPay did not return a checkout URL' },
         { status: 502, headers: NO_STORE },
       );
+    }
+
+    // Mark the discount promo code as consumed now that the checkout session exists
+    if (wheelSpinRowId) {
+      await db`
+        UPDATE wheel_spins
+        SET used_at = NOW(), used_by_user_id = ${session.user.id}
+        WHERE id = ${wheelSpinRowId} AND used_at IS NULL
+      `;
     }
 
     return NextResponse.json(

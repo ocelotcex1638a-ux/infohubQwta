@@ -1054,6 +1054,10 @@ async function _doInitDB(): Promise<void> {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_wheel_spins_created ON wheel_spins(created_at DESC)`;
+  // Track redemption so each code can only be used once
+  await sql`ALTER TABLE wheel_spins ADD COLUMN IF NOT EXISTS used_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE wheel_spins ADD COLUMN IF NOT EXISTS used_by_user_id TEXT`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_wheel_spins_code ON wheel_spins(promo_code)`;
 
   // NOTE: the `auto_tweets` table + its schema were removed 2026-05 when the
   // auto-tweet feature was deleted. Any pre-existing prod table is empty

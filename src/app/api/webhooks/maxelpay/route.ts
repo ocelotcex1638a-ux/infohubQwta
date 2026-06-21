@@ -177,7 +177,11 @@ export async function POST(request: NextRequest) {
   const secret = getMaxelPayWebhookSecret();
   const signature = request.headers.get('x-maxelpay-signature');
 
-  if (secret && !verifyMaxelPaySignature(rawBody, signature, secret)) {
+  if (!secret) {
+    console.error('MaxelPay webhook: MAXELPAY_WEBHOOK_SECRET not configured — rejecting webhook to prevent unsigned tier upgrades');
+    return NextResponse.json({ error: 'Webhook verification not configured' }, { status: 503, headers: NO_STORE });
+  }
+  if (!verifyMaxelPaySignature(rawBody, signature, secret)) {
     console.warn('MaxelPay webhook: invalid signature');
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401, headers: NO_STORE });
   }
