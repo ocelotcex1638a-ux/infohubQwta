@@ -440,20 +440,14 @@ Whale-only:
 - Sub-second priority alert delivery via `/api/cron/whale-alerts`
 - 1:1 Telegram channel with the team
 
-### OG images (deferred)
+### OG images
 
-We tried `next/og` dynamic OG images but `ImageResponse` 503'd on DO
-App Platform — neither Edge runtime (unsupported) nor Node runtime
-(satori font-loading failure) worked. The 8 `opengraph-image.tsx`
-files were removed in commit `<replace-on-next-deploy>`.
-
-Static OG metadata (titles + descriptions via `lib/seo.ts`) still
-works fine — Twitter / Telegram show the URL preview with proper
-title + description, just no custom hero image. For richer share
-cards, options:
-  1. Pre-render static PNGs offline + drop in `/public/og/`
-  2. Use an external OG service (cloudinary, vercel.app/og)
-  3. Migrate this app to Vercel where `next/og` Just Works
+The per-page `opengraph-image.tsx` convention files were removed
+(Edge runtime unsupported on DO; satori font-loading failed on Node
+runtime). The centralized `/api/og/route.tsx` handler using
+`ImageResponse` with `runtime = 'nodejs'` **is working on DO** (returns
+200 + `image/png`). All metadata in `layout.tsx` points to
+`/api/og?v=<variant>`. No action needed.
 
 ---
 
