@@ -255,6 +255,17 @@ export async function GET(request: NextRequest) {
       userErrors, skippedByTier, mode: priorityOnly ? 'priority' : 'standard',
     }).catch(e => console.error(`[${heartbeatKey}] heartbeat error:`, e));
 
+    // Piggyback: broadcast critical market signals to the public Telegram channel
+    // on the standard (non-priority) run only — whale-alerts fires too often and
+    // broadcast-signals has its own 1-hour dedup, so this runs effectively every
+    // 5 min but only fires a message when a new signal surfaces.
+    if (!priorityOnly) {
+      const { broadcastMarketSignals } = await import('@/lib/broadcast-signals');
+      broadcastMarketSignals().catch(e =>
+        console.error('[alerts-cron] broadcast-signals error:', e instanceof Error ? e.message : e),
+      );
+    }
+
     return NextResponse.json({
       ok: true,
       users: users.length,
