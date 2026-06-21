@@ -9,7 +9,7 @@ import type { FundingRateData } from '@/lib/api/types';
 import { ExchangeLogo } from '@/components/ExchangeLogos';
 import {
   TrendingDown, TrendingUp, ExternalLink, ChevronDown, ChevronUp,
-  RefreshCw, Calculator, Info,
+  RefreshCw, Calculator, Info, Download,
 } from 'lucide-react';
 
 // ── Carry math ────────────────────────────────────────────────────────────────
@@ -278,6 +278,31 @@ function TableRow({ row, mode, expanded, onToggle }: {
   );
 }
 
+// ── CSV export ────────────────────────────────────────────────────────────────
+
+function downloadCsv(rows: CarryRow[], mode: CarryMode) {
+  const headers = ['Symbol', 'Exchange', 'Rate%', 'APR%', 'Daily%', 'FeeRT%', 'BreakEven'];
+  const lines = rows.map((r) =>
+    [
+      r.symbol,
+      r.best.exchange,
+      (r.best.rate * 100).toFixed(6),
+      r.best.apr.toFixed(2),
+      r.best.dailyPct.toFixed(4),
+      r.best.feePct.toFixed(4),
+      r.best.breakEven !== null && isFinite(r.best.breakEven) ? r.best.breakEven.toFixed(2) + 'd' : '',
+    ].join(','),
+  );
+  const csv = [headers.join(','), ...lines].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `carry-${mode}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CarryPage() {
@@ -330,6 +355,14 @@ export default function CarryPage() {
             >
               <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
+            </button>
+            <button
+              onClick={() => downloadCsv(rows, mode)}
+              disabled={rows.length === 0}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] text-xs text-neutral-400 hover:text-white hover:bg-white/[0.06] disabled:opacity-40 transition-colors"
+            >
+              <Download className="w-3 h-3" />
+              CSV
             </button>
           </div>
         </div>
