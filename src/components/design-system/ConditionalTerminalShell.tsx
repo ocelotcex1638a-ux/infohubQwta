@@ -12,6 +12,7 @@ const EXCLUDED_PREFIXES = [
   '/signup',
   '/forgot-password',
   '/reset-password',
+  '/wheel',
 ];
 
 export default function ConditionalTerminalShell({ children }: { children: ReactNode }) {

@@ -111,6 +111,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/points',             priority: 0.6, changeFrequency: 'daily' as const },
 
     // ─── Tools + interactive ──────────────────────────────────────────
+    { path: '/tools',              priority: 0.7, changeFrequency: 'weekly' as const },
+    { path: '/scalper',            priority: 0.7, changeFrequency: 'hourly' as const },
     { path: '/compare',            priority: 0.7, changeFrequency: 'daily' as const },
     { path: '/compare-traders',    priority: 0.6, changeFrequency: 'daily' as const },
     { path: '/exchange-comparison', priority: 0.7, changeFrequency: 'daily' as const },
