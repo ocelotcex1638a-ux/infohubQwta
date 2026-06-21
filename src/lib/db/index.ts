@@ -1062,6 +1062,12 @@ async function _doInitDB(): Promise<void> {
   // NOTE: the `auto_tweets` table + its schema were removed 2026-05 when the
   // auto-tweet feature was deleted. Any pre-existing prod table is empty
   // (the cron never ran on a live timer) + harmless; drop it manually if desired.
+
+  // ─── Onboarding trading style (Jun 2026) ─────────────────────────────────
+  // Stores the trader-type the user picked on their first login.
+  // Values: 'arb' | 'directional' | 'intraday' | 'options' | 'spot'
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trading_style TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trading_style_set_at TIMESTAMPTZ`;
 }
 
 // ─── API Cache (L2 — survives Edge cold starts) ────────────────────────────

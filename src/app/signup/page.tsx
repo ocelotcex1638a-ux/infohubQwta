@@ -200,7 +200,8 @@ function SignupContent() {
       if (password) {
         const signInRes = await signIn('credentials', { email, password, redirect: false });
         if (!signInRes?.error) {
-          window.location.href = callbackUrl;
+          // New users go to onboarding to pick their trading style first
+          window.location.href = '/onboarding';
           return;
         }
       }
