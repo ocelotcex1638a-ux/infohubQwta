@@ -117,6 +117,7 @@ const PERSONAS: Persona[] = [
     tone: 'text-hub-yellow',
     tools: [
       { label: 'Funding Rates', href: '/funding', hint: 'Live across all venues' },
+      { label: 'Live Signals', href: '/signals', hint: 'Extreme carry · OI surges · momentum' },
       { label: 'Carry Calculator', href: '/tools/carry', hint: 'APR · break-even · net-of-fee' },
       { label: 'Funding Arb', href: '/spread-scanner', hint: 'Long/short pair grader A→D' },
       { label: 'Spreads', href: '/spreads', hint: 'Cross-venue · net of fees' },
