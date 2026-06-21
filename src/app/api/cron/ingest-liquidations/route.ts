@@ -313,6 +313,12 @@ export async function GET(request: NextRequest) {
     // Insert via existing DB helper (handles dedup with ON CONFLICT DO NOTHING)
     const inserted = await saveLiquidationSnapshot(allRows);
 
+    // Broadcast $1M+ liquidations to public Telegram channel (no-op if env not set)
+    const { broadcastLargeLiqs } = await import('@/lib/broadcast-liquidation');
+    await broadcastLargeLiqs(allRows).catch((e) =>
+      console.error('[ingest-liquidations] broadcast error:', e instanceof Error ? e.message : e),
+    );
+
     await upsertWorkerHeartbeat('cron:ingest-liquidations', 'ok', {
       fetched, inserted,
     }).catch(e => console.error('[ingest-liquidations] heartbeat error:', e));
