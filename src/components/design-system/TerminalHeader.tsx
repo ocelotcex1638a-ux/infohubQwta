@@ -39,7 +39,7 @@ const POPULAR_COMMODITIES = ['XAUUSD', 'XAGUSD', 'CL1!', 'NG1!', 'HG1!'];
 // so they can be unit-tested without dragging in React's JSX runtime.
 import { looksLikeTicker } from './searchHelpers';
 
-interface NavItem { id: string; label: string; href: string; hint?: string; }
+interface NavItem { id: string; label: string; href: string; hint?: string; isNew?: boolean; }
 interface NavGroup { key: string; label: string; icon: React.ReactNode; items: NavItem[]; }
 
 const NAV_GROUPS: NavGroup[] = [
@@ -65,10 +65,10 @@ const NAV_GROUPS: NavGroup[] = [
   { key: 'monitor', label: 'Monitor',
     icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></svg>,
     items: [
-      { id: 'today',            label: 'Daily Digest',    href: '/today',            hint: 'Shareable market snapshot — prices, funding, movers, liqs' },
+      { id: 'today',            label: 'Daily Digest',    href: '/today',            hint: 'Shareable market snapshot — prices, funding, movers, liqs', isNew: true },
       { id: 'signals',         label: 'Live Signals',    href: '/signals',          hint: 'Extreme carry · OI surges · momentum' },
       { id: 'tape',            label: 'Trade Tape',      href: '/tape',             hint: 'Live whale trade flow · $50K+ filter' },
-      { id: 'whales',          label: 'DEX Whales',      href: '/whales',           hint: 'Hyperliquid $100K+ real-time fills' },
+      { id: 'whales',          label: 'DEX Whales',      href: '/whales',           hint: 'Hyperliquid $100K+ real-time fills', isNew: true },
       { id: 'funding',         label: 'Funding Rates',   href: '/funding',          hint: 'Live across all venues' },
       { id: 'funding-heatmap', label: 'Funding Heatmap', href: '/funding-heatmap',   hint: 'Asset × venue grid' },
       { id: 'funding-countdown', label: 'Funding Countdown', href: '/funding-countdown', hint: 'Next settlement clocks' },
@@ -279,6 +279,7 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
       hint: it.hint || g.label,
       href: it.href,
       group: g.label,
+      isNew: it.isNew,
     })));
     const symbolList: Array<{ s: string; ac: 'crypto' | 'stocks' | 'forex' | 'commodities' }> = [
       ...POPULAR_CRYPTO.map(s => ({ s, ac: 'crypto' as const })),
@@ -466,6 +467,15 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
                           }}
                         />
                         <span style={{ fontWeight: on ? 600 : 500, color: on ? 'var(--hub-accent)' : 'var(--fg-default)' }}>{it.label}</span>
+                        {it.isNew && (
+                          <span style={{
+                            fontSize: 8, fontWeight: 800, letterSpacing: '0.06em',
+                            padding: '1px 5px', borderRadius: 3,
+                            background: 'rgba(52,211,153,0.14)', color: '#34d399',
+                            border: '1px solid rgba(52,211,153,0.2)',
+                            flexShrink: 0,
+                          }}>NEW</span>
+                        )}
                         <span style={{ flex: 1 }} />
                         {it.hint && (
                           <span style={{ fontSize: 10, color: 'var(--fg-subtle)', whiteSpace: 'nowrap' }}>
@@ -755,9 +765,15 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
                           </svg>
                         )}
                       </span>
-                      <span style={{
-                        fontWeight: 700, fontSize: 13,
-                      }}>{r.label}</span>
+                      <span style={{ fontWeight: 700, fontSize: 13 }}>{r.label}</span>
+                      {!isSym && (r as { isNew?: boolean }).isNew && (
+                        <span style={{
+                          fontSize: 8, fontWeight: 800, letterSpacing: '0.06em',
+                          padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+                          background: 'rgba(52,211,153,0.14)', color: '#34d399',
+                          border: '1px solid rgba(52,211,153,0.2)',
+                        }}>NEW</span>
+                      )}
                       <span style={{ flex: 1 }} />
                       <span style={{
                         fontSize: 10, color: 'var(--fg-muted)',

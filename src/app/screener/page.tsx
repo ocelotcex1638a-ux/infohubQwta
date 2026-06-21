@@ -554,34 +554,48 @@ export default function ScreenerPage() {
         )}
 
         {/* Controls Row */}
-        <div className="flex flex-wrap items-center gap-2 mb-4" role="toolbar">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[180px] max-w-[300px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
-            <input
-              ref={searchRef}
-              type="text"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-              placeholder="Search symbol... (press /)"
-              aria-label="Search symbols by name"
-              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-hub-yellow/30"
-            />
+        <div className="flex flex-col gap-2 mb-4" role="toolbar">
+          {/* Row 1: Search + filter toggle */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <div className="relative flex-1 min-w-0 max-w-[300px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                placeholder="Search symbol... (press /)"
+                aria-label="Search symbols by name"
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-hub-yellow/30"
+              />
+            </div>
+
+            {/* Filter toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
+                conditions.length > 0
+                  ? 'bg-hub-yellow/10 text-hub-yellow border border-hub-yellow/20'
+                  : 'bg-white/[0.04] text-neutral-400 hover:text-white border border-white/[0.06]'
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              Filters{conditions.length > 0 ? ` (${conditions.length})` : ''}
+            </button>
+
+            {conditions.length > 0 && (
+              <button
+                onClick={() => { setConditions([]); setShowFilters(false); setPage(0); }}
+                className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/20 transition-colors shrink-0"
+              >
+                Clear All
+              </button>
+            )}
           </div>
 
-          {/* Filter toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              conditions.length > 0
-                ? 'bg-hub-yellow/10 text-hub-yellow border border-hub-yellow/20'
-                : 'bg-white/[0.04] text-neutral-400 hover:text-white border border-white/[0.06]'
-            }`}
-          >
-            <Filter className="w-3.5 h-3.5" />
-            Filters{conditions.length > 0 ? ` (${conditions.length})` : ''}
-          </button>
-
+          {/* Row 2: Quick presets (scrollable) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5 -mb-0.5">
           {/* Quick presets */}
           {presets.map((p) => {
             const isDefault = DEFAULT_PRESETS.some((d) => d.name === p.name);
@@ -630,14 +644,7 @@ export default function ScreenerPage() {
             );
           })}
 
-          {conditions.length > 0 && (
-            <button
-              onClick={() => { setConditions([]); setShowFilters(false); setPage(0); }}
-              className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/20 transition-colors"
-            >
-              Clear All
-            </button>
-          )}
+          </div>
         </div>
 
         {/* Filter Panel */}

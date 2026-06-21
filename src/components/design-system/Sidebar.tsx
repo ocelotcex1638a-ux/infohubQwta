@@ -72,6 +72,7 @@ const MUTE = 'var(--fg-muted)';
 
 const DEFAULT_SECTIONS: SidebarSection[] = [
   { id: 'workflows', label: 'Start Here', items: [
+    { href: '/today',                    label: 'Daily Digest',     color: ACC,  icon: I.news },
     { href: '/tools',                    label: 'Choose Workflow',  color: ACC,  icon: I.layers },
     { href: '/spread-scanner',           label: 'Find Trades',      color: PUMP, icon: I.fundArb },
     { href: '/scalper',                  label: 'Scalper Cockpit',  color: MUTE, icon: I.chart },
@@ -174,6 +175,7 @@ const DEFAULT_SECTIONS: SidebarSection[] = [
     { href: '/hl-traders',        label: 'HL Traders',     color: PUR,  icon: I.user },
     { href: '/hl-vaults',         label: 'HL Vaults',      color: PUR,  icon: I.shield },
     { href: '/hl-whales',         label: 'HL Whales',      color: PUR,  icon: I.whale },
+    { href: '/whales',            label: 'DEX Whale Tracker', color: PUR, icon: I.whale },
     { href: '/gmx-traders',       label: 'GMX Traders',    color: PUR,  icon: I.user },
     // /wallet-tracker replaced by /watch (May 2026)
     { href: '/compare-traders',   label: 'Compare Traders', color: PUR, icon: I.scale },

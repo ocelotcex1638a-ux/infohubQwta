@@ -371,12 +371,12 @@ function WatchPageInner() {
     if (status !== 'authenticated') return;
     const ac = new AbortController();
     Promise.all([
-      fetch('/api/smart-money?limit=4&include=hl', { signal: ac.signal }).then(r => r.ok ? r.json() : null),
-      fetch('/api/smart-money?limit=4&include=gmx', { signal: ac.signal }).then(r => r.ok ? r.json() : null),
+      fetch('/api/smart-money?limit=8&include=hl', { signal: ac.signal }).then(r => r.ok ? r.json() : null),
+      fetch('/api/smart-money?limit=6&include=gmx', { signal: ac.signal }).then(r => r.ok ? r.json() : null),
     ])
       .then(([hl, gmx]) => {
-        const hlRows: SuggestedWhale[] = (hl?.data ?? []).slice(0, 4);
-        const gmxRows: SuggestedWhale[] = (gmx?.data ?? []).slice(0, 4);
+        const hlRows: SuggestedWhale[] = (hl?.data ?? []).slice(0, 8);
+        const gmxRows: SuggestedWhale[] = (gmx?.data ?? []).slice(0, 6);
         // Interleave HL + GMX so both venues are visible without the user
         // having to scroll. If one venue returns empty, the other fills.
         const merged: SuggestedWhale[] = [];
@@ -401,7 +401,7 @@ function WatchPageInner() {
           tm.forEach((v, k) => next.set(k, v));
           return next;
         });
-        setSuggested(merged.slice(0, 8).map(w => ({
+        setSuggested(merged.slice(0, 12).map(w => ({
           address: w.address,
           displayName: w.displayName ?? null,
           realizedPnl: w.realizedPnl,
@@ -692,7 +692,7 @@ function WatchPageInner() {
 
         {/* Suggested whales — shown when user has < 5 wallets so it
             doesn't clutter the page once they've curated their own list */}
-        {wallets.length < 5 && suggested && suggested.length > 0 && (
+        {wallets.length < 10 && suggested && suggested.length > 0 && (
           <section className="mb-6">
             <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-white mb-2 px-1 flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-hub-yellow" />
@@ -700,7 +700,7 @@ function WatchPageInner() {
               <span className="text-[10px] font-mono text-neutral-600">top traders by realized PnL · click to watch</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-              {suggested.slice(0, 8).map(w => {
+              {suggested.slice(0, 12).map(w => {
                 const alreadyWatching = wallets.some(x => x.address.toLowerCase() === w.address.toLowerCase());
                 const submitting = addingAddr === w.address;
                 return (

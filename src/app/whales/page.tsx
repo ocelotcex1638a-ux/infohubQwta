@@ -8,12 +8,13 @@ import { Activity, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 
-const COINS = ['BTC', 'ETH', 'SOL', 'ARB', 'DOGE', 'AVAX', 'LINK', 'SUI'];
+const COINS = ['BTC', 'ETH', 'SOL', 'ARB', 'DOGE', 'AVAX', 'LINK', 'SUI', 'OP', 'NEAR', 'APT', 'WIF', 'PEPE', 'TIA'];
 
 // dYdX v4 market IDs for supported coins (others skip silently)
 const DYDX_MARKETS: Record<string, string> = {
   BTC: 'BTC-USD', ETH: 'ETH-USD', SOL: 'SOL-USD', ARB: 'ARB-USD',
   DOGE: 'DOGE-USD', AVAX: 'AVAX-USD', LINK: 'LINK-USD',
+  OP: 'OP-USD', NEAR: 'NEAR-USD', APT: 'APT-USD',
 };
 
 const MIN_SIZES = [

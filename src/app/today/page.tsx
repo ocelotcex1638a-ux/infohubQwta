@@ -519,23 +519,118 @@ function TradeIdeasSection({ digest, loading }: { digest: DigestData; loading: b
 
 /* ── Share button ────────────────────────────────────────────────────── */
 
-function ShareButton() {
+function buildTextSummary(digest: DigestData): string {
+  const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const lines: string[] = [`📊 *Crypto Market Digest — ${date}*`, ''];
+
+  // Prices
+  const key = ['BTC', 'ETH', 'SOL'];
+  const priceMap = new Map(digest.prices.map(p => [p.symbol, p]));
+  const priceLines = key.map(s => {
+    const p = priceMap.get(s);
+    if (!p) return null;
+    const sign = p.change24h >= 0 ? '+' : '';
+    const price = p.price >= 1000 ? `$${Math.round(p.price).toLocaleString()}` : `$${p.price.toFixed(2)}`;
+    return `${s} ${price} (${sign}${p.change24h.toFixed(1)}%)`;
+  }).filter(Boolean);
+  if (priceLines.length) lines.push(`💰 *Prices:* ${priceLines.join(' · ')}`);
+
+  // Sentiment
+  const { fgValue, fgLabel, btcDom } = digest.sentiment;
+  const sentParts: string[] = [];
+  if (fgValue != null) sentParts.push(`F&G ${fgValue}/100 (${fgLabel ?? '?'})`);
+  if (btcDom != null) sentParts.push(`BTC Dom ${btcDom.toFixed(1)}%`);
+  if (sentParts.length) lines.push(`😱 *Sentiment:* ${sentParts.join(' · ')}`);
+
+  // Liquidations
+  if (digest.liqs) {
+    const { total, longs, shorts } = digest.liqs;
+    const tot = total >= 1e9 ? `$${(total / 1e9).toFixed(2)}B` : `$${(total / 1e6).toFixed(0)}M`;
+    const longPct = total > 0 ? ((longs / total) * 100).toFixed(0) : '?';
+    lines.push(`💧 *Liqs:* ${tot} total (${longPct}% longs)`);
+  }
+
+  // Funding
+  const { hot, cold } = digest.funding;
+  const fundParts: string[] = [];
+  if (hot) fundParts.push(`🔴 ${hot.symbol} ${hot.apr.toFixed(0)}% APR (${hot.exchange})`);
+  if (cold && cold.apr >= 20) fundParts.push(`🟢 ${cold.symbol} -${cold.apr.toFixed(0)}% APR (${cold.exchange})`);
+  if (fundParts.length) lines.push(`⚡ *Funding:* ${fundParts.join(' · ')}`);
+
+  // OI
+  if (digest.oi) {
+    const oiParts: string[] = [];
+    const tot = digest.oi.total >= 1e9 ? `$${(digest.oi.total / 1e9).toFixed(1)}B` : `$${(digest.oi.total / 1e6).toFixed(0)}M`;
+    oiParts.push(`Total ${tot}`);
+    if (digest.oi.topSurge) oiParts.push(`⬆ ${digest.oi.topSurge.symbol} +${digest.oi.topSurge.pct.toFixed(0)}%`);
+    if (digest.oi.topDump) oiParts.push(`⬇ ${digest.oi.topDump.symbol} ${digest.oi.topDump.pct.toFixed(0)}%`);
+    lines.push(`📈 *OI:* ${oiParts.join(' · ')}`);
+  }
+
+  // Movers
+  const g = digest.movers.gainers.slice(0, 2).map(m => `${m.symbol} +${m.change.toFixed(1)}%`).join(', ');
+  const l = digest.movers.losers.slice(0, 2).map(m => `${m.symbol} ${m.change.toFixed(1)}%`).join(', ');
+  if (g || l) lines.push(`🏆 *Movers:* ${g ? `↑ ${g}` : ''}${g && l ? ' · ' : ''}${l ? `↓ ${l}` : ''}`);
+
+  lines.push('');
+  lines.push('📍 https://info-hub.io/today');
+  return lines.join('\n');
+}
+
+function ShareButton({ digest }: { digest: DigestData }) {
   const [copied, setCopied] = useState(false);
+  const [textCopied, setTextCopied] = useState(false);
+
   const copy = useCallback(() => {
-    const url = typeof window !== 'undefined' ? window.location.href : 'https://info-hub.io/today';
-    navigator.clipboard.writeText(url).then(() => {
+    navigator.clipboard.writeText('https://info-hub.io/today').then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => {});
   }, []);
+
+  const copyText = useCallback(() => {
+    const summary = buildTextSummary(digest);
+    navigator.clipboard.writeText(summary).then(() => {
+      setTextCopied(true);
+      setTimeout(() => setTextCopied(false), 2500);
+    }).catch(() => {});
+  }, [digest]);
+
+  const shareOnX = useCallback(() => {
+    const text = encodeURIComponent(`Today's crypto market digest — prices, funding extremes, OI moves, movers & trade ideas 📊`);
+    const url = encodeURIComponent('https://info-hub.io/today');
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}&via=info_hub69`, '_blank', 'noopener,noreferrer');
+  }, []);
+
   return (
-    <button
-      onClick={copy}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/[0.08] bg-white/[0.04] text-neutral-300 hover:text-white hover:border-white/20 transition-colors"
-    >
-      {copied ? <Check size={12} /> : <Copy size={12} />}
-      {copied ? 'Copied!' : 'Copy link'}
-    </button>
+    <div className="inline-flex items-center gap-1.5">
+      <button
+        onClick={copy}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/[0.08] bg-white/[0.04] text-neutral-300 hover:text-white hover:border-white/20 transition-colors"
+        title="Copy link to this page"
+      >
+        {copied ? <Check size={12} /> : <Copy size={12} />}
+        {copied ? 'Copied!' : 'Link'}
+      </button>
+      <button
+        onClick={copyText}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#229ED9]/25 bg-[#229ED9]/[0.07] text-[#229ED9] hover:bg-[#229ED9]/15 transition-colors"
+        title="Copy Telegram-ready text summary"
+      >
+        {textCopied ? <Check size={12} /> : <Share2 size={12} />}
+        {textCopied ? 'Copied!' : 'Copy text'}
+      </button>
+      <button
+        onClick={shareOnX}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/[0.06] bg-white/[0.02] text-neutral-400 hover:text-white hover:border-white/15 transition-colors"
+        title="Share on X (Twitter)"
+      >
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.265 5.638L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/>
+        </svg>
+        X
+      </button>
+    </div>
   );
 }
 
@@ -667,6 +762,13 @@ export default function TodayPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Auto-refresh every 5 minutes — digest data (funding, OI, prices) changes
+  // continuously; users who leave the tab open should see fresh data.
+  useEffect(() => {
+    const id = setInterval(() => { load(true); }, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [load]);
+
   const updateLabel = lastUpdate
     ? lastUpdate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     : null;
@@ -694,7 +796,9 @@ export default function TodayPage() {
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               {updateLabel && (
-                <span className="text-[10px] text-neutral-600 font-mono">Updated {updateLabel}</span>
+                <span className="text-[10px] text-neutral-600 font-mono" title="Auto-refreshes every 5 minutes">
+                  {refreshing ? '↻ updating…' : `Updated ${updateLabel}`}
+                </span>
               )}
               <button
                 onClick={() => load(true)}
@@ -704,7 +808,7 @@ export default function TodayPage() {
                 <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
                 Refresh
               </button>
-              <ShareButton />
+              <ShareButton digest={digest} />
               <Link
                 href="/"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-hub-yellow/30 bg-hub-yellow/[0.08] text-hub-yellow hover:bg-hub-yellow/15 transition-colors no-underline"

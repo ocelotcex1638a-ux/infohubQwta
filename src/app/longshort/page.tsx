@@ -227,9 +227,9 @@ function LongShortPageInner() {
         />
 
         {/* Controls */}
-        <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-4 overflow-x-auto scrollbar-none pb-0.5 -mb-0.5">
           {/* Symbol selector */}
-          <div className="flex rounded-lg overflow-hidden bg-white/[0.04] border border-white/[0.06]">
+          <div className="flex rounded-lg overflow-hidden bg-white/[0.04] border border-white/[0.06] shrink-0">
             {SYMBOLS.map(s => (
               <button
                 key={s.value}
@@ -246,7 +246,7 @@ function LongShortPageInner() {
           </div>
 
           {/* Period selector */}
-          <div className="flex rounded-lg overflow-hidden bg-white/[0.04] border border-white/[0.06]">
+          <div className="flex rounded-lg overflow-hidden bg-white/[0.04] border border-white/[0.06] shrink-0">
             {PERIODS.map(p => (
               <button
                 key={p.value}

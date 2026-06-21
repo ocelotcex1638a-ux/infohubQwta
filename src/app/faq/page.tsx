@@ -95,6 +95,16 @@ const faqs: FAQEntry[] = [
   },
   {
     category: 'Data & Features',
+    q: 'What is the Daily Digest?',
+    a: '/today is a shareable one-page snapshot of what is moving the market right now: key prices with 24h change, Fear &amp; Greed sentiment, BTC dominance, 24h liquidation totals, the highest and lowest funding rates, OI surges and dumps, top movers, and up to 3 algorithmic trade ideas. Auto-refreshes every 5 minutes. The Copy Text button generates a Telegram-ready summary.',
+  },
+  {
+    category: 'Data & Features',
+    q: 'What is the DEX Whale Tracker?',
+    a: '/whales shows real-time fills above your chosen size threshold ($50K to $1M+) from Hyperliquid (live WebSocket) and dYdX (5-second poll). Filter by coin (BTC, ETH, SOL, and 11 others) and minimum trade size. The buy/sell bar updates in real time so you can read flow bias at a glance. No login required.',
+  },
+  {
+    category: 'Data & Features',
     q: 'Can I set price alerts?',
     a: 'Yes. The Alerts page supports conditions for price, funding rate, open interest, and 24h change. You define the threshold and direction, and you get notified when the condition is met.',
   },

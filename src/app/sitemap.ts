@@ -48,6 +48,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/perp-dex-volume',    priority: 0.7, changeFrequency: 'hourly' as const },
     { path: '/volume-share',       priority: 0.7, changeFrequency: 'hourly' as const },
     // /whale-alert → /liquidations (consolidated May 2026).
+    { path: '/whales',             priority: 0.8, changeFrequency: 'always' as const },
     { path: '/hl-whales',          priority: 0.7, changeFrequency: 'hourly' as const },
     { path: '/hl-traders',         priority: 0.7, changeFrequency: 'hourly' as const },
     { path: '/hl-vaults',          priority: 0.7, changeFrequency: 'hourly' as const },

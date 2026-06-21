@@ -260,9 +260,11 @@ export default function TopMoversPage() {
         )}
 
         {/* Controls Row */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+          {/* Tabs + search: scroll on mobile, row on desktop */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5 -mb-0.5">
           {/* Tabs */}
-          <div className="flex rounded-lg overflow-hidden border border-white/[0.06]">
+          <div className="flex rounded-lg overflow-hidden border border-white/[0.06] shrink-0">
             {TABS.map(t => (
               <button
                 key={t.key}
@@ -284,7 +286,7 @@ export default function TopMoversPage() {
           </div>
 
           {/* Search */}
-          <div className="relative flex-1 min-w-[150px] max-w-[260px]">
+          <div className="relative w-full sm:flex-1 sm:min-w-[150px] sm:max-w-[260px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
             <input
               type="text"
@@ -295,8 +297,10 @@ export default function TopMoversPage() {
             />
           </div>
 
+          </div>
+
           {/* Result count */}
-          <span className="text-[11px] text-neutral-600 ml-auto">
+          <span className="text-[11px] text-neutral-600 sm:ml-auto">
             {filtered.length} coin{filtered.length !== 1 ? 's' : ''}
           </span>
         </div>
