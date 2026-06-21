@@ -232,7 +232,7 @@ function LiquidityDepth({ symbol, exchanges, highExchange, lowExchange }: {
         <BarChart3 className="w-3.5 h-3.5" />
         <span>{showDepth ? 'Hide' : 'Show'} Liquidity Depth</span>
         {showDepth ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        {loading && <span className="text-hub-yellow text-[9px] animate-pulse">Loading...</span>}
+        {loading && <span className="text-hub-yellow text-[9px] animate-pulse">Loading…</span>}
       </button>
       {showDepth && depthData && (
         <div className="mt-2 overflow-x-auto">

@@ -142,7 +142,7 @@ export default function SpreadsPage() {
           </div>
           <div className="flex items-center gap-2">
             {state.chartLoading && (
-              <span className="flex items-center gap-1.5 text-xs text-neutral-600"><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Loading...</span>
+              <span className="flex items-center gap-1.5 text-xs text-neutral-600"><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Loading…</span>
             )}
             {/* WS status — most important, shown first */}
             <button onClick={actions.toggleWs}

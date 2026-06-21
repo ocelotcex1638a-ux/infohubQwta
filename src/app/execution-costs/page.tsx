@@ -35,7 +35,7 @@ function loadPrefs(): { asset: string; size: number; direction: Direction } {
 
 export default function ExecutionCostsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+    <Suspense fallback={<div className="min-h-screen bg-hub-black" />}>
       <ExecutionCostsInner />
     </Suspense>
   );

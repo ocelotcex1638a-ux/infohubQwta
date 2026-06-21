@@ -216,7 +216,7 @@ export default function DocsPage() {
   const activeSection = useActiveSection(allIds);
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-hub-black text-white">
       <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="flex gap-0 lg:gap-0">

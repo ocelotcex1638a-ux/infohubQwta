@@ -728,7 +728,7 @@ export default function ScreenerPage() {
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] text-neutral-500">
             {loading && rows.length === 0
-              ? 'Loading...'
+              ? 'Loading…'
               : `Showing ${paged.length} of ${filtered.length} results${conditions.length > 0 ? ` (filtered from ${rows.length})` : ''}`}
           </span>
         </div>

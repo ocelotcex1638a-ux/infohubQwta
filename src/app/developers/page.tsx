@@ -475,7 +475,7 @@ export default function DevelopersPage() {
     // so the layout doesn't pop in. Mirrors the real hero structure roughly
     // so the perceived load is shorter than a bare "Loading..." line.
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-hub-black text-white">
         <Header />
         <main id="main-content">
           <section className="relative overflow-hidden">
@@ -514,7 +514,7 @@ export default function DevelopersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-hub-black text-white">
       <Header />
       <main id="main-content">
 

@@ -40,6 +40,7 @@ import {
   TIER_PRICE_MONTHLY,
   type Tier,
 } from '@/lib/constants/tiers';
+import { isLaunchCutoverReached } from '@/lib/launch';
 
 interface AccountStats {
   memberSince: string | null;
@@ -762,14 +763,23 @@ function ReferralsTab() {
   );
 }
 
+interface BillingOrder {
+  orderId: string;
+  tier: string | null;
+  period: string | null;
+  amountUsd: number;
+  currency: string;
+  status: string;
+  verifiedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
 function BillingTab() {
   const { data: session } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role;
   const billingTier = (session?.user as { billingTier?: string } | undefined)?.billingTier ?? null;
   const billingExpiresAt = (session?.user as { billingExpiresAt?: string | null } | undefined)?.billingExpiresAt ?? null;
-  // Admin role auto-resolves to whale regardless of billing_tier.
-  // Non-admins read users.billing_tier (now in the JWT). Default 'free'
-  // until a confirmed MaxelPay payment is written back to the account.
   const tier = resolveUserTier({ role, billingTier });
   const branding = TIER_BRANDING[tier];
   const limits = TIER_LIMITS[tier];
@@ -778,8 +788,6 @@ function BillingTab() {
     : branding.iconName === 'Zap' ? Zap
     : Crown;
 
-  // Launch state: Pro + Whale tiers are unlocked for everyone while we
-  // onboard early users. Admin is grandfathered to Whale.
   const isAdminGrandfathered = role === 'admin';
   const isPaidTier = tier !== 'free';
   const paidThrough = billingExpiresAt ? new Date(billingExpiresAt) : null;
@@ -787,14 +795,26 @@ function BillingTab() {
     ? paidThrough.toISOString().slice(0, 10)
     : null;
 
-  // Pick the "upgrade target" for the CTA — Free→Trader, Trader→Pro,
-  // Pro→Whale, Whale users get a "you're at the top" state.
   const upgradeTarget: Tier | null =
     tier === 'free' ? 'trader'
     : tier === 'trader' ? 'pro'
     : tier === 'pro' ? 'whale'
     : null;
   const upgradeBranding = upgradeTarget ? TIER_BRANDING[upgradeTarget] : null;
+
+  const [orders, setOrders] = useState<BillingOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  useEffect(() => {
+    let mounted = true;
+    fetch('/api/billing/orders', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : { orders: [] })
+      .then(j => { if (mounted) setOrders(j.orders ?? []); })
+      .catch(() => {})
+      .finally(() => { if (mounted) setOrdersLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  const postLaunch = isLaunchCutoverReached();
 
   return (
     <SectionCard
@@ -803,7 +823,9 @@ function BillingTab() {
       description={
         isAdminGrandfathered
           ? "Admin accounts are grandfathered to the Whale tier — all features unlocked, no billing."
-          : "Trader, Pro + Whale tiers are available during launch. See /pricing for the real tier limits and post-launch prices."
+          : postLaunch
+          ? "Upgrade from /pricing. Payments are processed via MaxelPay (crypto). Your active-through date updates here after payment confirms."
+          : "Trader, Pro + Whale tiers are free during launch. Paid billing starts June 22, 2026 — see /pricing for tier limits."
       }
     >
       {/* Current-tier card */}
@@ -856,10 +878,6 @@ function BillingTab() {
           value={Number.isFinite(limits.maxWatchedWallets) ? String(limits.maxWatchedWallets) : 'Unlimited'}
         />
         <LimitTile
-          label="Historical window"
-          value={limits.historyDays >= 365 ? `${Math.round(limits.historyDays / 365)}y` : `${limits.historyDays}d`}
-        />
-        <LimitTile
           label="Plan price"
           value={monthlyPrice === 0 ? 'Free' : `$${monthlyPrice}/mo`}
         />
@@ -895,7 +913,47 @@ function BillingTab() {
         <ArrowRight className="w-3 h-3" aria-hidden />
       </Link>
 
-        <p className="text-[11px] text-neutral-600 italic mt-4">
+      {/* Order history */}
+      {!isAdminGrandfathered && (
+        <div className="mt-5 border-t border-white/[0.06] pt-4">
+          <h3 className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold mb-2">Order history</h3>
+          {ordersLoading ? (
+            <div className="flex items-center gap-2 text-xs text-neutral-600">
+              <Loader2 className="w-3 h-3 animate-spin" /> Loading…
+            </div>
+          ) : orders.length === 0 ? (
+            <p className="text-xs text-neutral-600">No orders yet.</p>
+          ) : (
+            <ul className="divide-y divide-white/[0.04] text-xs">
+              {orders.map((o) => {
+                const tierBranding = o.tier && (o.tier === 'trader' || o.tier === 'pro' || o.tier === 'whale')
+                  ? TIER_BRANDING[o.tier as 'trader' | 'pro' | 'whale']
+                  : null;
+                const isConfirmed = Boolean(o.verifiedAt) || o.status === 'paid' || o.status === 'overpaid' || o.status === 'promo_granted';
+                return (
+                  <li key={o.orderId} className="py-2 flex items-center gap-3 flex-wrap">
+                    <span className={`font-semibold ${tierBranding?.textColor ?? 'text-neutral-300'}`}>
+                      {tierBranding?.label ?? o.tier ?? '—'}
+                    </span>
+                    <span className="text-neutral-500">{o.period ?? '—'}</span>
+                    <span className="font-mono tabular-nums text-white">
+                      {o.amountUsd === 0 ? 'FREE' : `$${o.amountUsd.toFixed(2)} ${o.currency}`}
+                    </span>
+                    <span className={`ml-auto font-mono uppercase tracking-wider ${isConfirmed ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {isConfirmed ? 'confirmed' : o.status.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-neutral-600 font-mono">
+                      {new Date(o.createdAt).toISOString().slice(0, 10)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <p className="text-[11px] text-neutral-600 italic mt-4">
         {isAdminGrandfathered
           ? "Admin tier is permanent — you'll never be billed regardless of how the public pricing evolves."
           : "Crypto checkout runs through MaxelPay. Upgrade from /pricing, then track your paid-through date here. If access expires without a new payment, the account drops back to Free."}

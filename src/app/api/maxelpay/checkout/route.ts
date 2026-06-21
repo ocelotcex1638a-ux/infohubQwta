@@ -11,6 +11,9 @@ import {
   type MaxelPayPeriod,
   type MaxelPayTier,
 } from '@/lib/maxelpay';
+import { parsePromoDiscount, applyPromoDiscount } from '@/lib/promo';
+import { sendSubscriptionConfirmed } from '@/lib/email/templates';
+import { TIER_BRANDING } from '@/lib/constants/tiers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,7 +75,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'MaxelPay is not configured' }, { status: 503, headers: NO_STORE });
   }
 
-  let body: { tier?: unknown; period?: unknown };
+  let body: { tier?: unknown; period?: unknown; promoCode?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -90,10 +93,24 @@ export async function POST(request: NextRequest) {
 
   const paymentTier = tier as MaxelPayTier;
   const billingPeriod = period as MaxelPayPeriod;
-  const amountUsd = getMaxelPayAmount(paymentTier, billingPeriod);
-  if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
+  const baseAmountUsd = getMaxelPayAmount(paymentTier, billingPeriod);
+  if (!Number.isFinite(baseAmountUsd) || baseAmountUsd <= 0) {
     return NextResponse.json({ error: 'Invalid amount' }, { status: 400, headers: NO_STORE });
   }
+
+  // Validate promo code server-side — the client sends it but we must not
+  // trust the discount the client claims; compute it here.
+  const rawPromo = typeof body.promoCode === 'string' ? body.promoCode.trim() : null;
+  const promoDiscount = parsePromoDiscount(rawPromo);
+  // Only honour promos that unlock the requested tier or a pct discount.
+  // A "1 month Trader FREE" code must not be used to upgrade to Pro/Whale.
+  const promoValid =
+    promoDiscount &&
+    (promoDiscount.freeTier === null || promoDiscount.freeTier === paymentTier);
+  const effectivePromo = promoValid ? promoDiscount : null;
+  const amountUsd = effectivePromo
+    ? applyPromoDiscount(baseAmountUsd, effectivePromo.pct)
+    : baseAmountUsd;
 
   const orderId = buildMaxelPayOrderId();
   const baseUrl = getBaseUrl(request);
@@ -194,6 +211,66 @@ export async function POST(request: NextRequest) {
       request_payload = EXCLUDED.request_payload,
       updated_at = EXCLUDED.updated_at
   `;
+
+  // ── Free-tier promo bypass ─────────────────────────────────────────────────
+  // 100% promos (IH-TRADER-xxx, IH-PRO-xxx) have $0 amount — MaxelPay won't
+  // accept a zero-dollar session. Grant the tier directly and return the local
+  // confirmation page URL as the "paymentUrl" so the client redirect still works.
+  if (effectivePromo && amountUsd === 0) {
+    const grantedAt = new Date();
+    const expiresAt = new Date(grantedAt.getTime());
+    expiresAt.setUTCMonth(expiresAt.getUTCMonth() + 1);
+    const grantedAtIso = grantedAt.toISOString();
+    const expiresAtIso = expiresAt.toISOString();
+    await db.begin(async (txRaw) => {
+      const tx = txRaw as any;
+      await tx`
+        UPDATE maxelpay_checkouts
+        SET status = 'promo_granted',
+            paid_at = ${grantedAtIso},
+            verified_at = ${grantedAtIso},
+            expires_at = ${expiresAtIso},
+            updated_at = NOW()
+        WHERE order_id = ${orderId}
+      `;
+      await tx`
+        UPDATE users
+        SET billing_tier = ${paymentTier},
+            billing_expires_at = ${expiresAtIso}
+        WHERE id = ${session.user.id}
+          AND role != 'admin'
+      `;
+      await tx`
+        UPDATE api_keys
+        SET tier = ${paymentTier}
+        WHERE user_id = ${session.user.id}
+          AND is_active = true
+      `;
+    });
+    if (email) {
+      sendSubscriptionConfirmed({
+        to: email,
+        dryRun: false,
+        tierLabel: TIER_BRANDING[paymentTier].label,
+        amountUsd: 0,
+        period: billingPeriod,
+        nextRenewalIso: expiresAtIso.slice(0, 10),
+      }).catch((e) => console.warn('[promo-grant] confirmation email failed:', e));
+    }
+    return NextResponse.json(
+      {
+        ok: true,
+        orderId,
+        paymentUrl: successUrl,
+        amountUsd: 0,
+        currency: 'USD',
+        tier: paymentTier,
+        period: billingPeriod,
+        promoGranted: true,
+      },
+      { headers: NO_STORE },
+    );
+  }
 
   try {
     const maxelPayResponse = await createMaxelPaySession(requestPayload);

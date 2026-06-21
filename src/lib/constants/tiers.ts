@@ -6,8 +6,8 @@
  * 4-tier ladder (May 2026 reshape):
  *   Free   $0   — Demand-gen + SEO entry point. Data terminal, 3 alerts.
  *   Trader $15  — Active retail. All venues + power dashboards + 15 alerts.
- *   Pro    $49  — "I trade for a living". + API archive, tax export,
- *                  custom dashboards, setup scanner.
+ *   Pro    $49  — "I trade for a living". + tax export, custom dashboards,
+ *                  setup scanner.
  *   Whale  $99  — Funds + desks. + Priority alerts, custom webhooks,
  *                 1:1 Telegram.
  *
@@ -57,7 +57,7 @@ export interface TierLimits {
   maxAlerts: number;
   /** Max watched HL/gTrade wallets via /watch */
   maxWatchedWallets: number;
-  /** Days of historical funding / OI / liquidations data accessible. */
+  /** Days of historical funding / OI data the API will serve (accrues from launch — not backfilled). */
   historyDays: number;
   /** Cumulative funding / OI window granted to API keys. */
   archiveDays: number;
@@ -93,7 +93,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     apiPerDay: Infinity,
     maxAlerts: Infinity,
     maxWatchedWallets: Infinity,
-    historyDays: 365 * 5,                   // 5y
+    historyDays: 365 * 5,
     archiveDays: 365 * 5,
   },
 };
@@ -151,7 +151,7 @@ export const TIER_BRANDING: Record<Tier, TierBranding> = {
     bgTint: 'bg-emerald-500/[0.04]',
     borderTint: 'border-emerald-400/30',
     iconName: 'Zap',
-    tagline: 'Trade for a living — API archive, tax export, custom dashboards, setup scanner',
+    tagline: 'Trade for a living — tax export, custom dashboards, setup scanner',
   },
   whale: {
     label: 'Whale',
@@ -213,14 +213,14 @@ export const TOOLS_BY_TIER: TierToolList[] = [
       { label: 'Token Unlocks', href: '/token-unlocks', hint: 'Vesting + cliffs' },
       { label: 'Liq Heatmap', href: '/liquidation-heatmap' },
       { label: 'News + Sentiment', href: '/news' },
-      { label: '3 custom alerts · 5 watched wallets', hint: '30d history · 100 API req/min · 5k req/day' },
+      { label: '3 custom alerts · 5 watched wallets', hint: '100 API req/min · 5k req/day' },
       { label: 'Community Telegram support' },
     ],
   },
   {
     tier: 'trader',
     heading: 'Trader adds',
-    description: 'Everything in Free, plus more alerts and watched wallets, longer history, and active-retail power tools.',
+    description: 'Everything in Free, plus more alerts and watched wallets, and active-retail power tools.',
     items: [
       { label: 'Spreads', href: '/spreads', hint: 'Cross-venue arb · net-of-fees' },
       { label: 'Funding Arb', href: '/spread-scanner', hint: 'Long/short pair grader A→D' },
@@ -231,20 +231,19 @@ export const TOOLS_BY_TIER: TierToolList[] = [
       { label: 'HL Whales', href: '/hl-whales', hint: 'Top Hyperliquid positions' },
       { label: 'On-Chain', href: '/onchain', hint: 'MVRV · NUPL · network metrics' },
       { label: 'FOMC Playbook', href: '/fomc-playbook' },
-      { label: '15 custom alerts · 30 watched wallets', hint: '180d history · 200 API req/min · 25k req/day' },
+      { label: '15 custom alerts · 30 watched wallets', hint: '200 API req/min · 25k req/day' },
       { label: 'Priority email + DM support' },
     ],
   },
   {
     tier: 'pro',
     heading: 'Pro adds',
-    description: 'Everything in Trader, plus API archive, tax CSV, custom dashboards, and the setup scanner.',
+    description: 'Everything in Trader, plus tax CSV, custom dashboards, and the setup scanner.',
     items: [
-      { label: 'API funding-history archive (1y)', href: '/developers/docs', hint: 'Bulk historical funding export via /api/v1/funding/history' },
       { label: 'Tax CSV export', href: '/positions/tax', hint: 'Positions + funding paid + realized PnL' },
       { label: 'Custom dashboards', href: '/dashboard', hint: 'Drag/drop tiles · save layouts' },
       { label: 'Setup scanner', href: '/breakouts', hint: 'Breakout / range / divergence across top 200' },
-      { label: '75 custom alerts · 200 watched wallets', hint: '1y history · 600 API req/min · unlimited daily' },
+      { label: '75 custom alerts · 200 watched wallets', hint: '600 API req/min · unlimited daily' },
       { label: 'Priority email + DM support · 12h response' },
     ],
   },
@@ -255,7 +254,6 @@ export const TOOLS_BY_TIER: TierToolList[] = [
     items: [
       { label: 'Priority alert delivery', hint: 'Dedicated Whale queue — delivers in seconds, vs the 5-min standard cron' },
       { label: 'Custom alert webhooks', href: '/developers/webhooks', hint: 'HMAC-signed POSTs to your endpoint' },
-      { label: 'API funding-history archive (5y)', href: '/developers/docs', hint: 'Full funding-history export, unlimited rate' },
       { label: 'Unlimited alerts · unlimited watched wallets' },
       { label: '1:1 Telegram channel with the team', hint: 'Feature requests + priority response' },
     ],
@@ -294,7 +292,6 @@ export const FEATURE_MATRIX: FeatureGroup[] = [
   // ── Market data ──
   // The API bulk-export archive and the in-app funding/OI chart window are the
   // same per-tier depth, so they're one row instead of two identical-looking ones.
-  { group: 'Market data', label: 'Historical data window (API + in-app · accrues from launch)', values: { free: '30 days', trader: '180 days', pro: '1 year', whale: '5 years' } },
   { group: 'Market data', label: `Real-time aggregator (${ALL_EXCHANGES.length} venues)`, values: { free: true, trader: true, pro: true, whale: true } },
   { group: 'Market data', label: 'Smart Money + Hyperliquid whale feeds', values: { free: false, trader: true, pro: true, whale: true } },
   // ── Pro power tools ──

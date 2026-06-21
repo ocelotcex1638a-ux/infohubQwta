@@ -21,7 +21,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Star, RefreshCw, X, ExternalLink, ArrowUpDown, Plus, AlertTriangle, Bell } from 'lucide-react';
+import { Star, RefreshCw, X, ExternalLink, ArrowUpDown, Plus, AlertTriangle, Bell, TrendingUp, TrendingDown } from 'lucide-react';
 import PageHero from '@/components/PageHero';
 import { useTraderBookmarks, type TraderBookmark } from '@/hooks/useTraderBookmarks';
 import { useTraderAlerts } from '@/hooks/useTraderAlerts';
@@ -556,7 +556,8 @@ export default function TraderWatchPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+        <StatTile label="Traders" value={`${bookmarks.length}`} />
         <StatTile label="Total notional" value={fmtUsd(totals.totalSize)} />
         <StatTile
           label="Aggregate PnL"
@@ -579,32 +580,57 @@ export default function TraderWatchPage() {
         watchedCount={bookmarks.length}
       />
 
-      {/* Watched-traders strip. Each chip is also a filter — click to
-          narrow the table to just that trader, click again to clear.
-          The X button still removes the bookmark entirely. */}
-      <div className="mb-3 flex flex-wrap gap-2 items-center">
-        {bookmarks.map(b => (
-          <BookmarkChip
-            key={b.address}
-            bookmark={b}
-            active={filterAddr === b.address}
-            onSelect={() => setFilterAddr(prev => prev === b.address ? null : b.address)}
-            onRemove={() => {
-              if (filterAddr === b.address) setFilterAddr(null);
-              remove(b.address);
-            }}
-          />
-        ))}
-        {filterAddr && (
-          <button
-            type="button"
-            onClick={() => setFilterAddr(null)}
-            className="text-[10px] text-neutral-500 hover:text-white inline-flex items-center gap-1 px-2 py-1 rounded border border-white/[0.06] hover:border-white/[0.15] transition-colors"
-          >
-            <X className="w-2.5 h-2.5" />
-            Clear filter
-          </button>
-        )}
+      {/* Trader cards grid — one card per bookmarked trader showing their
+          live positions summary. Click to filter the table below to just
+          that trader; hover to reveal the remove (X) button. */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[10px] uppercase tracking-[0.18em] text-neutral-500 font-bold flex items-center gap-1.5">
+            <Star className="w-3 h-3 text-hub-yellow fill-current" />
+            Watched traders
+            <span className="font-mono text-neutral-700 normal-case tracking-normal">({bookmarks.length})</span>
+          </h2>
+          {filterAddr && (
+            <button
+              type="button"
+              onClick={() => setFilterAddr(null)}
+              className="text-[10px] text-hub-yellow hover:text-hub-yellow/80 inline-flex items-center gap-1 transition-colors"
+            >
+              <X className="w-3 h-3" /> Clear filter
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {bookmarks.map(b => (
+            <TraderCard
+              key={b.address}
+              bookmark={b}
+              positions={positions}
+              active={filterAddr === b.address}
+              loading={!hasLoadedOnce}
+              onSelect={() => setFilterAddr(prev => prev === b.address ? null : b.address)}
+              onRemove={() => {
+                if (filterAddr === b.address) setFilterAddr(null);
+                remove(b.address);
+              }}
+            />
+          ))}
+          {/* Add more traders shortcut */}
+          <div className="card-premium p-4 border-dashed flex flex-col items-center justify-center gap-3 opacity-50 hover:opacity-100 transition-opacity min-h-[140px]">
+            <Plus className="w-5 h-5 text-neutral-500" />
+            <div className="text-center">
+              <div className="text-xs text-neutral-400 font-medium mb-2">Watch more traders</div>
+              <div className="flex flex-col gap-1.5">
+                <Link href="/hl-traders" className="text-[10px] text-hub-yellow hover:underline flex items-center gap-1 justify-center">
+                  HL leaderboard <ExternalLink className="w-2.5 h-2.5" />
+                </Link>
+                <Link href="/gmx-traders" className="text-[10px] text-neutral-400 hover:text-white flex items-center gap-1 justify-center">
+                  GMX leaderboard <ExternalLink className="w-2.5 h-2.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Side filter chips — sit just above the table to make the
@@ -709,6 +735,152 @@ function StatTile({ label, value, tone }: { label: string; value: string; tone?:
   );
 }
 
+function TraderCard({
+  bookmark, positions, active, onSelect, onRemove, loading,
+}: {
+  bookmark: TraderBookmark;
+  positions: NormalizedPosition[];
+  active: boolean;
+  onSelect: () => void;
+  onRemove: () => void;
+  loading: boolean;
+}) {
+  const label = bookmark.displayName?.trim() || trunc(bookmark.address);
+  const myPositions = positions.filter(p => p.trader === bookmark.address.toLowerCase());
+  const totalSize = myPositions.reduce((s, p) => s + p.sizeUsd, 0);
+  const totalPnl = myPositions.reduce((s, p) => s + (p.unrealizedPnl ?? 0), 0);
+  const longs = myPositions.filter(p => p.side === 'long').length;
+  const shorts = myPositions.filter(p => p.side === 'short').length;
+  const venues = myPositions.map(p => p.venue).filter((v, i, arr) => arr.indexOf(v) === i);
+  const liqDanger = myPositions.some(p => p.liqDistPct != null && p.liqDistPct < 5);
+  const pnlPositive = totalPnl >= 0;
+  const hue = parseInt(bookmark.address.slice(2, 6), 16) % 360;
+
+  const venueStyle = (v: string) =>
+    v === 'GMX'    ? 'bg-blue-500/[0.10] text-blue-300 border-blue-400/20' :
+    v === 'HL'     ? 'bg-purple-500/[0.10] text-purple-300 border-purple-400/20' :
+    'bg-amber-500/[0.10] text-amber-300 border-amber-400/20';
+
+  return (
+    <div
+      className={`relative group card-premium p-4 cursor-pointer transition-all select-none ${
+        liqDanger
+          ? 'ring-1 ring-red-500/40'
+          : active
+          ? 'ring-1 ring-hub-yellow/50 bg-hub-yellow/[0.02]'
+          : 'hover:bg-white/[0.015]'
+      }`}
+      onClick={onSelect}
+      role="button"
+      aria-pressed={active}
+      tabIndex={0}
+      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onSelect()}
+    >
+      {/* Remove button */}
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); onRemove(); }}
+        className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-red-400 transition-all"
+        aria-label={`Remove ${label} from watchlist`}
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+
+      {/* Liq danger badge */}
+      {liqDanger && (
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-red-500/15 border border-red-500/30 rounded px-1.5 py-0.5">
+          <AlertTriangle className="w-3 h-3 text-red-400" />
+          <span className="text-[9px] font-bold text-red-400 uppercase tracking-wider">Liq risk</span>
+        </div>
+      )}
+
+      {/* Avatar + name */}
+      <div className={`flex items-center gap-3 mb-3 ${liqDanger ? 'mt-6' : ''}`}>
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 border border-white/[0.08]"
+          style={{ background: `hsl(${hue},35%,18%)`, color: `hsl(${hue},60%,70%)` }}
+          aria-hidden
+        >
+          {label.slice(0, 2).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-mono text-[13px] font-bold text-white truncate">{label}</div>
+          <div className="flex items-center gap-1 mt-1 flex-wrap">
+            {venues.length > 0 ? venues.map(v => (
+              <span key={v} className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${venueStyle(v)}`}>
+                {v}
+              </span>
+            )) : (
+              <span className="text-[10px] text-neutral-600 italic">loading…</span>
+            )}
+            {active && (
+              <span className="text-[9px] font-bold text-hub-yellow bg-hub-yellow/[0.08] px-1.5 py-0.5 rounded border border-hub-yellow/20">
+                Filtered
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      {loading ? (
+        <div className="space-y-1.5">
+          <div className="h-3 rounded bg-white/[0.04] animate-pulse" />
+          <div className="h-3 rounded bg-white/[0.04] animate-pulse w-3/4" />
+        </div>
+      ) : myPositions.length === 0 ? (
+        <div className="text-[11px] text-neutral-600 italic py-1">No open positions</div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-1 text-center mb-3">
+            <div className="bg-white/[0.02] rounded-lg py-2">
+              <div className="font-mono font-bold text-sm text-white tabular-nums">{myPositions.length}</div>
+              <div className="text-[9px] uppercase tracking-wider text-neutral-600 mt-0.5">Positions</div>
+            </div>
+            <div className="bg-white/[0.02] rounded-lg py-2">
+              <div className="font-mono font-bold text-sm text-white tabular-nums">{fmtUsd(totalSize)}</div>
+              <div className="text-[9px] uppercase tracking-wider text-neutral-600 mt-0.5">Notional</div>
+            </div>
+            <div className="bg-white/[0.02] rounded-lg py-2">
+              <div className={`font-mono font-bold text-sm tabular-nums inline-flex items-center gap-0.5 ${pnlPositive ? 'text-green-400' : 'text-red-400'}`}>
+                {pnlPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {fmtUsd(totalPnl, { sign: true })}
+              </div>
+              <div className="text-[9px] uppercase tracking-wider text-neutral-600 mt-0.5">PnL</div>
+            </div>
+          </div>
+
+          {/* L/S ratio bar */}
+          {(longs + shorts) > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1 rounded-full overflow-hidden bg-white/[0.04]">
+                <div
+                  className="h-full bg-green-400/50 rounded-full"
+                  style={{ width: `${(longs / (longs + shorts)) * 100}%` }}
+                />
+              </div>
+              <span className="text-[9px] font-mono text-neutral-500 tabular-nums shrink-0">
+                {longs}L · {shorts}S
+              </span>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Profile link */}
+      <Link
+        href={`/trader/${bookmark.address}`}
+        onClick={e => e.stopPropagation()}
+        className="mt-3 pt-3 border-t border-white/[0.04] flex items-center justify-between text-[10px] text-neutral-600 hover:text-hub-yellow transition-colors group/link"
+        tabIndex={-1}
+      >
+        <span>View full profile</span>
+        <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+      </Link>
+    </div>
+  );
+}
+
 function BookmarkChip({
   bookmark, active, onSelect, onRemove,
 }: {
@@ -733,7 +905,7 @@ function BookmarkChip({
         aria-pressed={active}
         title={active ? 'Click to clear filter' : 'Click to filter table to this trader'}
       >
-        <Star className={`w-3 h-3 ${active ? 'text-hub-yellow' : 'text-hub-yellow'} fill-current`} />
+        <Star className={`w-3 h-3 text-hub-yellow fill-current`} />
         <span className="text-white">{label}</span>
       </button>
       <button

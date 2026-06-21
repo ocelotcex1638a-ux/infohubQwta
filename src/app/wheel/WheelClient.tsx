@@ -2,21 +2,33 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { Copy, Check, ArrowRight, Zap } from 'lucide-react';
 
 // ─── Segment data — order must match SEGMENTS in /api/wheel/spin/route.ts ───
 const SEGS = [
-  { line1: '10%',    line2: 'OFF',   color: '#f59e0b', dark: true  },
-  { line1: 'TRADER', line2: 'FREE',  color: '#10b981', dark: false },
-  { line1: '5%',     line2: 'OFF',   color: '#3b82f6', dark: false },
-  { line1: '20%',    line2: 'OFF',   color: '#f97316', dark: false },
-  { line1: '10%',    line2: 'OFF',   color: '#a855f7', dark: false },
-  { line1: '15%',    line2: 'OFF',   color: '#06b6d4', dark: true  },
-  { line1: '30%',    line2: 'OFF',   color: '#ec4899', dark: false },
-  { line1: 'PRO',    line2: 'FREE',  color: '#eab308', dark: true  },
+  { line1: '10%',    line2: 'OFF',   color: '#f59e0b', textColor: '#000', glowColor: 'rgba(245,158,11,0.6)' },
+  { line1: 'TRADER', line2: 'FREE',  color: '#10b981', textColor: '#fff', glowColor: 'rgba(16,185,129,0.6)' },
+  { line1: '5%',     line2: 'OFF',   color: '#6366f1', textColor: '#fff', glowColor: 'rgba(99,102,241,0.6)' },
+  { line1: '20%',    line2: 'OFF',   color: '#f97316', textColor: '#fff', glowColor: 'rgba(249,115,22,0.6)' },
+  { line1: '10%',    line2: 'OFF',   color: '#a855f7', textColor: '#fff', glowColor: 'rgba(168,85,247,0.6)' },
+  { line1: '15%',    line2: 'OFF',   color: '#06b6d4', textColor: '#000', glowColor: 'rgba(6,182,212,0.6)' },
+  { line1: '30%',    line2: 'OFF',   color: '#ec4899', textColor: '#fff', glowColor: 'rgba(236,72,153,0.6)' },
+  { line1: 'PRO',    line2: 'FREE',  color: '#eab308', textColor: '#000', glowColor: 'rgba(234,179,8,0.6)'  },
 ] as const;
 
+const PRIZE_LABELS = [
+  '5% off',
+  '10% off',
+  '10% off',
+  '15% off',
+  '20% off',
+  '30% off',
+  '1 mo Trader FREE',
+  '1 mo Pro FREE',
+];
+
 // ─── SVG helpers ─────────────────────────────────────────────────────────────
-const CX = 200, CY = 200, R = 178;
+const CX = 200, CY = 200, R = 175;
 
 function toXY(deg: number, r = R): [number, number] {
   const a = (deg * Math.PI) / 180;
@@ -48,6 +60,7 @@ export default function WheelClient() {
   const [prize, setPrize] = useState<Prize | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pulseGlow, setPulseGlow] = useState(false);
   const revealTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -56,11 +69,19 @@ export default function WheelClient() {
 
   useEffect(() => () => { if (revealTimer.current) clearTimeout(revealTimer.current); }, []);
 
+  // Idle pulse glow animation
+  useEffect(() => {
+    if (phase !== 'idle') return;
+    const id = setInterval(() => setPulseGlow(p => !p), 1800);
+    return () => clearInterval(id);
+  }, [phase]);
+
   async function handleSpin(e: React.FormEvent) {
     e.preventDefault();
     if (phase !== 'idle') return;
     setError(null);
     setPhase('loading');
+    setPulseGlow(false);
 
     try {
       const res = await fetch('/api/wheel/spin', {
@@ -77,7 +98,6 @@ export default function WheelClient() {
       }
 
       setPrize(data);
-
       const segCenter = (data.segment + 0.5) * 45;
       const baseOffset = (360 - segCenter + 360) % 360;
 
@@ -108,33 +128,88 @@ export default function WheelClient() {
 
   const isSpinning = phase === 'spinning';
   const showResult = phase === 'result' || phase === 'already';
-  const winColor = prize ? (SEGS[prize.segment]?.color ?? '#f59e0b') : '#f59e0b';
   const spinDuration = prize?.alreadySpun ? '3s' : '4.5s';
   const isLoggedIn = !!session?.user?.email;
+  const winSeg = prize ? SEGS[prize.segment] : null;
+  const winColor = winSeg?.color ?? '#f59e0b';
+  const winGlow = winSeg?.glowColor ?? 'rgba(245,158,11,0.5)';
 
   return (
-    <div className="min-h-screen bg-hub-black flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-hub-black flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden">
+
+      {/* Background radial glow */}
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
+        style={{
+          background: showResult
+            ? `radial-gradient(ellipse 60% 50% at 50% 40%, ${winGlow} 0%, transparent 70%)`
+            : `radial-gradient(ellipse 50% 40% at 50% 35%, rgba(234,179,8,${pulseGlow ? '0.10' : '0.05'}) 0%, transparent 65%)`,
+          opacity: 1,
+        }}
+      />
+
+      {/* Back link */}
+      <Link
+        href="/"
+        className="absolute top-5 left-5 text-[11px] text-neutral-600 hover:text-neutral-400 transition-colors font-mono tracking-wider flex items-center gap-1"
+      >
+        ← InfoHub
+      </Link>
 
       {/* Header */}
-      <div className="text-center mb-8 space-y-2">
-        <Link href="/" className="inline-block mb-4 opacity-50 hover:opacity-100 transition-opacity">
-          <span className="font-mono font-bold text-hub-accent text-lg tracking-wide">InfoHub</span>
-        </Link>
-        <h1 className="text-3xl sm:text-4xl font-black text-white">Lucky Wheel</h1>
-        <p className="text-sm text-hub-text-muted max-w-xs mx-auto leading-relaxed">
-          One spin per email. Win a discount on any InfoHub plan.
+      <div className="text-center mb-6 relative z-10">
+        <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-400/20 rounded-full px-3 py-1 text-[11px] font-bold text-amber-300 uppercase tracking-widest mb-3">
+          <Zap className="w-3 h-3" />
+          Limited · 1 spin per email
+        </div>
+        <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none">
+          Lucky <span className="text-amber-400">Wheel</span>
+        </h1>
+        <p className="text-sm text-neutral-500 mt-2 max-w-[260px] mx-auto">
+          Spin once. Win a discount on any InfoHub plan — instantly.
         </p>
       </div>
 
-      {/* Wheel */}
-      <div className="relative mb-8">
+      {/* Wheel container */}
+      <div className="relative mb-6 z-10">
+        {/* Outer glow ring */}
+        <div
+          className="absolute inset-0 rounded-full pointer-events-none transition-all duration-1000"
+          style={{
+            boxShadow: showResult
+              ? `0 0 80px 20px ${winGlow}, 0 0 160px 40px ${winGlow.replace('0.6', '0.2')}`
+              : `0 0 40px 8px rgba(234,179,8,${pulseGlow ? '0.18' : '0.08'})`,
+          }}
+        />
+
         <svg
           viewBox="0 0 400 400"
-          width={320}
-          height={320}
-          className="block overflow-visible"
+          width={340}
+          height={340}
+          className="block overflow-visible drop-shadow-2xl"
           aria-hidden="true"
         >
+          {/* Outer decorative ring */}
+          <circle cx={CX} cy={CY} r={R + 12} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
+          <circle cx={CX} cy={CY} r={R + 8} fill="none" stroke="rgba(234,179,8,0.20)" strokeWidth="1.5" />
+
+          {/* Tick marks on rim */}
+          {Array.from({ length: 24 }).map((_, i) => {
+            const a = (i * 15 * Math.PI) / 180;
+            const r1 = R + 5, r2 = R + 9;
+            return (
+              <line
+                key={i}
+                x1={(CX + r1 * Math.sin(a)).toFixed(2)}
+                y1={(CY - r1 * Math.cos(a)).toFixed(2)}
+                x2={(CX + r2 * Math.sin(a)).toFixed(2)}
+                y2={(CY - r2 * Math.cos(a)).toFixed(2)}
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth="1.5"
+              />
+            );
+          })}
+
           {/* Spinning group */}
           <g
             style={{
@@ -148,64 +223,80 @@ export default function WheelClient() {
           >
             {SEGS.map((seg, i) => {
               const midDeg = (i + 0.5) * 45;
-              const [tx, ty] = toXY(midDeg, R * 0.62);
+              const [tx, ty] = toXY(midDeg, R * 0.63);
               return (
                 <g key={i}>
-                  <path d={segPath(i)} fill={seg.color} stroke="#0d0d0d" strokeWidth="2" />
+                  <path d={segPath(i)} fill={seg.color} />
+                  {/* Subtle inner segment divider lines */}
+                  <path d={segPath(i)} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1.5" />
                   <text
                     x={tx.toFixed(2)}
                     y={ty.toFixed(2)}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fill={seg.dark ? '#000' : '#fff'}
-                    fontSize="13"
-                    fontWeight="800"
+                    fill={seg.textColor}
+                    fontSize="12"
+                    fontWeight="900"
                     fontFamily="Inter, system-ui, sans-serif"
                     transform={`rotate(${midDeg.toFixed(1)}, ${tx.toFixed(2)}, ${ty.toFixed(2)})`}
+                    style={{ letterSpacing: '0.05em' }}
                   >
-                    <tspan x={tx.toFixed(2)} dy="-0.55em">{seg.line1}</tspan>
-                    <tspan x={tx.toFixed(2)} dy="1.1em">{seg.line2}</tspan>
+                    <tspan x={tx.toFixed(2)} dy="-0.6em">{seg.line1}</tspan>
+                    <tspan x={tx.toFixed(2)} dy="1.2em">{seg.line2}</tspan>
                   </text>
                 </g>
               );
             })}
           </g>
 
-          {/* Outer rim */}
-          <circle cx={CX} cy={CY} r={R + 5} fill="none" stroke="#2a2a2a" strokeWidth="3" />
+          {/* Center cap — gradient */}
+          <circle cx={CX} cy={CY} r={28} fill="url(#capGrad)" />
+          <circle cx={CX} cy={CY} r={28} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
+          <circle cx={CX} cy={CY} r={16} fill="#0d0d0d" />
 
-          {/* Center cap */}
-          <circle cx={CX} cy={CY} r={30} fill="#0d0d0d" stroke="#2a2a2a" strokeWidth="2" />
-          <circle cx={CX} cy={CY} r={18} fill="#151515" />
+          {/* InfoHub dot in center */}
+          <circle cx={CX} cy={CY} r={5} fill="#eab308" />
 
-          {/* Pointer — fixed, points down at the top of the wheel */}
+          {/* Pointer triangle at top */}
           <polygon
-            points={`${CX},26 ${CX - 11},4 ${CX + 11},4`}
+            points={`${CX},${CY - R + 2} ${CX - 13},${CY - R - 20} ${CX + 13},${CY - R - 20}`}
             fill="#f59e0b"
+            filter="url(#pointerGlow)"
+          />
+          <polygon
+            points={`${CX},${CY - R + 2} ${CX - 13},${CY - R - 20} ${CX + 13},${CY - R - 20}`}
+            fill="none"
             stroke="#0d0d0d"
             strokeWidth="1.5"
             strokeLinejoin="round"
           />
-        </svg>
 
-        {/* Win glow */}
-        {showResult && (
-          <div
-            className="absolute inset-0 rounded-full -z-10 pointer-events-none blur-3xl"
-            style={{ background: winColor, opacity: 0.15 }}
-          />
-        )}
+          {/* Defs */}
+          <defs>
+            <radialGradient id="capGrad" cx="50%" cy="30%" r="70%">
+              <stop offset="0%" stopColor="#2a2a2a" />
+              <stop offset="100%" stopColor="#0d0d0d" />
+            </radialGradient>
+            <filter id="pointerGlow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+        </svg>
       </div>
 
       {/* Form / Result */}
-      <div className="w-full max-w-[340px]">
+      <div className="w-full max-w-[360px] relative z-10">
         {!showResult ? (
           <form onSubmit={handleSpin} className="space-y-3">
             {isLoggedIn ? (
-              <p className="text-center text-xs text-hub-text-muted">
+              <div className="text-center text-xs text-neutral-500 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-2.5">
                 Spinning as{' '}
-                <span className="text-white font-medium">{session.user!.email}</span>
-              </p>
+                <span className="text-white font-semibold">{session.user!.email}</span>
+              </div>
             ) : (
               <input
                 type="email"
@@ -214,82 +305,140 @@ export default function WheelClient() {
                 placeholder="your@email.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full bg-hub-secondary border border-hub-border rounded-xl px-4 py-3 text-white placeholder-hub-text-muted text-sm focus:outline-none focus:border-hub-accent transition-colors"
+                className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder-neutral-600 text-sm focus:outline-none focus:border-amber-400/50 focus:bg-white/[0.06] transition-all"
               />
             )}
 
             {error && (
-              <p className="text-red-400 text-xs text-center">{error}</p>
+              <p className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                {error}
+              </p>
             )}
 
             <button
               type="submit"
               disabled={phase !== 'idle'}
-              className="w-full py-3.5 rounded-xl font-black text-lg tracking-wide bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-amber-500/20 active:scale-[0.98]"
+              className="w-full py-4 rounded-xl font-black text-lg tracking-wide transition-all active:scale-[0.98] relative overflow-hidden"
+              style={{
+                background: phase !== 'idle'
+                  ? 'rgba(234,179,8,0.3)'
+                  : 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
+                color: phase !== 'idle' ? '#888' : '#000',
+                boxShadow: phase === 'idle' ? '0 0 32px rgba(245,158,11,0.3), 0 4px 16px rgba(0,0,0,0.4)' : 'none',
+              }}
             >
-              {phase === 'loading' ? 'Getting prize…' : phase === 'spinning' ? 'Spinning…' : '🎡 SPIN'}
+              {phase === 'loading'
+                ? 'Getting your prize…'
+                : phase === 'spinning'
+                ? 'Spinning…'
+                : '🎡  SPIN THE WHEEL'}
             </button>
 
-            <p className="text-center text-xs text-hub-text-muted">
-              One spin per email · Code emailed to you
+            <p className="text-center text-[11px] text-neutral-600">
+              One spin per email · Valid 30 days · Applied at checkout
             </p>
+
+            {/* Prize preview strip */}
+            <div className="pt-2">
+              <p className="text-[10px] uppercase tracking-widest text-neutral-600 text-center mb-2 font-semibold">
+                Possible prizes
+              </p>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {PRIZE_LABELS.map((label, i) => (
+                  <span
+                    key={i}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                    style={{
+                      background: SEGS[i % SEGS.length].color + '18',
+                      borderColor: SEGS[i % SEGS.length].color + '40',
+                      color: SEGS[i % SEGS.length].color,
+                    }}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
           </form>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {phase === 'already' && (
-              <p className="text-center text-xs font-semibold uppercase tracking-widest" style={{ color: winColor }}>
-                Your previously won prize
-              </p>
+              <div className="text-center text-xs font-bold uppercase tracking-widest py-1.5 px-3 rounded-lg border"
+                style={{ color: winColor, borderColor: winColor + '40', background: winColor + '12' }}>
+                You already spun — here&apos;s your prize
+              </div>
             )}
 
+            {/* Prize card */}
             <div
-              className="rounded-2xl border p-5 text-center space-y-3"
-              style={{ borderColor: winColor + '50', background: winColor + '0f' }}
+              className="rounded-2xl border p-6 text-center space-y-4 relative overflow-hidden"
+              style={{
+                borderColor: winColor + '50',
+                background: `linear-gradient(135deg, ${winColor}10 0%, ${winColor}06 100%)`,
+                boxShadow: `0 0 40px ${winColor}20`,
+              }}
             >
-              <p className="text-xs uppercase tracking-widest" style={{ color: winColor }}>
-                You won
-              </p>
-              <p className="text-2xl font-black text-white leading-tight">
-                {prize?.prizeText}
-              </p>
+              {/* Decorative shine */}
+              <div
+                className="absolute top-0 left-0 right-0 h-px opacity-60"
+                style={{ background: `linear-gradient(90deg, transparent, ${winColor}80, transparent)` }}
+              />
+
               <div>
-                <p className="text-xs text-hub-text-muted mb-2">Your promo code</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-1" style={{ color: winColor }}>
+                  {phase === 'already' ? 'Your prize' : '🎉 You won'}
+                </p>
+                <p className="text-3xl font-black text-white leading-tight">
+                  {prize?.prizeText}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[10px] text-neutral-500 mb-2 uppercase tracking-wider">Promo code</p>
                 <div className="flex items-center justify-center gap-2">
                   <span
-                    className="font-mono font-bold text-xl tracking-widest text-white bg-hub-secondary rounded-lg px-4 py-2.5 border border-hub-border"
+                    className="font-mono font-black text-xl tracking-[0.15em] text-white px-4 py-2.5 rounded-xl border select-all"
+                    style={{
+                      background: 'rgba(0,0,0,0.4)',
+                      borderColor: winColor + '40',
+                    }}
                   >
                     {prize?.promoCode}
                   </span>
                   <button
                     onClick={copyCode}
-                    className="px-3 py-2.5 rounded-lg text-xs font-bold transition-all"
+                    className="p-2.5 rounded-xl border transition-all"
                     style={
                       copied
-                        ? { background: winColor + '25', color: winColor }
-                        : { background: '#1a1a1a', color: '#888' }
+                        ? { background: winColor + '25', borderColor: winColor, color: winColor }
+                        : { background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)', color: '#888' }
                     }
                   >
-                    {copied ? '✓ Copied' : 'Copy'}
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
-            </div>
 
-            <p className="text-center text-xs text-hub-text-muted">
-              Valid 30 days · Code also sent to {email}
-            </p>
+              <p className="text-[11px] text-neutral-500">
+                Code sent to <span className="text-neutral-300">{email}</span> · Valid 30 days
+              </p>
+            </div>
 
             <Link
               href={`/pricing?promo=${encodeURIComponent(prize?.promoCode ?? '')}`}
-              className="block w-full py-3 rounded-xl font-bold text-sm text-center text-black transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: winColor }}
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-black text-base text-black transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{
+                background: `linear-gradient(135deg, ${winColor}, ${winColor}cc)`,
+                boxShadow: `0 4px 20px ${winGlow}`,
+              }}
             >
-              Upgrade now →
+              Claim at checkout
+              <ArrowRight className="w-4 h-4" />
             </Link>
 
             <Link
               href="/"
-              className="block text-center text-xs text-hub-text-muted hover:text-white transition-colors"
+              className="block text-center text-[11px] text-neutral-600 hover:text-neutral-400 transition-colors"
             >
               ← Back to InfoHub
             </Link>

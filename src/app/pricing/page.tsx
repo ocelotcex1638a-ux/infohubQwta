@@ -24,30 +24,9 @@ import {
   type TierToolList,
 } from '@/lib/constants/tiers';
 import { LAUNCH_CUTOVER_LABEL, LAUNCH_CUTOVER_DAY_LABEL } from '@/lib/launch';
+import { parsePromoDiscount, type PromoDiscount } from '@/lib/promo';
 
 type Period = 'monthly' | 'annual';
-
-interface PromoDiscount {
-  pct: number;
-  freeTier: Tier | null;
-  label: string;
-}
-
-/** Parse the discount from a Lucky Wheel promo code: IH-{SEGID}-{RANDOM6} */
-function parsePromoDiscount(code: string | null): PromoDiscount | null {
-  if (!code) return null;
-  const parts = code.toUpperCase().split('-');
-  if (parts.length < 3 || parts[0] !== 'IH') return null;
-  const key = parts[1];
-  if (key === '5OFF') return { pct: 5, freeTier: null, label: '5% off your first month' };
-  if (key === '10OFF' || key === '10OFFB') return { pct: 10, freeTier: null, label: '10% off your first month' };
-  if (key === '15OFF') return { pct: 15, freeTier: null, label: '15% off your first month' };
-  if (key === '20OFF') return { pct: 20, freeTier: null, label: '20% off your first month' };
-  if (key === '30OFF') return { pct: 30, freeTier: null, label: '30% off your first month' };
-  if (key === 'TRADER') return { pct: 100, freeTier: 'trader', label: '1 month Trader FREE' };
-  if (key === 'PRO') return { pct: 100, freeTier: 'pro', label: '1 month Pro FREE' };
-  return null;
-}
 
 function calcDiscountedPrice(price: number, pct: number): string {
   const d = price * (1 - pct / 100);
@@ -344,11 +323,7 @@ export default function PricingPage() {
             />
             <FaqItem
               q="What's the difference between Trader, Pro, and Whale?"
-              a={`Trader ($${TIER_PRICE_MONTHLY.trader}) is active retail - every venue real-time, ${TIER_LIMITS.trader.maxAlerts} alerts, ${TIER_LIMITS.trader.maxWatchedWallets} wallets, ${TIER_LIMITS.trader.historyDays}d history, ${TIER_LIMITS.trader.apiPerMinute}/min API. Pro ($${TIER_PRICE_MONTHLY.pro}) is "trade for a living" - adds API archive (1y) + Tax CSV export + Custom dashboards + Setup scanner, plus ${TIER_LIMITS.pro.maxAlerts} alerts, ${TIER_LIMITS.pro.maxWatchedWallets} wallets, 1y history, ${TIER_LIMITS.pro.apiPerMinute}/min API. Whale ($${TIER_PRICE_MONTHLY.whale}) is funds + desks - adds priority alert delivery (dedicated queue), custom alert webhooks, 5y archive, unlimited alerts, unlimited watched wallets, and a 1:1 Telegram channel with the team.`}
-            />
-            <FaqItem
-              q="How far back does historical data go?"
-              a={`Your tier sets the maximum lookback you can query - ${TIER_LIMITS.free.historyDays}d (Free), ${TIER_LIMITS.trader.historyDays}d (Trader), 1y (Pro), 5y (Whale). We keep full-resolution funding/OI for 30 days and a daily-downsampled archive beyond that. That archive has been accumulating since launch and grows every day, so the deepest windows fill in over time rather than being backfilled. The funding-history API reports the actual coverage it returned alongside your requested window, so you always know exactly how much data you got.`}
+              a={`Trader ($${TIER_PRICE_MONTHLY.trader}) is active retail - every venue real-time, ${TIER_LIMITS.trader.maxAlerts} alerts, ${TIER_LIMITS.trader.maxWatchedWallets} wallets, ${TIER_LIMITS.trader.apiPerMinute}/min API. Pro ($${TIER_PRICE_MONTHLY.pro}) is "trade for a living" - adds Tax CSV export + Custom dashboards + Setup scanner, plus ${TIER_LIMITS.pro.maxAlerts} alerts, ${TIER_LIMITS.pro.maxWatchedWallets} wallets, ${TIER_LIMITS.pro.apiPerMinute}/min API. Whale ($${TIER_PRICE_MONTHLY.whale}) is funds + desks - adds priority alert delivery (dedicated queue), custom alert webhooks, unlimited alerts, unlimited watched wallets, and a 1:1 Telegram channel with the team.`}
             />
             <FaqItem
               q="Do you charge based on usage?"
@@ -551,9 +526,6 @@ function TierCard({
         <Bullet>
           <strong>{formatLimit(limits.maxWatchedWallets)}</strong> watched wallets
         </Bullet>
-        <Bullet>
-          <strong>{limits.historyDays >= 365 ? `${Math.round(limits.historyDays / 365)}y` : `${limits.historyDays}d`}</strong> historical data
-        </Bullet>
         {tier === 'whale' && (
           <>
             <Bullet>Priority alert delivery (dedicated queue)</Bullet>
@@ -563,7 +535,7 @@ function TierCard({
         )}
         {tier === 'pro' && (
           <>
-            <Bullet>API archive (1y) + Tax CSV + Dashboards + Setup scanner</Bullet>
+            <Bullet>Tax CSV + Dashboards + Setup scanner</Bullet>
             <Bullet>Priority email + DM support / 12h response</Bullet>
           </>
         )}
