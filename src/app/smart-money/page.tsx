@@ -482,7 +482,7 @@ function SmartMoneyContent() {
   const [topN, setTopN] = useState(50);
   const [lookback, setLookback] = useState(90);
   const [search, setSearch] = useState('');
-  const [confMinTier, setConfMinTier] = useState<TraderTier>('B');
+  const [confMinTier, setConfMinTier] = useState<TraderTier>('C');
   const [confMinWallets, setConfMinWallets] = useState(2);
 
   const { bookmarks } = useTraderBookmarks();
@@ -942,8 +942,20 @@ function SmartMoneyContent() {
             )}
 
             {confluenceData && visibleSignals.length === 0 && (
-              <div className="card-premium p-10 text-center text-fg-subtle text-sm">
-                No signals match the current filters.
+              <div className="card-premium p-8 text-center space-y-2">
+                <Radar className="w-6 h-6 text-fg-faint mx-auto" />
+                <p className="text-sm text-fg-subtle">No signals match the current filters.</p>
+                {confMinTier !== 'C' && (
+                  <p className="text-[11px] text-fg-faint">
+                    Only {confluenceData.walletsConsidered} wallets have open positions right now.
+                    Try <button onClick={() => setConfMinTier('C')} className="text-hub-yellow hover:underline font-semibold">Tier C</button> to include more traders.
+                  </p>
+                )}
+                {confMinTier === 'C' && confMinWallets > 2 && (
+                  <p className="text-[11px] text-fg-faint">
+                    Try <button onClick={() => setConfMinWallets(2)} className="text-hub-yellow hover:underline font-semibold">2+ wallets</button> to lower the alignment threshold.
+                  </p>
+                )}
               </div>
             )}
 

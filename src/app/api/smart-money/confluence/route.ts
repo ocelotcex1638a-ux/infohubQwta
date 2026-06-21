@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const topN = Math.min(Math.max(parseInt(request.nextUrl.searchParams.get('topN') ?? '50', 10) || 50, 5), 100);
   const lookbackDays = Math.min(Math.max(parseInt(request.nextUrl.searchParams.get('lookbackDays') ?? '90', 10) || 90, 1), 180);
   const minWallets = Math.min(Math.max(parseInt(request.nextUrl.searchParams.get('minWallets') ?? '2', 10) || 2, 1), 10);
-  const minPositionUsd = Math.min(Math.max(parseInt(request.nextUrl.searchParams.get('minPositionUsd') ?? '25000', 10) || 25_000, 1_000), 1_000_000);
+  const minPositionUsd = Math.min(Math.max(parseInt(request.nextUrl.searchParams.get('minPositionUsd') ?? '10000', 10) || 10_000, 1_000), 1_000_000);
   const minTier = normalizeTier(request.nextUrl.searchParams.get('minTier'));
   const assetFilter = (request.nextUrl.searchParams.get('asset') ?? '').trim().toUpperCase() || null;
   const cacheKey = `${topN}:${lookbackDays}:${minTier}:${minWallets}:${minPositionUsd}:${assetFilter ?? 'all'}`;

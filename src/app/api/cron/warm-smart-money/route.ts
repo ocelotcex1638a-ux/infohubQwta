@@ -50,45 +50,42 @@ export async function GET(req: NextRequest) {
 
   const origin = process.env.NEXT_PUBLIC_BASE_URL || new URL(req.url).origin;
 
-  // Hit both endpoints in parallel — they share underlying lib data so
-  // warming one helps the other.
-  const [smartMoney, leaderboard] = await Promise.all([
+  // Hit all three endpoints in parallel — they share underlying lib data so
+  // warming one helps the other. Confluence is warmed with Tier C + $10K
+  // floor (the UI defaults) so the first real user request hits L1 cache.
+  const [smartMoney, leaderboard, confluence] = await Promise.all([
     timed('smart-money',         `${origin}/api/smart-money?limit=50`),
     timed('smart-money/leaderboard', `${origin}/api/smart-money/leaderboard?topN=50&lookbackDays=90`),
+    timed('smart-money/confluence',  `${origin}/api/smart-money/confluence?topN=50&lookbackDays=90&minTier=C&minWallets=2`),
   ]);
 
-  // Always return 200 — DO rewrites non-2xx into its own generic
-  // "via_upstream (502 -)" HTML which would mask our diagnostics from
-  // systemd journal grepping. But we ALSO log a warn when either
-  // endpoint failed — without this, the cron monitor only sees 200s
-  // and a permanently-broken upstream goes undetected.
-  if (!smartMoney.ok || !leaderboard.ok) {
+  if (!smartMoney.ok || !leaderboard.ok || !confluence.ok) {
     console.warn(
       '[warm-smart-money] partial failure: ' +
       `smartMoney=${smartMoney.ok}/${smartMoney.status}/${smartMoney.ms}ms, ` +
-      `leaderboard=${leaderboard.ok}/${leaderboard.status}/${leaderboard.ms}ms`,
+      `leaderboard=${leaderboard.ok}/${leaderboard.status}/${leaderboard.ms}ms, ` +
+      `confluence=${confluence.ok}/${confluence.status}/${confluence.ms}ms`,
     );
   }
 
-  // Heartbeat — was missing. The route always returns 200 so DO doesn't
-  // rewrite the body, which meant the cron-monitor HTTP grep couldn't see
-  // failure. Heartbeat reflects real cache-warm health.
-  const allOk = smartMoney.ok && leaderboard.ok;
+  const allOk = smartMoney.ok && leaderboard.ok && confluence.ok;
   await upsertWorkerHeartbeat(
     'cron:warm-smart-money',
     allOk ? 'ok' : 'degraded',
     {
       smartMoneyMs: smartMoney.ms,
       leaderboardMs: leaderboard.ms,
+      confluenceMs: confluence.ms,
       smartMoneyStatus: smartMoney.status,
       leaderboardStatus: leaderboard.status,
+      confluenceStatus: confluence.status,
     },
   ).catch(e => console.error('[warm-smart-money] heartbeat error:', e));
 
   return NextResponse.json(
     {
       ok: allOk,
-      results: { smartMoney, leaderboard },
+      results: { smartMoney, leaderboard, confluence },
       ts: Date.now(),
     },
     { headers: { 'Cache-Control': 'no-store' } },
