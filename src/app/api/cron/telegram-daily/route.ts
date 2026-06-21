@@ -227,6 +227,18 @@ export async function GET(request: NextRequest) {
     ],
   };
 
+  // Broadcast to public channel (no inline keyboard — channels can't click buttons)
+  const broadcastChannelId = process.env.TELEGRAM_BROADCAST_CHANNEL_ID?.trim();
+  let channelSent = false;
+  if (broadcastChannelId) {
+    // Append channel-specific CTA footer
+    const channelMsg = msg + '\n\n📊 <a href="https://info-hub.io">Open InfoHub dashboard</a>';
+    channelSent = await sendMessage(broadcastChannelId, channelMsg, 'HTML');
+    if (!channelSent) {
+      console.error('[telegram-daily] failed to send to broadcast channel');
+    }
+  }
+
   // Send to all active links
   let sent = 0;
   for (const link of links) {
@@ -244,8 +256,8 @@ export async function GET(request: NextRequest) {
   await upsertWorkerHeartbeat(
     'cron:telegram-daily',
     sent === 0 && links.length > 0 ? 'degraded' : 'ok',
-    { sent, total: links.length },
+    { sent, total: links.length, channelSent },
   ).catch(e => console.error('[telegram-daily] heartbeat error:', e));
 
-  return NextResponse.json({ ok: true, sent, total: links.length });
+  return NextResponse.json({ ok: true, sent, total: links.length, channelSent });
 }
