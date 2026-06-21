@@ -67,6 +67,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'signals',         label: 'Live Signals',    href: '/signals',          hint: 'Extreme carry · OI surges · momentum' },
       { id: 'tape',            label: 'Trade Tape',      href: '/tape',             hint: 'Live whale trade flow · $50K+ filter' },
+      { id: 'whales',          label: 'DEX Whales',      href: '/whales',           hint: 'Hyperliquid $100K+ real-time fills' },
       { id: 'funding',         label: 'Funding Rates',   href: '/funding',          hint: 'Live across all venues' },
       { id: 'funding-heatmap', label: 'Funding Heatmap', href: '/funding-heatmap',   hint: 'Asset × venue grid' },
       { id: 'funding-countdown', label: 'Funding Countdown', href: '/funding-countdown', hint: 'Next settlement clocks' },
