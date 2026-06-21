@@ -12,6 +12,7 @@
 import { sendMessage } from './telegram';
 import { fetchAllFundingRates } from './api/aggregator';
 import type { FundingRateData } from './api/types';
+import { getOIChanges } from '@/app/api/_shared/oi-core';
 
 const DEDUP_TTL_MS = 60 * 60_000; // 1 hour
 const recentSignals = new Map<string, number>();
@@ -67,6 +68,58 @@ ${s.detail}
 ${lines}
 
 📊 <a href="https://info-hub.io/signals">View all signals</a> · <a href="https://info-hub.io">InfoHub</a>`;
+}
+
+function deriveOISignals(): MarketSignal[] {
+  const signals: MarketSignal[] = [];
+  const { changes } = getOIChanges();
+  if (changes.size === 0) return signals; // OI cache not warm yet
+
+  const TOP_COINS = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'AVAX', 'ARB', 'SUI', 'LINK']);
+
+  changes.forEach((ch, sym) => {
+    if (!TOP_COINS.has(sym)) return;
+    const p1h = ch.pct1h;
+    const p4h = ch.pct4h;
+
+    // 1h OI surge/dump — very fast and significant
+    if (p1h !== undefined) {
+      if (p1h >= 15) {
+        signals.push({
+          tier: p1h >= 25 ? 'critical' : 'high',
+          type: 'oi_surge_1h',
+          symbol: sym,
+          exchange: '',
+          headline: `${sym} OI surged +${p1h.toFixed(0)}% in 1h`,
+          detail: `Rapid open interest build — new positions opening fast. Watch for follow-through or squeeze.`,
+        });
+      } else if (p1h <= -15) {
+        signals.push({
+          tier: p1h <= -25 ? 'critical' : 'high',
+          type: 'oi_dump_1h',
+          symbol: sym,
+          exchange: '',
+          headline: `${sym} OI dropped ${p1h.toFixed(0)}% in 1h`,
+          detail: `Fast deleveraging event — large positions closing. Potential trend reversal or flush.`,
+        });
+      }
+    }
+
+    // 4h OI surge — less urgent but still notable
+    if (p4h !== undefined && Math.abs(p4h) >= 20 && (p1h === undefined || Math.abs(p1h) < 15)) {
+      const dir = p4h > 0 ? 'surged' : 'dropped';
+      signals.push({
+        tier: 'high',
+        type: p4h > 0 ? 'oi_surge_4h' : 'oi_dump_4h',
+        symbol: sym,
+        exchange: '',
+        headline: `${sym} OI ${dir} ${p4h > 0 ? '+' : ''}${p4h.toFixed(0)}% in 4h`,
+        detail: `${p4h > 0 ? 'Significant position build — bullish momentum.' : 'Significant deleveraging — watch for trend shift.'}`,
+      });
+    }
+  });
+
+  return signals;
 }
 
 function deriveSignals(rates: FundingRateData[]): MarketSignal[] {
@@ -133,7 +186,7 @@ export async function broadcastMarketSignals(): Promise<void> {
     return;
   }
 
-  const derived = deriveSignals(rates);
+  const derived = [...deriveSignals(rates), ...deriveOISignals()];
 
   // Filter out already-broadcast signals
   const toSend = derived.filter((s) => {
