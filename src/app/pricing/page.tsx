@@ -64,6 +64,13 @@ export default function PricingPage() {
   const [showCheckoutModal, setShowCheckoutModal] = useState<Tier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutTier, setCheckoutTier] = useState<Tier | null>(null);
+  const [promoCode, setPromoCode] = useState<string | null>(null);
+  const [promoCopied, setPromoCopied] = useState(false);
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('promo');
+    if (code && /^IH-[A-Z0-9]+-[A-Z0-9]+$/.test(code)) setPromoCode(code);
+  }, []);
 
   const isSignedIn = !!session;
   const userTier = resolveUserTier({
@@ -110,7 +117,33 @@ export default function PricingPage() {
           accent="hub-yellow"
         />
 
-        {/* â”€â”€â”€ Launch notice + Monthly/Annual toggle â”€â”€â”€ */}
+        {/* Promo code banner — shown when arriving from /wheel with ?promo= */}
+        {promoCode && (
+          <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/[0.06] px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-xl" aria-hidden>🎡</span>
+              <span className="text-emerald-200">You won a discount! Enter this code at checkout:</span>
+              <span className="font-mono font-bold text-white bg-white/[0.08] rounded px-2 py-0.5 border border-white/[0.12] tracking-widest text-sm select-all">
+                {promoCode}
+              </span>
+            </div>
+            <button
+              onClick={async () => {
+                try { await navigator.clipboard.writeText(promoCode); } catch {}
+                setPromoCopied(true);
+                setTimeout(() => setPromoCopied(false), 2000);
+              }}
+              className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all shrink-0"
+              style={promoCopied
+                ? { borderColor: '#34d399', color: '#34d399', background: 'rgba(52,211,153,0.1)' }
+                : { borderColor: 'rgba(52,211,153,0.3)', color: '#6ee7b7', background: 'transparent' }}
+            >
+              {promoCopied ? '✓ Copied' : 'Copy code'}
+            </button>
+          </div>
+        )}
+
+        {/* Launch notice + Monthly/Annual toggle */}
         <section className="rounded-xl border border-amber-400/30 bg-amber-500/[0.04] px-4 py-3 mb-5 text-center">
           <p className="text-[12px] sm:text-[13px] text-amber-200">
             <Sparkles className="inline w-3.5 h-3.5 -mt-0.5 mr-1.5 text-amber-300" aria-hidden />
@@ -160,7 +193,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* â”€â”€â”€ Tier cards (4 cards - Pro is the conversion anchor) â”€â”€â”€ */}
+        {/* ─── Tier cards (4 cards - Pro is the conversion anchor) ─── */}
         {/* DOM order keeps the paid plans first on every breakpoint so Free
             doesn't set the benchmark. 2Ã—2 grid on sm, 4-column row on lg. */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10 items-stretch">
@@ -176,9 +209,9 @@ export default function PricingPage() {
           ))}
         </section>
 
-        {/* â”€â”€â”€ What's in each tier - four cumulative columns showing
+        {/* ─── What's in each tier - four cumulative columns showing
             what Free includes, what Trader adds, what Pro adds, what
-            Whale adds. Surfaces the upgrade path concretely. â”€â”€â”€ */}
+            Whale adds. Surfaces the upgrade path concretely. ─── */}
         <section className="mb-12">
           <h2 className="text-base font-bold text-white mb-4 px-1">
             What&apos;s in each tier
@@ -199,7 +232,7 @@ export default function PricingPage() {
           </p>
         </section>
 
-        {/* â”€â”€â”€ Comparison table â”€â”€â”€ */}
+        {/* ─── Comparison table ─── */}
         <section className="mb-12">
           <h2 className="text-base font-bold text-white mb-3 px-1">Compare all features</h2>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
@@ -284,7 +317,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* â”€â”€â”€ FAQ â”€â”€â”€ */}
+        {/* ─── FAQ ─── */}
         <section className="mb-12">
           <h2 className="text-base font-bold text-white mb-3 px-1">Pricing FAQ</h2>
           <div className="space-y-2">
@@ -323,7 +356,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* â”€â”€â”€ Final CTA â”€â”€â”€ */}
+        {/* ─── Final CTA ─── */}
         <section className="text-center pb-12">
           <p className="text-[12px] text-neutral-500">
             Questions?{' '}
@@ -342,7 +375,7 @@ export default function PricingPage() {
         </section>
       </main>
 
-      {/* â”€â”€â”€ Checkout-coming-soon modal â”€â”€â”€ */}
+      {/* ─── Checkout-coming-soon modal ─── */}
       {showCheckoutModal && (
         <CheckoutModal
           tier={showCheckoutModal}
@@ -363,7 +396,7 @@ export default function PricingPage() {
   );
 }
 
-/* â”€â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Sub-components ─────────────────────────────────────────────── */
 
 interface TierCardProps {
   tier: Tier;
@@ -385,7 +418,7 @@ function TierCard({
   const Icon = tierIcon(b.iconName);
   const monthly = TIER_PRICE_MONTHLY[tier];
   const annual = TIER_PRICE_ANNUAL[tier];
-  // Annual / 12 produces $40.8333â€¦ for Whale; show two decimals so the
+  // Annual / 12 produces $40.8333… for Whale; show two decimals so the
   // strikethrough price reads cleanly ($40.83, $10.00) instead of a
   // 14-digit float. Use toFixed only when the value isn't an integer.
   const displayMonthlyRaw = period === 'monthly' ? monthly : annual / 12;

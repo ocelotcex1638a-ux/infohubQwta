@@ -280,7 +280,7 @@ export default function WheelClient() {
             </p>
 
             <Link
-              href="/pricing"
+              href={`/pricing?promo=${encodeURIComponent(prize?.promoCode ?? '')}`}
               className="block w-full py-3 rounded-xl font-bold text-sm text-center text-black transition-all hover:opacity-90 active:scale-[0.98]"
               style={{ background: winColor }}
             >

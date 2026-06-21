@@ -168,16 +168,20 @@ export default function BreakoutsPage() {
                 className="md:grid md:grid-cols-[40px,1fr,100px,110px,110px,110px,120px,110px] gap-3 px-3 py-2 items-center rounded hover:bg-white/[0.02] transition-colors"
               >
                 <div className="text-right text-neutral-500 font-mono text-xs tabular-nums">{i + 1}</div>
-                <div className="flex items-center gap-2 min-w-0">
+                <a
+                  href={`https://www.coingecko.com/en/coins/${r.id}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 min-w-0 group"
+                >
                   {r.image && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={r.image} alt="" className="w-4 h-4 rounded-full flex-shrink-0" loading="lazy" />
                   )}
                   <div className="min-w-0">
-                    <div className="text-sm text-white font-semibold truncate">{r.symbol}</div>
+                    <div className="text-sm text-white font-semibold truncate group-hover:text-hub-yellow transition-colors">{r.symbol}</div>
                     <div className="text-[10px] text-neutral-600 truncate">{r.name}</div>
                   </div>
-                </div>
+                </a>
                 <div className="text-right font-mono text-xs tabular-nums text-neutral-300">
                   <UsdDisplay amount={r.price} />
                 </div>
