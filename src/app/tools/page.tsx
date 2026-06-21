@@ -101,6 +101,7 @@ const PERSONAS: Persona[] = [
     tone: 'text-violet-400',
     tools: [
       { label: 'Options', href: '/options', hint: 'Max pain · OI by strike · IV smile' },
+      { label: 'Vol Surface', href: '/vol-surface', hint: 'IV term structure · skew · heatmap' },
       { label: 'Strategy Builder', href: '/options/builder', hint: 'Multi-leg payoff + Greeks' },
       { label: 'RV vs IV', href: '/rv-iv', hint: 'Realized vs implied vol' },
       { label: 'Skew', href: '/skew', hint: '25-delta put/call skew' },
