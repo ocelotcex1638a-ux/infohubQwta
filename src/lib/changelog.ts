@@ -27,6 +27,27 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '2026-06-21',
+    title: 'Daily Digest · DEX Whales · What\'s New popover · mobile fixes',
+    summary: 'Four new surfaces and a round of mobile polish. /today is a shareable daily market digest with algorithmic trade ideas. /whales tracks $100K+ Hyperliquid fills in real time. The status bar "WHAT\'S NEW" badge now opens an inline popover listing recent releases — no admin gate. Mobile control rows on /funding, /funding-heatmap, and /whales now scroll instead of wrapping.',
+    tags: ['new', 'improved'],
+    bullets: [
+      '/today — Daily Digest: shareable snapshot of prices, Fear & Greed, funding extremes, OI surges, liquidations, top movers, and a Trade Ideas section. Trade ideas are derived algorithmically from live carry/OI data — hot carry → short to earn APR, negative carry → free longs, OI surge/dump → momentum/deleveraging alerts. No AI model call needed. Added to Monitor nav, TerminalHeader, /tools, and sitemap (priority 0.9).',
+      'Trade Ideas section on /today: up to 3 actionable carry or OI-driven setups with badge (Carry trade / Free longs / OI surge / Deleverage), headline, one-sentence rationale, risk note, and a link. Renders below the movers grid spanning full width.',
+      '/whales — DEX Whale Tracker: real-time $100K+ Hyperliquid fills via WebSocket, filtered by coin and minimum size. Added to Monitor nav under Daily Digest and Intraday/Scalper tools list.',
+      'Status bar "WHAT\'S NEW" button now opens a fixed popover (above the bar) listing the 10 most recent releases with NEW / IMPROVED / FIX badges, date chips, descriptions, and direct links. Closes on outside click or Escape. Replaces the old /faq dead-end link for non-admins. Admins get an additional plain CHANGELOG link.',
+      'Telegram CTA on /signals: blue "Connect Telegram" + "Manage Alerts" banner at page bottom — drives channel subscribers without interrupting the signal feed.',
+      'Community section on /home: Telegram invite + X follow buttons before the competitor comparison — surfaces the community for new visitors.',
+      'Mobile control rows: /funding asset-class tabs + category chips now scroll horizontally; /funding-heatmap sort buttons scroll; /whales coin tabs + min-size selector scroll. Eliminates multi-line wrapping on narrow screens.',
+      'Onboarding: "DEX Whales" added to the Intraday & Scalper persona tags on /onboarding.',
+    ],
+    links: [
+      { label: 'Daily Digest', href: '/today' },
+      { label: 'DEX Whales', href: '/whales' },
+      { label: 'Live Signals', href: '/signals' },
+    ],
+  },
+  {
     date: '2026-05-26',
     title: 'Copy-trader workflow · prediction markets removed · 5 new news sources',
     summary: 'Round of focused improvements from operator + power-user feedback. New /position-copy-form deep-linked from every whale page, severity-graded liquidation alerts, "+ Follow trader" CTA on profiles, top-positions-by-size sorting in /hl-whales. Prediction markets feature removed (3 dirs + 17 file references). Affiliate cookie bumped 60→90 days. 5 new high-signal news sources (WuBlockchain, Forkast, Galaxy Research, Messari, Bitcoin Optech). Spending-audit doc with paid-services upgrade order.',
