@@ -10,6 +10,7 @@ import {
   Zap, TrendingUp, TrendingDown, AlertTriangle, DollarSign,
   Activity, RefreshCw, ExternalLink, Filter,
 } from 'lucide-react';
+import { SkeletonCard } from '@/components/Skeleton';
 
 // ── Signal types ──────────────────────────────────────────────────────────────
 
@@ -395,9 +396,12 @@ export default function SignalsPage() {
 
         {/* ── Signal grid ── */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20 gap-3">
-            <RefreshCw className="w-5 h-5 text-neutral-600 animate-spin" />
-            <span className="text-sm text-neutral-500">Scanning markets…</span>
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-3 space-y-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="break-inside-avoid">
+                <SkeletonCard />
+              </div>
+            ))}
           </div>
         ) : visible.length === 0 ? (
           <div className="text-center py-20">

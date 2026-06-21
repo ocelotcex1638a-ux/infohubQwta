@@ -9,6 +9,7 @@ import {
   ResponsiveContainer, BarChart, Bar, ReferenceLine,
 } from 'recharts';
 import { RefreshCw, Activity } from 'lucide-react';
+import { SkeletonBlock, SkeletonTable } from '@/components/Skeleton';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -253,7 +254,14 @@ export default function VolSurfacePage() {
 
         {/* ── Loading skeleton ── */}
         {isLoading && !data && (
-          <div className="h-64 rounded-2xl border border-white/[0.07] bg-white/[0.02] animate-pulse" />
+          <div className="space-y-4">
+            <div className="grid lg:grid-cols-2 gap-4">
+              <SkeletonBlock height="h-64" />
+              <SkeletonBlock height="h-64" />
+            </div>
+            <SkeletonBlock height="h-52" />
+            <SkeletonTable rows={6} cols={8} />
+          </div>
         )}
 
         {data && (
