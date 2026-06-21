@@ -66,10 +66,8 @@ src/remotion/
 # Local design-handoff scratch (PNG/SVG drops, screenshots, prototypes)
 .design-handoff/
 
-# Throwaway QA screenshots from agent runs — .tmp-* / .verify-* /
-# .codex-* / .deslop-* / .improve-* / .ui-* — the actual filename
-# prefix changes per agent but they're all dropped at repo root and
-# never want to be committed.
+# Throwaway QA screenshots and logs from agent runs
+.tmp/
 .tmp-*.png
 .verify-*.png
 .codex-*.png
