@@ -317,12 +317,12 @@ function MarketPulseBar({
 // Quick actions row (compact, mobile-friendly)
 // ────────────────────────────────────────────────────────────────────
 const QUICK_LINKS = [
+  { name: 'Today',       href: '/today',             icon: Crosshair,        color: '#f59e0b' },
   { name: 'Funding',     href: '/funding',           icon: Activity,         color: 'var(--pump-mild)' },
   { name: 'Open Interest', href: '/open-interest',   icon: BarChart3,        color: '#a78bfa' },
   { name: 'Liquidations', href: '/liquidations',     icon: Zap,              color: 'var(--rekt-mild)' },
   { name: 'Screener',    href: '/screener',          icon: TrendingUp,       color: '#60a5fa' },
   { name: 'News',        href: '/news',              icon: Newspaper,        color: '#f59e0b' },
-  { name: 'Compare',     href: '/compare',           icon: GitCompareArrows, color: 'var(--hub-accent)' },
 ];
 
 // ────────────────────────────────────────────────────────────────────
@@ -877,6 +877,23 @@ export default function HomePage() {
               Pick wallets, get Telegram pings when they open / close / size up / get near liq.
               Severity-graded ({'\u{1F534}'} critical / {'\u{1F7E1}'} warning) so the noise
               filters itself out.
+            </p>
+          </Card>
+
+          {/* DEX Whale Feed — live cross-venue fills */}
+          <Card>
+            <CardHeader
+              icon={<Activity size={12} style={{ color: '#a78bfa' }} />}
+              title="DEX Whale Feed"
+              accent="#a78bfa"
+              link="/whales"
+              linkLabel="Live"
+            />
+            <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: 0, lineHeight: 1.5 }}>
+              Real-time $100K+ fills from{' '}
+              <span style={{ color: '#a78bfa', fontWeight: 700 }}>Hyperliquid</span> and{' '}
+              <span style={{ color: '#60a5fa', fontWeight: 700 }}>dYdX v4</span> — every large
+              DEX trade as it hits the chain. Filter by coin, venue, and minimum size.
             </p>
           </Card>
         </div>

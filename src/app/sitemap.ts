@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const pages = [
     // ─── Top-tier landing pages ───────────────────────────────────────
     { path: '/',                priority: 1.0, changeFrequency: 'daily' as const },
+    { path: '/today',           priority: 0.9, changeFrequency: 'hourly' as const },
     { path: '/funding',         priority: 0.9, changeFrequency: 'hourly' as const },
     { path: '/open-interest',   priority: 0.9, changeFrequency: 'hourly' as const },
     { path: '/liquidations',    priority: 0.9, changeFrequency: 'hourly' as const },

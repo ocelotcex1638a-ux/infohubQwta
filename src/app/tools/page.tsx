@@ -42,6 +42,7 @@ const PERSONAS: Persona[] = [
     icon: TrendingUp,
     tone: 'text-emerald-400',
     tools: [
+      { label: 'Daily Digest', href: '/today', hint: 'Shareable market snapshot — prices, movers, funding' },
       { label: 'Chart', href: '/chart', hint: 'Candles · indicators · book + tape' },
       { label: 'Screener', href: '/screener', hint: 'Filter & rank every market' },
       { label: 'Breakouts', href: '/breakouts', hint: 'Range breaks & setups' },
