@@ -11,6 +11,18 @@ export const metadata: Metadata = {
   description: 'Open a support ticket for account, billing, or product questions. Bug reports use the Report button on any page (faster triage).',
   alternates: { canonical: 'https://info-hub.io/contact' },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: 'Contact Support · InfoHub',
+    description: 'Open a support ticket for account, billing, or product questions.',
+    url: 'https://info-hub.io/contact',
+    images: [{ url: 'https://info-hub.io/api/og?title=Contact+Support&v=default', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact Support · InfoHub',
+    description: 'Open a support ticket for account, billing, or product questions.',
+    images: ['https://info-hub.io/api/og?title=Contact+Support&v=default'],
+  },
 };
 
 export default function ContactLayout({ children }: { children: React.ReactNode }) {

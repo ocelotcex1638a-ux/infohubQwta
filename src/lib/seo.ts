@@ -117,7 +117,7 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: 'Real-time liquidation data across Binance, Bybit, OKX, Bitget, and more. Track large liquidation events and market impact.',
   },
   '/screener': {
-    title: 'Screener',
+    title: 'Perpetual Futures Screener · Funding, OI & Volume',
     description: 'Screen and filter perpetual futures across all exchanges. Sort by funding rate, open interest, volume, and price change.',
   },
   '/funding-heatmap': {
@@ -189,12 +189,12 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: `Crypto derivatives REST API across ${ALL_EXCHANGES.length} exchanges. Real-time funding rates, open interest, liquidations, spreads, arbitrage, options, and on-chain whale data. OpenAPI 3.1 spec with full fee transparency.`,
   },
   '/faq': {
-    title: 'FAQ',
+    title: 'FAQ · Funding Rates, Open Interest & InfoHub',
     description: 'Frequently asked questions about InfoHub, crypto funding rates, open interest, and derivatives data.',
   },
   '/pricing': {
     title: 'Pricing - Free, Trader, Pro, Whale',
-    description: 'Pricing for InfoHub - Free forever with the full data terminal, Trader ($15/mo) for active retail with every venue real-time, Pro ($49/mo) for daily traders with API archive, tax export, custom dashboards, and setup scanner, Whale ($99/mo) for funds and desks with priority alerts, custom webhooks, and 1:1 Telegram. Launch access is open while we onboard early users.',
+    description: 'Pricing for InfoHub - Free forever with the full data terminal, Trader ($15/mo) for active retail with every venue real-time, Pro ($49/mo) for daily traders with tax export, custom dashboards, and setup scanner, Whale ($99/mo) for funds and desks with priority alerts, custom webhooks, and 1:1 Telegram. Launch access is open while we onboard early users.',
     ogVariant: 'pricing',
   },
   '/brand': {
@@ -268,8 +268,12 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: 'Real-time forced liquidation density heatmap from Binance, OKX, HTX, gTrade, and Deribit. Visualize liquidation clusters by price and time for BTC, ETH, and SOL.',
   },
   '/chart': {
-    title: 'Chart',
-    description: 'Professional cryptocurrency charting with technical indicators powered by TradingView lightweight-charts.',
+    title: 'Live Crypto Chart · TradingView + Funding & OI Strips',
+    description: 'Professional cryptocurrency charting with TradingView. Live funding rates, open interest, liquidations, and AI signals in 6 info bands.',
+  },
+  '/scalper': {
+    title: 'Scalper Cockpit · Live Chart + Microstructure',
+    description: 'Real-time scalping cockpit with tick chart, order flow tape, liquidations, and microstructure signals for crypto futures.',
   },
   '/guides': {
     title: 'Trading Guides',

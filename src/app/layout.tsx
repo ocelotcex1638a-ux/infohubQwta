@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+import dynamic from 'next/dynamic'
 import Providers from '@/components/Providers'
 // ChatWidget hidden for now per user request — re-enable by importing + rendering
 // const ChatWidget = dynamic(() => import('@/components/chat/ChatWidget'), { ssr: false })
 import AlertEngine from '@/components/AlertEngine'
-import ReportBugButton from '@/components/ReportBugButton'
-import PageViewBeacon from '@/components/PageViewBeacon'
-import LuckyWheelFloat from '@/components/LuckyWheelFloat'
+const ReportBugButton = dynamic(() => import('@/components/ReportBugButton'), { ssr: false })
+const PageViewBeacon = dynamic(() => import('@/components/PageViewBeacon'), { ssr: false })
+const LuckyWheelFloat = dynamic(() => import('@/components/LuckyWheelFloat'), { ssr: false })
 import { ALL_EXCHANGES, DEX_EXCHANGES } from '@/lib/constants'
 import { FREE_TIER_PER_MINUTE, FREE_TIER_PER_DAY } from '@/lib/api/rate-limit'
 import { ConditionalTerminalShell } from '@/components/design-system'
@@ -197,6 +198,7 @@ const jsonLd = {
       },
       sameAs: [
         'https://t.me/info_hub69',
+        'https://x.com/info_hub69',
       ],
     },
     {

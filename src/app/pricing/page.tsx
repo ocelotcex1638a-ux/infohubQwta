@@ -49,6 +49,10 @@ const TOOLS_BY_TIER_MAP = Object.fromEntries(
   TOOLS_BY_TIER.map((entry) => [entry.tier, entry]),
 ) as Record<Tier, TierToolList>;
 
+// Feature breakdown shows the tier ladder (Free → Trader → Pro → Whale).
+// Pricing cards use PRICING_CARD_ORDER (Pro first for conversion anchoring).
+const TOOLS_CARD_ORDER: Tier[] = ['free', 'trader', 'pro', 'whale'];
+
 export default function PricingPage() {
   const { data: session } = useSession();
   const [period, setPeriod] = useState<Period>('monthly');
@@ -224,7 +228,7 @@ export default function PricingPage() {
             What&apos;s in each tier
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
-            {PRICING_CARD_ORDER.map((t) => (
+            {TOOLS_CARD_ORDER.map((t) => (
               <TierToolListCard key={t} tierList={TOOLS_BY_TIER_MAP[t]} />
             ))}
           </div>

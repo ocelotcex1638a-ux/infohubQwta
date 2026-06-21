@@ -17,6 +17,13 @@ export const metadata: Metadata = {
     title: 'Affiliate Leaderboard · InfoHub',
     description: 'Top earning InfoHub affiliates — 20% recurring lifetime, USDT payouts.',
     url: 'https://info-hub.io/leaderboard',
+    images: [{ url: 'https://info-hub.io/api/og?title=Affiliate+Leaderboard&v=donate', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Affiliate Leaderboard · InfoHub',
+    description: 'Top earning InfoHub affiliates — 20% recurring lifetime, USDT payouts.',
+    images: ['https://info-hub.io/api/og?title=Affiliate+Leaderboard&v=donate'],
   },
 };
 
