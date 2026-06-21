@@ -1,19 +1,4 @@
-﻿'use client';
-
-/**
- * /pricing - public-facing tier comparison page.
- *
- * Four tiers: Free / Trader $15 / Pro $49 / Whale $99. Pro is the
- * conversion target (the new $29 middle anchor, "MOST POPULAR" badge).
- * Trader is the cheap-entry paid tier. Whale is the premium anchor for
- * funds + power users. All numbers derive from lib/constants/tiers.ts so
- * a tier bump auto-propagates to the cards, the comparison table, and
- * the FAQ.
- *
- * Today (May 2026): paid tiers are FREE DURING LAUNCH. Prices visible
- * with strike-through so users see the future cost, but the "Subscribe"
- * CTAs open a MaxelPay-hosted checkout for signed-in buyers.
- */
+'use client';
 
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { useSession } from 'next-auth/react';
@@ -22,7 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PageHero from '@/components/PageHero';
 import LaunchCountdown from '@/components/LaunchCountdown';
-import { Sparkles, Compass, Zap, Crown, Check, X as XIcon, ArrowRight, CreditCard, Loader2 } from 'lucide-react';
+import { Sparkles, Compass, Zap, Crown, Check, X as XIcon, ArrowRight, CreditCard, Loader2, Gift } from 'lucide-react';
 import {
   PRICING_CARD_ORDER,
   TIER_LIMITS,
@@ -41,6 +26,33 @@ import {
 import { LAUNCH_CUTOVER_LABEL, LAUNCH_CUTOVER_DAY_LABEL } from '@/lib/launch';
 
 type Period = 'monthly' | 'annual';
+
+interface PromoDiscount {
+  pct: number;
+  freeTier: Tier | null;
+  label: string;
+}
+
+/** Parse the discount from a Lucky Wheel promo code: IH-{SEGID}-{RANDOM6} */
+function parsePromoDiscount(code: string | null): PromoDiscount | null {
+  if (!code) return null;
+  const parts = code.toUpperCase().split('-');
+  if (parts.length < 3 || parts[0] !== 'IH') return null;
+  const key = parts[1];
+  if (key === '5OFF') return { pct: 5, freeTier: null, label: '5% off your first month' };
+  if (key === '10OFF' || key === '10OFFB') return { pct: 10, freeTier: null, label: '10% off your first month' };
+  if (key === '15OFF') return { pct: 15, freeTier: null, label: '15% off your first month' };
+  if (key === '20OFF') return { pct: 20, freeTier: null, label: '20% off your first month' };
+  if (key === '30OFF') return { pct: 30, freeTier: null, label: '30% off your first month' };
+  if (key === 'TRADER') return { pct: 100, freeTier: 'trader', label: '1 month Trader FREE' };
+  if (key === 'PRO') return { pct: 100, freeTier: 'pro', label: '1 month Pro FREE' };
+  return null;
+}
+
+function calcDiscountedPrice(price: number, pct: number): string {
+  const d = price * (1 - pct / 100);
+  return Number.isInteger(d) ? d.toString() : d.toFixed(2);
+}
 
 function tierIcon(name: 'Sparkles' | 'Compass' | 'Zap' | 'Crown') {
   if (name === 'Sparkles') return Sparkles;
@@ -72,13 +84,13 @@ export default function PricingPage() {
     if (code && /^IH-[A-Z0-9]+-[A-Z0-9]+$/.test(code)) setPromoCode(code);
   }, []);
 
+  const promoDiscount = parsePromoDiscount(promoCode);
+
   const isSignedIn = !!session;
   const userTier = resolveUserTier({
     role: (session?.user as { role?: string } | undefined)?.role,
     billingTier: (session?.user as { billingTier?: string } | undefined)?.billingTier ?? null,
   });
-  // Only mark a card "current" if the user is actually signed in. Logged-out
-  // users see signup CTAs on every card (including Free).
   const currentTier: Tier | null = isSignedIn ? userTier : null;
 
   async function startCheckout(tier: Tier) {
@@ -89,7 +101,7 @@ export default function PricingPage() {
       const res = await fetch('/api/maxelpay/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier, period }),
+        body: JSON.stringify({ tier, period, ...(promoCode ? { promoCode } : {}) }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -117,29 +129,48 @@ export default function PricingPage() {
           accent="hub-yellow"
         />
 
-        {/* Promo code banner — shown when arriving from /wheel with ?promo= */}
-        {promoCode && (
-          <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/[0.06] px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-xl" aria-hidden>🎡</span>
-              <span className="text-emerald-200">You won a discount! Enter this code at checkout:</span>
-              <span className="font-mono font-bold text-white bg-white/[0.08] rounded px-2 py-0.5 border border-white/[0.12] tracking-widest text-sm select-all">
-                {promoCode}
-              </span>
+        {/* Lucky Wheel promo banner */}
+        {promoCode && promoDiscount && (
+          <div className="relative rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-5 mb-6 overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_50%,rgba(52,211,153,0.07),transparent_60%)] pointer-events-none" />
+            <div className="relative flex flex-wrap items-center gap-5 justify-between">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-400/15 border border-emerald-400/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Gift className="w-5 h-5 text-emerald-300" />
+                </div>
+                <div>
+                  <p className="text-[15px] font-black text-white leading-tight">
+                    {promoDiscount.freeTier
+                      ? `1 month ${promoDiscount.freeTier.charAt(0).toUpperCase() + promoDiscount.freeTier.slice(1)} tier — FREE`
+                      : `${promoDiscount.pct}% OFF applied to your first month`}
+                  </p>
+                  <p className="text-[12px] text-emerald-300/80 mt-0.5">
+                    Your Lucky Wheel prize is active — discounted prices are shown on the cards below.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-emerald-600 mb-1 font-semibold">Promo code</p>
+                  <span className="font-mono font-bold text-white bg-black/30 border border-emerald-400/30 rounded-lg px-3 py-1.5 tracking-widest text-[13px] select-all">
+                    {promoCode}
+                  </span>
+                </div>
+                <button
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(promoCode); } catch {}
+                    setPromoCopied(true);
+                    setTimeout(() => setPromoCopied(false), 2000);
+                  }}
+                  className="text-[11px] font-bold px-3 py-2 rounded-lg border transition-all"
+                  style={promoCopied
+                    ? { borderColor: '#34d399', color: '#34d399', background: 'rgba(52,211,153,0.12)' }
+                    : { borderColor: 'rgba(52,211,153,0.3)', color: '#6ee7b7', background: 'rgba(52,211,153,0.05)' }}
+                >
+                  {promoCopied ? '✓ Copied' : 'Copy'}
+                </button>
+              </div>
             </div>
-            <button
-              onClick={async () => {
-                try { await navigator.clipboard.writeText(promoCode); } catch {}
-                setPromoCopied(true);
-                setTimeout(() => setPromoCopied(false), 2000);
-              }}
-              className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all shrink-0"
-              style={promoCopied
-                ? { borderColor: '#34d399', color: '#34d399', background: 'rgba(52,211,153,0.1)' }
-                : { borderColor: 'rgba(52,211,153,0.3)', color: '#6ee7b7', background: 'transparent' }}
-            >
-              {promoCopied ? '✓ Copied' : 'Copy code'}
-            </button>
           </div>
         )}
 
@@ -147,10 +178,10 @@ export default function PricingPage() {
         <section className="rounded-xl border border-amber-400/30 bg-amber-500/[0.04] px-4 py-3 mb-5 text-center">
           <p className="text-[12px] sm:text-[13px] text-amber-200">
             <Sparkles className="inline w-3.5 h-3.5 -mt-0.5 mr-1.5 text-amber-300" aria-hidden />
-            <span className="font-semibold text-amber-300">Free during launch</span> / Trader,
-            Pro + Whale tiers unlocked while we onboard early users until {LAUNCH_CUTOVER_LABEL} /
+            <span className="font-semibold text-amber-300">Free during launch</span> — Trader,
+            Pro + Whale unlocked for all early users until {LAUNCH_CUTOVER_LABEL} /
             <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-2 py-[1px] mx-1 font-bold uppercase tracking-wide text-emerald-300 border border-emerald-400/30">
-              Annual -17%
+              Annual -{ANNUAL_DISCOUNT_PCT}%
             </span>
           </p>
           <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
@@ -161,13 +192,13 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <div className="flex justify-center mb-6">
-          <div role="group" aria-label="Billing period" className="inline-flex rounded-full border border-white/[0.08] bg-white/[0.02] p-1">
+        <div className="flex justify-center mb-7">
+          <div role="group" aria-label="Billing period" className="inline-flex rounded-full border border-white/[0.08] bg-white/[0.02] p-1 gap-1">
             <button
               type="button"
               aria-pressed={period === 'monthly'}
               onClick={() => setPeriod('monthly')}
-              className={`px-4 py-1.5 rounded-full text-[12px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/50 ${
+              className={`px-5 py-1.5 rounded-full text-[12px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/50 ${
                 period === 'monthly'
                   ? 'bg-hub-yellow/15 text-hub-yellow border border-hub-yellow/30'
                   : 'text-neutral-400 hover:text-white'
@@ -179,7 +210,7 @@ export default function PricingPage() {
               type="button"
               aria-pressed={period === 'annual'}
               onClick={() => setPeriod('annual')}
-              className={`px-4 py-1.5 rounded-full text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/50 ${
+              className={`px-5 py-1.5 rounded-full text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/50 ${
                 period === 'annual'
                   ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/30'
                   : 'text-neutral-400 hover:text-white'
@@ -193,9 +224,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* ─── Tier cards (4 cards - Pro is the conversion anchor) ─── */}
-        {/* DOM order keeps the paid plans first on every breakpoint so Free
-            doesn't set the benchmark. 2Ã—2 grid on sm, 4-column row on lg. */}
+        {/* Tier cards */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10 items-stretch">
           {PRICING_CARD_ORDER.map((t) => (
             <TierCard
@@ -204,25 +233,22 @@ export default function PricingPage() {
               period={period}
               isCurrentTier={currentTier === t}
               isMostPopular={t === MOST_POPULAR_TIER}
+              promoDiscount={promoDiscount}
               onSubscribe={() => setShowCheckoutModal(t)}
             />
           ))}
         </section>
 
-        {/* ─── What's in each tier - four cumulative columns showing
-            what Free includes, what Trader adds, what Pro adds, what
-            Whale adds. Surfaces the upgrade path concretely. ─── */}
+        {/* What's in each tier */}
         <section className="mb-12">
           <h2 className="text-base font-bold text-white mb-4 px-1">
             What&apos;s in each tier
           </h2>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
             {PRICING_CARD_ORDER.map((t) => (
               <TierToolListCard key={t} tierList={TOOLS_BY_TIER_MAP[t]} />
             ))}
           </div>
-
           <p className="text-[11px] text-neutral-500 mt-4 px-1">
             Plus public API access on every tier /{' '}
             <Link href="/developers/docs" className="text-emerald-300 hover:underline">
@@ -232,7 +258,7 @@ export default function PricingPage() {
           </p>
         </section>
 
-        {/* ─── Comparison table ─── */}
+        {/* Comparison table */}
         <section className="mb-12">
           <h2 className="text-base font-bold text-white mb-3 px-1">Compare all features</h2>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
@@ -240,9 +266,6 @@ export default function PricingPage() {
               <table className="w-full text-[12px]">
                 <thead>
                   <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                    {/* Sticky cell - uses theme-aware `bg-hub-darker` so the
-                        column reads correctly in both dark + light mode and
-                        body cells stay hidden during horizontal scroll. */}
                     <th scope="col" className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-neutral-500 font-semibold sticky left-0 bg-hub-darker">
                       Feature
                     </th>
@@ -267,7 +290,6 @@ export default function PricingPage() {
                 <tbody>
                   {FEATURE_MATRIX.map((row, i) => {
                     const stripe = i % 2 === 0;
-                    // Section divider whenever the group changes from the row above.
                     const newGroup = i === 0 || FEATURE_MATRIX[i - 1].group !== row.group;
                     return (
                       <Fragment key={row.label}>
@@ -282,23 +304,10 @@ export default function PricingPage() {
                             </th>
                           </tr>
                         )}
-                        <tr
-                          className={`border-b border-white/[0.04] ${
-                            stripe ? '' : 'bg-white/[0.01]'
-                          }`}
-                        >
-                          {/* Sticky leftmost cell - theme-aware solid bg
-                              (hub-black / hub-dark) so light + dark mode
-                              both work and the cells underneath stay
-                              hidden during horizontal scroll. `scope="row"`
-                              gives screen readers a row-header anchor so
-                              each cell announcement starts with the feature
-                              label rather than "blank cell". */}
+                        <tr className={`border-b border-white/[0.04] ${stripe ? '' : 'bg-white/[0.01]'}`}>
                           <th
                             scope="row"
-                            className={`px-4 py-2.5 text-neutral-300 font-normal text-left sticky left-0 ${
-                              stripe ? 'bg-hub-black' : 'bg-hub-dark'
-                            }`}
+                            className={`px-4 py-2.5 text-neutral-300 font-normal text-left sticky left-0 ${stripe ? 'bg-hub-black' : 'bg-hub-dark'}`}
                           >
                             {row.label}
                           </th>
@@ -317,7 +326,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* ─── FAQ ─── */}
+        {/* FAQ */}
         <section className="mb-12">
           <h2 className="text-base font-bold text-white mb-3 px-1">Pricing FAQ</h2>
           <div className="space-y-2">
@@ -356,7 +365,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* ─── Final CTA ─── */}
+        {/* Final CTA */}
         <section className="text-center pb-12">
           <p className="text-[12px] text-neutral-500">
             Questions?{' '}
@@ -375,11 +384,13 @@ export default function PricingPage() {
         </section>
       </main>
 
-      {/* ─── Checkout-coming-soon modal ─── */}
+      {/* Checkout modal */}
       {showCheckoutModal && (
         <CheckoutModal
           tier={showCheckoutModal}
           period={period}
+          promoDiscount={promoDiscount}
+          promoCode={promoCode}
           isLoading={checkoutTier === showCheckoutModal}
           error={checkoutError}
           onStartCheckout={startCheckout}
@@ -403,6 +414,7 @@ interface TierCardProps {
   period: Period;
   isCurrentTier: boolean;
   isMostPopular: boolean;
+  promoDiscount: PromoDiscount | null;
   onSubscribe: () => void;
 }
 
@@ -411,6 +423,7 @@ function TierCard({
   period,
   isCurrentTier,
   isMostPopular,
+  promoDiscount,
   onSubscribe,
 }: TierCardProps) {
   const b = TIER_BRANDING[tier];
@@ -418,27 +431,36 @@ function TierCard({
   const Icon = tierIcon(b.iconName);
   const monthly = TIER_PRICE_MONTHLY[tier];
   const annual = TIER_PRICE_ANNUAL[tier];
-  // Annual / 12 produces $40.8333… for Whale; show two decimals so the
-  // strikethrough price reads cleanly ($40.83, $10.00) instead of a
-  // 14-digit float. Use toFixed only when the value isn't an integer.
   const displayMonthlyRaw = period === 'monthly' ? monthly : annual / 12;
   const displayMonthly = Number.isInteger(displayMonthlyRaw)
     ? displayMonthlyRaw.toString()
     : displayMonthlyRaw.toFixed(2);
   const isPaid = monthly > 0;
 
+  // Is this the specific free tier from the promo?
+  const isFreeTierPromo = promoDiscount?.freeTier === tier;
+  // Does a percentage promo apply to this paid card?
+  const pctPromo = isPaid && promoDiscount && !promoDiscount.freeTier ? promoDiscount.pct : null;
+
   return (
     <div
-      className={`relative rounded-xl border-2 ${b.borderTint} ${b.bgTint} p-5 flex flex-col h-full ${
+      className={`relative rounded-xl border-2 flex flex-col h-full transition-shadow ${b.borderTint} ${b.bgTint} p-5 ${
         isMostPopular ? 'ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-hub-black shadow-glow-md' : ''
-      }`}
+      } ${isFreeTierPromo ? 'ring-2 ring-emerald-400/80 ring-offset-2 ring-offset-hub-black' : ''}`}
     >
-      {isMostPopular && (
-        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-[0.15em] px-2.5 py-0.5 rounded-full bg-emerald-400 text-black shadow-glow-md">
+      {/* Badges */}
+      {isMostPopular && !isFreeTierPromo && (
+        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-[0.15em] px-2.5 py-0.5 rounded-full bg-emerald-400 text-black shadow-glow-md whitespace-nowrap">
           Most popular
         </span>
       )}
+      {isFreeTierPromo && (
+        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-[0.15em] px-2.5 py-0.5 rounded-full bg-emerald-400 text-black shadow-glow-md whitespace-nowrap">
+          🎡 1 month FREE
+        </span>
+      )}
 
+      {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Icon className={`w-5 h-5 ${b.textColor}`} aria-hidden />
         <h3 className={`text-lg font-bold ${b.textColor}`}>{b.label}</h3>
@@ -452,28 +474,65 @@ function TierCard({
       <p className="text-[12px] text-neutral-400 mb-4 min-h-[2.5rem]">{b.tagline}</p>
 
       {/* Price block */}
-      <div className="mb-4">
-        {isPaid ? (
+      <div className="mb-5">
+        {!isPaid ? (
           <>
-            {/* Post-launch price shown struck through; free during launch. */}
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white/90 line-through decoration-[3px] decoration-rose-400/90">${displayMonthly}</span>
-              <span className="text-[12px] text-neutral-500">/mo{period === 'annual' ? ' / billed annually' : ''}</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-black text-white">$0</span>
+              <span className="text-[12px] text-neutral-500">forever</span>
             </div>
-            <p className="text-[11px] uppercase font-bold tracking-wider text-amber-300 mt-1.5">Free during launch</p>
+            <p className="text-[10px] text-neutral-500 mt-1">No card required</p>
+          </>
+        ) : isFreeTierPromo ? (
+          <>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-emerald-400">FREE</span>
+              <span className="text-[12px] text-neutral-400">first month</span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <span className="text-[12px] text-neutral-500">then</span>
+              <span className="text-[12px] text-neutral-300 font-semibold">${displayMonthly}/mo</span>
+              {period === 'annual' && (
+                <span className="text-[10px] text-neutral-500">billed annually</span>
+              )}
+            </div>
+            <p className="text-[10px] text-amber-300/80 mt-1.5">Also free now during launch</p>
+          </>
+        ) : pctPromo ? (
+          <>
+            {/* Discounted price prominent */}
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-3xl font-black text-white">
+                ${calcDiscountedPrice(displayMonthlyRaw, pctPromo)}
+              </span>
+              <span className="text-[12px] text-neutral-400">/mo</span>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/15 border border-emerald-400/30 text-emerald-300 uppercase tracking-wider">
+                {pctPromo}% OFF
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span className="text-[12px] text-neutral-600 line-through">${displayMonthly}/mo</span>
+              <span className="text-[11px] text-amber-300">· free now during launch</span>
+            </div>
             {period === 'annual' && (
-              <p className="text-[10px] text-neutral-500 mt-1.5">
-                ${annual}/yr after launch, save ${annualSavingsUsd(tier)}/yr vs monthly
+              <p className="text-[10px] text-neutral-500 mt-1">
+                ${calcDiscountedPrice(annual, pctPromo)}/yr first year · ${annual}/yr after
               </p>
             )}
           </>
         ) : (
           <>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-white">$0</span>
-              <span className="text-[12px] text-neutral-500">forever</span>
+            {/* No promo — show strike-through during launch */}
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-white/70 line-through decoration-[3px] decoration-rose-400/80">${displayMonthly}</span>
+              <span className="text-[12px] text-neutral-500">/mo{period === 'annual' ? ' · billed annually' : ''}</span>
             </div>
-            <p className="text-[10px] text-neutral-500 mt-1">No card required</p>
+            <p className="text-[11px] uppercase font-bold tracking-wider text-amber-300 mt-1.5">Free during launch</p>
+            {period === 'annual' && (
+              <p className="text-[10px] text-neutral-500 mt-1">
+                ${annual}/yr after launch · save ${annualSavingsUsd(tier)}/yr vs monthly
+              </p>
+            )}
           </>
         )}
       </div>
@@ -516,6 +575,8 @@ function TierCard({
         tier={tier}
         isPaid={isPaid}
         isCurrentTier={isCurrentTier}
+        promoDiscount={promoDiscount}
+        displayMonthlyRaw={displayMonthlyRaw}
         onSubscribe={onSubscribe}
       />
     </div>
@@ -526,21 +587,21 @@ function TierCta({
   tier,
   isPaid,
   isCurrentTier,
+  promoDiscount,
+  displayMonthlyRaw,
   onSubscribe,
 }: {
   tier: Tier;
   isPaid: boolean;
   isCurrentTier: boolean;
+  promoDiscount: PromoDiscount | null;
+  displayMonthlyRaw: number;
   onSubscribe: () => void;
 }) {
   const { data: session } = useSession();
   const isSignedIn = !!session;
   const b = TIER_BRANDING[tier];
 
-  // Current-tier "disabled" state (works for all 4 tiers).
-  // We render a real <button disabled> so keyboard/screen-reader users
-  // get the correct semantic ("button, dimmed, your current tier")
-  // rather than a generic div with aria-disabled, which AT often skips.
   if (isCurrentTier) {
     return (
       <button
@@ -548,12 +609,11 @@ function TierCta({
         disabled
         className="w-full py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-wider text-center bg-white/[0.04] border border-white/[0.06] text-neutral-500 cursor-default"
       >
-        <span aria-hidden="true">OK </span>Your current tier
+        Your current tier
       </button>
     );
   }
 
-  // Free tier CTA - invite to sign up (if logged out) or just informational
   if (!isPaid) {
     if (isSignedIn) {
       return (
@@ -576,9 +636,6 @@ function TierCta({
     );
   }
 
-  // CTA color per tier - Whale gets amber gradient, Pro (the conversion
-  // anchor) gets the brand-orange gradient, Trader gets sky. Pulled into a
-  // helper so logged-out + signed-in variants stay in sync.
   const ctaColorClass =
     tier === 'whale'
       ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:from-amber-400 hover:to-orange-400 focus-visible:ring-amber-400/60'
@@ -586,8 +643,15 @@ function TierCta({
       ? 'bg-gradient-to-r from-hub-yellow to-hub-yellow-dark text-black hover:opacity-90 focus-visible:ring-hub-yellow/60'
       : 'bg-sky-500 text-black hover:bg-sky-400 focus-visible:ring-sky-400/60';
 
-  // Paid tier (Trader / Pro / Whale) - subscribe button. Logged-out users
-  // go to signup first so they have somewhere to land after checkout.
+  // Build the CTA label — show the discounted price when a promo is active
+  const isFreeTierPromo = promoDiscount?.freeTier === tier;
+  const pctPromo = promoDiscount && !promoDiscount.freeTier ? promoDiscount.pct : null;
+  const ctaLabel = isFreeTierPromo
+    ? `Get 1 month ${b.label} FREE`
+    : pctPromo
+    ? `Subscribe at $${calcDiscountedPrice(displayMonthlyRaw, pctPromo)}/mo`
+    : `Get ${b.label}`;
+
   if (!isSignedIn) {
     return (
       <Link
@@ -599,14 +663,13 @@ function TierCta({
     );
   }
 
-  // Signed-in, paid tier, not current - actual subscribe CTA.
   return (
     <button
       type="button"
       onClick={onSubscribe}
       className={`w-full py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-hub-black ${ctaColorClass}`}
     >
-      Get {b.label}
+      {ctaLabel}
     </button>
   );
 }
@@ -620,16 +683,6 @@ function Bullet({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * Card for one tier's tool/feature list in the "What's in each tier"
- * grid. Renders the tier badge, heading, description, and items as
- * either clickable links (when `href` present) or plain feature rows
- * (when href omitted - Whale's webhooks, raw WS, etc.).
- *
- * Visual treatment is tier-coded: Free is neutral, Trader is sky, Pro
- * is emerald, Whale is amber. Matches the tier cards above so the "this
- * is the Pro column" mapping is unambiguous.
- */
 function TierToolListCard({ tierList }: { tierList: TierToolList }) {
   const branding = TIER_BRANDING[tierList.tier];
   const Icon = tierIcon(branding.iconName);
@@ -656,11 +709,6 @@ function TierToolListCard({ tierList }: { tierList: TierToolList }) {
       <p className="text-[11px] text-neutral-500 mb-3 leading-snug">{tierList.description}</p>
       <ul className="space-y-2 flex-1">
         {tierList.items.map((item, i) => {
-          // Stacked layout (label above, hint below) instead of the old
-          // inline justify-between - long hints like "1 year history /
-          // 500 API req/min" were truncating to "1 year histor..." in
-          // the 3-column grid because the row couldn't fit. Two lines
-          // costs vertical density but reads cleanly.
           const content = (
             <span className="flex flex-col gap-0.5">
               <span className={`${branding.textColor} font-semibold text-[12px] leading-tight`}>
@@ -695,9 +743,6 @@ function TierToolListCard({ tierList }: { tierList: TierToolList }) {
 
 function FeatureCell({ value }: { value: boolean | string }) {
   if (value === true) {
-    // Consistent emerald check across all tiers (matches the competitor
-    // table). Tier emphasis comes from the coloured column headers + the
-    // highlighted Pro column, not four different check colours.
     return <Check className="w-4 h-4 mx-auto text-emerald-400" aria-label="Included" />;
   }
   if (value === false) {
@@ -711,7 +756,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
     <details className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 group">
       <summary className="text-[13px] font-semibold text-white cursor-pointer list-none flex items-center justify-between">
         <span>{q}</span>
-        <span className="text-neutral-500 group-open:rotate-45 transition-transform">+</span>
+        <span className="text-neutral-500 group-open:rotate-45 transition-transform duration-150">+</span>
       </summary>
       <p className="text-[12px] text-neutral-400 mt-2 leading-relaxed">{a}</p>
     </details>
@@ -721,6 +766,8 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 function CheckoutModal({
   tier,
   period,
+  promoDiscount,
+  promoCode,
   isLoading,
   error,
   onStartCheckout,
@@ -728,6 +775,8 @@ function CheckoutModal({
 }: {
   tier: Tier;
   period: Period;
+  promoDiscount: PromoDiscount | null;
+  promoCode: string | null;
   isLoading: boolean;
   error: string | null;
   onStartCheckout: (tier: Tier) => Promise<void>;
@@ -736,19 +785,16 @@ function CheckoutModal({
   const b = TIER_BRANDING[tier];
   const Icon = tierIcon(b.iconName);
   const dismissRef = useRef<HTMLButtonElement>(null);
+  const monthly = TIER_PRICE_MONTHLY[tier];
+  const displayRaw = period === 'monthly' ? monthly : TIER_PRICE_ANNUAL[tier] / 12;
+  const isFreeTierPromo = promoDiscount?.freeTier === tier;
+  const pctPromo = promoDiscount && !promoDiscount.freeTier ? promoDiscount.pct : null;
 
-  // Esc closes the modal (accessibility + matches user expectation).
-  // Also lock body scroll while open so the background doesn't drift
-  // when the user scrolls the modal on mobile.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    // Auto-focus the dismiss button so keyboard users land somewhere
-    // sensible inside the dialog rather than back at the page.
     dismissRef.current?.focus();
     return () => {
       document.removeEventListener('keydown', onKey);
@@ -772,6 +818,23 @@ function CheckoutModal({
         <h3 id="checkout-modal-title" className="text-base font-bold text-white mb-2">
           Continue to {b.label} checkout
         </h3>
+
+        {/* Show promo summary in the modal */}
+        {(isFreeTierPromo || pctPromo) && promoCode && (
+          <div className="mb-4 rounded-lg border border-emerald-400/30 bg-emerald-500/[0.06] px-3 py-2.5 text-left">
+            <p className="text-[11px] font-bold text-emerald-300 mb-1">
+              {isFreeTierPromo ? '🎡 1 month FREE applied' : `🎡 ${pctPromo}% OFF applied`}
+            </p>
+            {pctPromo && (
+              <p className="text-[11px] text-neutral-400">
+                Your price: <span className="text-white font-bold">${calcDiscountedPrice(displayRaw, pctPromo)}/mo</span>
+                {' '}<span className="line-through text-neutral-600">${Number.isInteger(displayRaw) ? displayRaw : displayRaw.toFixed(2)}/mo</span>
+              </p>
+            )}
+            <p className="text-[10px] text-neutral-500 mt-1">Code <span className="font-mono text-neutral-300">{promoCode}</span> will be applied at checkout.</p>
+          </div>
+        )}
+
         <p className="text-[12px] text-neutral-400 mb-4 leading-relaxed">
           You&apos;ll be redirected to MaxelPay&apos;s hosted crypto checkout to
           complete your {period} subscription. MaxelPay will return you here
@@ -799,11 +862,10 @@ function CheckoutModal({
             className="px-4 py-2 text-[12px] font-semibold rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400/50 disabled:cursor-not-allowed disabled:opacity-70 inline-flex items-center gap-2"
           >
             {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-            {isLoading ? 'Redirecting' : 'Continue to MaxelPay'}
+            {isLoading ? 'Redirecting…' : 'Continue to MaxelPay'}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
