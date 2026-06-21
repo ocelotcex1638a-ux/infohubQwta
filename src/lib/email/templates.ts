@@ -417,3 +417,39 @@ export async function sendPaymentFailed(args: BaseSendArgs & PaymentFailedData):
   const { subject, html } = renderPaymentFailed(data);
   return deliver({ to, subject, html, dryRun });
 }
+
+/* ─── Template 8: Lucky Wheel prize code ─────────────────────────── */
+
+export interface WheelPrizeData {
+  prizeText: string;   // e.g. "20% OFF your first month"
+  promoCode: string;   // e.g. "IH-20OFF-A3B7C2"
+}
+
+export function renderWheelPrize(data: WheelPrizeData): { subject: string; html: string } {
+  const subject = `You won: ${data.prizeText} — your InfoHub promo code`;
+  const html = shell({
+    headline: `You won ${data.prizeText}!`,
+    body: `
+      <p>You just spun the InfoHub Lucky Wheel and landed on something good.</p>
+      <div style="background:#0a0a0a;border:1px solid #333;border-radius:10px;padding:24px;text-align:center;margin:24px 0;">
+        <p style="margin:0 0 8px;color:#737373;font-size:12px;text-transform:uppercase;letter-spacing:0.12em;">Your prize</p>
+        <p style="margin:0 0 20px;color:#f59e0b;font-size:22px;font-weight:800;">${data.prizeText}</p>
+        <p style="margin:0 0 8px;color:#737373;font-size:12px;text-transform:uppercase;letter-spacing:0.12em;">Promo code</p>
+        <div style="display:inline-block;background:#111;border:1px dashed #555;border-radius:6px;padding:10px 24px;">
+          <span style="font-family:monospace;font-size:20px;font-weight:700;color:#fff;letter-spacing:0.12em;">${data.promoCode}</span>
+        </div>
+      </div>
+      <p style="color:#a3a3a3;font-size:13px;">Enter this code at checkout when you upgrade. Valid for 30 days — one use per email address.</p>
+    `,
+    ctaLabel: 'Upgrade now →',
+    ctaHref: 'https://info-hub.io/pricing',
+    footerNote: 'You received this because you spun the InfoHub Lucky Wheel. Code expires 30 days from today.',
+  });
+  return { subject, html };
+}
+
+export async function sendWheelPrize(args: BaseSendArgs & WheelPrizeData): Promise<SendResult> {
+  const { to, dryRun, ...data } = args;
+  const { subject, html } = renderWheelPrize(data);
+  return deliver({ to, subject, html, dryRun });
+}

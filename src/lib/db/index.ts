@@ -1040,6 +1040,21 @@ async function _doInitDB(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS idx_bug_reports_status_created ON bug_reports(status, created_at DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_bug_reports_user ON bug_reports(user_id, created_at DESC)`;
 
+  // ─── Lucky Wheel (email capture + promo codes, Jun 2026) ───────────────────
+  // One row per email — UNIQUE on email prevents double-spins. No FK to users
+  // so guests can spin without accounts.
+  await sql`
+    CREATE TABLE IF NOT EXISTS wheel_spins (
+      id         BIGSERIAL PRIMARY KEY,
+      email      TEXT UNIQUE NOT NULL,
+      prize_id   TEXT NOT NULL,
+      promo_code TEXT NOT NULL,
+      segment    INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_wheel_spins_created ON wheel_spins(created_at DESC)`;
+
   // NOTE: the `auto_tweets` table + its schema were removed 2026-05 when the
   // auto-tweet feature was deleted. Any pre-existing prod table is empty
   // (the cron never ran on a live timer) + harmless; drop it manually if desired.
