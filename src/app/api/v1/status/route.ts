@@ -10,7 +10,6 @@ import {
 import { TIER_PRICE_MONTHLY } from '@/lib/constants/tiers';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /**

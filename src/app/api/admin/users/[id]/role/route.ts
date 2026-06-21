@@ -19,7 +19,6 @@ import { requireAdmin, verifySameOrigin, auth, isOwner } from '@/lib/auth';
 import { isDBConfigured, getSQL, recordAuditEvent } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 // Roles ordered owner > admin > moderator/marketer/support > advisor > user.

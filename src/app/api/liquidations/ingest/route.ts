@@ -14,7 +14,6 @@ import { isDBConfigured, saveLiquidationSnapshot } from '@/lib/db';
 import { isLiqCryptoSymbol, normalizeLiqSymbol } from '@/lib/liquidation-parsers';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const MAX_BATCH_SIZE = 50;

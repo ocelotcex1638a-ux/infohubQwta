@@ -1,5 +1,4 @@
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 
 import { NextResponse } from 'next/server';
 import { isDBConfigured, getSQL } from '@/lib/db';

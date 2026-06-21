@@ -19,7 +19,6 @@ import { fetchValidatorsFresh, type ValidatorsResponse } from '@/lib/validators-
 import { getWarmCache } from '@/lib/api/warm-cache';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const WARM_KEY = 'validators';

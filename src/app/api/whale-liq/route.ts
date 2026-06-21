@@ -16,7 +16,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { buildWhaleLiqFeed } from '@/lib/whale-liq';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 let l1: { ts: number; feed: Awaited<ReturnType<typeof buildWhaleLiqFeed>> } | null = null;

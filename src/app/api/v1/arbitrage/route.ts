@@ -11,7 +11,6 @@ import { fetchArbHistory } from '@/lib/api/aggregator';
 import { VALID_ASSET_CLASSES, type AssetClassFilter } from '@/lib/validation/schemas';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 

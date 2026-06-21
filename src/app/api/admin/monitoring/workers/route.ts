@@ -10,7 +10,6 @@ import { requireAdminOrAdvisor } from '@/lib/auth';
 import { isDBConfigured, initDB, getWorkerHeartbeats } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const ADMIN_API_KEY = (process.env.ADMIN_API_KEY || '').trim();

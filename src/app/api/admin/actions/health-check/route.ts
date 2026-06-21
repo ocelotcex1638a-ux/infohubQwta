@@ -4,7 +4,6 @@ import { recordAuditEvent } from '@/lib/db';
 import { getFundingData } from '@/app/api/_shared/funding-core';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
 

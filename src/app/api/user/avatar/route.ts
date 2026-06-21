@@ -4,7 +4,6 @@ import { put, del } from '@vercel/blob';
 import { getSQL } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 
 const MAX_SIZE = 2 * 1024 * 1024; // 2MB (already resized client-side)
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];

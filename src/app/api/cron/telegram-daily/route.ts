@@ -10,7 +10,6 @@ import { sendMessage, type InlineKeyboardMarkup } from '@/lib/telegram';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-export const preferredRegion = 'bom1';
 
 function fmtUsd(n: number): string {
   if (Math.abs(n) >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;

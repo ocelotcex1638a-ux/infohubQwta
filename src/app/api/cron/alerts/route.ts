@@ -50,7 +50,6 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-export const preferredRegion = 'bom1';
 
 export async function GET(request: NextRequest) {
   // Auth check — timing-safe comparison

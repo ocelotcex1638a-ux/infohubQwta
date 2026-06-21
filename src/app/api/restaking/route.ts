@@ -11,7 +11,6 @@ import { NextResponse } from 'next/server';
 import { fetchRestakingPools } from '@/lib/restaking';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 let l1: { ts: number; body: any } | null = null;

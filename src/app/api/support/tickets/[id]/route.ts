@@ -18,7 +18,6 @@ import { auth, verifySameOrigin, requireSupport } from '@/lib/auth';
 import { initDB, isDBConfigured, getSQL, recordAuditEvent } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const VALID_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const;

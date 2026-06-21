@@ -15,7 +15,6 @@ import { isDBConfigured, getRecentSocialPosts } from '@/lib/db';
 import { TWITTER_KOLS } from '@/lib/social/kols';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 
 // L1 in-memory cache. The underlying data only changes at the 15-min cron
 // boundary, so even a 60s L1 prevents most DB hits when CF cache is warming.

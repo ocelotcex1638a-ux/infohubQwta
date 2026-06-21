@@ -18,7 +18,6 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-export const preferredRegion = 'bom1';
 
 
 async function fetchJSON<T = any>(url: string): Promise<T | null> {

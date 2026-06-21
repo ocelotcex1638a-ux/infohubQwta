@@ -14,7 +14,6 @@ import { determineVenue, normalizeAddress } from '@/lib/watch-service';
 import { TIER_LIMITS } from '@/lib/constants/tiers';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;

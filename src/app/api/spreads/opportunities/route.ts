@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSQL, isDBConfigured } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 
 const sql = getSQL();
 

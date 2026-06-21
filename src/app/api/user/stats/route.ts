@@ -16,7 +16,6 @@ import {
 } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {

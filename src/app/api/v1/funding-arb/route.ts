@@ -5,7 +5,6 @@ import {
 } from '@/lib/constants/exchanges';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /**

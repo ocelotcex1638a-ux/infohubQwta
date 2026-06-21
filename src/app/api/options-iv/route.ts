@@ -21,7 +21,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const DERIBIT_URL = 'https://www.deribit.com/api/v2/public/get_book_summary_by_currency';

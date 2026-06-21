@@ -20,7 +20,6 @@ import { initDB, isDBConfigured, getSQL, recordAuditEvent } from '@/lib/db';
 import { isOwner } from '@/lib/auth';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 

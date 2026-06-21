@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { fetchAllUnlocks, getAllCoinIds, setLivePrices, getTokenStaticPrice } from '@/lib/api/tokenunlocks';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /* ── CoinGecko price cache ─────────────────────────────────────────── */

@@ -4,7 +4,6 @@ import { createApiKey, listApiKeys, countUserApiKeys, initDB } from '@/lib/db';
 import { MAX_API_KEYS_PER_USER } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /**

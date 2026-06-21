@@ -9,7 +9,6 @@ import { dedupedFetch } from '../_shared/inflight';
 import { tickerFetchers } from '../tickers/exchanges';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const ADMIN_API_KEY = (process.env.ADMIN_API_KEY || '').trim();

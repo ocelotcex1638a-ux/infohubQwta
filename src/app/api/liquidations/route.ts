@@ -11,7 +11,6 @@ import { fetchWithTimeout } from '../_shared/fetch';
 import { LiquidationsQuerySchema } from '@/lib/validation/schemas';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 // L1 in-memory cache (30s TTL)

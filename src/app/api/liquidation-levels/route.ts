@@ -29,7 +29,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOIData } from '../_shared/oi-core';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const WINDOW_HOURS: Record<string, number> = { '4h': 4, '12h': 12, '24h': 24, '48h': 48 };

@@ -22,7 +22,6 @@ import { fetchFarsideFlows, type FlowDay } from '@/lib/etf-flows-fetch';
 import { getWarmCache } from '@/lib/api/warm-cache';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 interface ApiResponse {

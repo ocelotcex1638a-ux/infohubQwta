@@ -7,7 +7,6 @@ import { authenticateV1Request } from '@/lib/api/v1-auth';
 import { intervalHoursFor } from '@/lib/funding-intervals';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 
 /**
  * GET /api/v1/exchanges

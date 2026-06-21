@@ -6,7 +6,6 @@ import { getFundingData } from '../_shared/funding-core';
 import { getOIData } from '../_shared/oi-core';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /**

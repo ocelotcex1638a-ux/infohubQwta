@@ -21,7 +21,6 @@ import { auth, verifySameOrigin, requireSupport, getUserRole } from '@/lib/auth'
 import { initDB, isDBConfigured, getSQL, recordAuditEvent } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const VALID_STATUSES = ['open', 'claimed', 'resolved', 'wontfix'] as const;

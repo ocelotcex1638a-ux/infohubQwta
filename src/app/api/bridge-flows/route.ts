@@ -13,7 +13,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { buildBridgeFlowFeed } from '@/lib/bridge-flows';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 let l1: { ts: number; key: string; body: any } | null = null;

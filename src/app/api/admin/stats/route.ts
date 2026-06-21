@@ -25,7 +25,6 @@ import { initDB, isDBConfigured, getSQL } from '@/lib/db';
 import { recordServerError } from '@/lib/error-capture';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 // ────────────────────────────────────────────────────────────────────

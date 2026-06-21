@@ -3,7 +3,6 @@ import { requireAdminOrAdvisor, verifySameOrigin, auth } from '@/lib/auth';
 import { recordAuditEvent } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
 

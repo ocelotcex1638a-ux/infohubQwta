@@ -14,7 +14,6 @@ import { hyperliquidWalletClient } from '@/lib/wallet-clients/hyperliquid';
 import type { NormalizedTrade } from '@/lib/wallet-clients/types';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 

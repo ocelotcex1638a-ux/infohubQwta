@@ -7,7 +7,6 @@ import { detectPriceArbitrage, type TickerEntry } from '@/lib/arbitrage-detector
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-export const preferredRegion = 'bom1';
 
 // Cache in memory for 30s, separated by filter settings.
 const cache = new Map<string, { data: any; ts: number }>();

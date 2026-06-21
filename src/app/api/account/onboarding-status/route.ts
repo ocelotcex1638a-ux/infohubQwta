@@ -20,7 +20,6 @@ import { auth } from '@/lib/auth';
 import { initDB, isDBConfigured, getSQL } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOIData, getOIChanges } from '../_shared/oi-core';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 

@@ -1,5 +1,4 @@
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const CMC_API = 'https://pro-api.coinmarketcap.com';

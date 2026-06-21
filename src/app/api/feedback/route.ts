@@ -26,7 +26,6 @@ import { pingBugReport } from '@/lib/admin-telegram-ping';
 import { createHash } from 'crypto';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 function hashIp(ip: string | null): string | null {

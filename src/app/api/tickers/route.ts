@@ -6,7 +6,6 @@ import { classifyAssetClass } from '@/lib/api/asset-class';
 import { tickerFetchers } from './exchanges';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 

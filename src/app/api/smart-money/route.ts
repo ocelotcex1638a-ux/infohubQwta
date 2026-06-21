@@ -24,7 +24,6 @@ import { formatCoverageLabel } from '@/lib/trader-coverage';
 import { computeTruePnlUsd, summariseLiveRisk } from '@/lib/trader-risk';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 interface SmartWallet {

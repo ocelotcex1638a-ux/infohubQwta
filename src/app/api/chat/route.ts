@@ -7,7 +7,6 @@ import { checkRateLimit } from './rate-limit';
 import { auth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 // ─── BTC context cache (avoids 2 API calls per message) ──────────────────────

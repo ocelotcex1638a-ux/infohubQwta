@@ -8,7 +8,6 @@ import { timingSafeEqual } from 'crypto';
 import { setWebhook } from '@/lib/telegram';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 
 export async function GET(request: NextRequest) {
   const secret = request.nextUrl.searchParams.get('secret') || '';

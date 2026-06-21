@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gtradeWalletClient } from '@/lib/wallet-clients/gtrade';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /* ------------------------------------------------------------------ */

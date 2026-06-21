@@ -21,7 +21,6 @@ import { getTelegramLinkByUser, isDBConfigured } from '@/lib/db';
 import { sendMessage } from '@/lib/telegram';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /** Sliding-window in-memory rate limiter — 5 test pings per user per

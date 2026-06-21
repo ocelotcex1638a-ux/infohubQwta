@@ -17,7 +17,6 @@ import { auth, verifySameOrigin } from '@/lib/auth';
 import { initDB, isDBConfigured, getSQL, recordAuditEvent } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const MAX_SUBJECT_LEN = 200;

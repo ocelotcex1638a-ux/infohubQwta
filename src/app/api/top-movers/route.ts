@@ -5,7 +5,6 @@ import { fetchWithTimeout } from '../_shared/fetch';
 import { tickerFetchers } from '../tickers/exchanges';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 

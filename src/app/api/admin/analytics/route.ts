@@ -28,7 +28,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, getUserRole } from '@/lib/auth';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 type Window = '24h' | '7d' | '30d';

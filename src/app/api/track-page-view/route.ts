@@ -22,7 +22,6 @@ import { initDB, isDBConfigured, recordPageView } from '@/lib/db';
 import { normalizePageRoute } from '@/lib/utils/normalizePageRoute';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {

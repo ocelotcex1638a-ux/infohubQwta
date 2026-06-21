@@ -22,7 +22,6 @@ import { sendAlertDiscord, sendAlertWhatsApp, sendAlertEmail } from '@/lib/notif
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 55;
-export const preferredRegion = 'bom1';
 
 const MAX_WALLETS_PER_CYCLE = 25;
 const CURSOR_CACHE_KEY = 'whale_trades_cursor';

@@ -14,7 +14,6 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const preferredRegion = 'bom1';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };
 const VALID_TIERS = new Set<MaxelPayTier>(['trader', 'pro', 'whale']);

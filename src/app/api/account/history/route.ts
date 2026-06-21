@@ -13,7 +13,6 @@ import { auth } from '@/lib/auth';
 import { isDBConfigured, getPortfolioHistory } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };

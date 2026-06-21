@@ -34,7 +34,6 @@ import { auth } from '@/lib/auth';
 import { createHash } from 'node:crypto';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const revalidate = 60;
 
 type Window = 'all' | '30d' | '7d';

@@ -28,7 +28,6 @@ import { requireAdmin } from '@/lib/auth';
 import { initDB, isDBConfigured, getSQL } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 type Window = '24h' | '7d' | '30d';

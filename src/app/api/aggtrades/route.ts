@@ -8,7 +8,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 // L1 in-memory cache keyed on (symbol, limit). Per CLAUDE.md, fan-out

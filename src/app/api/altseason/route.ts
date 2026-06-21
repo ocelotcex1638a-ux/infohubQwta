@@ -17,7 +17,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { STABLE_SYMBOLS, BTC_PROXIES, ETH_PROXIES, hasExcludedName } from '@/lib/coin-filters';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const COINGECKO_MARKETS_URL = 'https://api.coingecko.com/api/v3/coins/markets';

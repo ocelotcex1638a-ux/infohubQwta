@@ -22,7 +22,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { buildSmartMoneyFeed } from '@/lib/smart-money';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 

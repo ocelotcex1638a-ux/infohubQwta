@@ -13,7 +13,6 @@ import { getCache, setCache, isDBConfigured } from '@/lib/db';
 import { fetchWithTimeout } from '../_shared/fetch';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const CACHE_KEY = 'dominance_global';

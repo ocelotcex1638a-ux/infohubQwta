@@ -12,7 +12,6 @@ import { initDB, isDBConfigured, createTelegramLinkCode, getTelegramLinkByUser, 
 import { generateLinkCode } from '@/lib/telegram';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 
 /** POST — Generate a new link code */
 export async function POST(request: NextRequest) {

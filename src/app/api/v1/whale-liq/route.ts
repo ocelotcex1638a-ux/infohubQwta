@@ -3,7 +3,6 @@ import { authenticateV1Request } from '@/lib/api/v1-auth';
 import { buildWhaleLiqFeed } from '@/lib/whale-liq';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /**

@@ -21,7 +21,6 @@ import { requireMarketer } from '@/lib/auth';
 import { initDB, isDBConfigured, getSQL } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 type Window = 'all' | '30d' | '7d';

@@ -24,7 +24,6 @@ import { upsertWorkerHeartbeat } from '@/lib/db';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-export const preferredRegion = 'bom1';
 
 export async function GET(request: NextRequest) {
   // Append `?priority=1` to the URL and delegate to the standard cron

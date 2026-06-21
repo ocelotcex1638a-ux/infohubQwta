@@ -4,7 +4,6 @@ import { Direction, ExecutionCostResponse } from '@/lib/execution-costs/types';
 import { FEE_MODEL_VERSION, FEE_MODEL_UPDATED_AT } from '@/lib/constants/exchanges';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 interface CachedResult {

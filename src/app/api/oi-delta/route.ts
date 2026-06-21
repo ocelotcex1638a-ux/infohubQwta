@@ -10,7 +10,6 @@ import { NextResponse } from 'next/server';
 import { initDB, isDBConfigured, getOIDeltas } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 

@@ -3,7 +3,6 @@ import { NextRequest } from 'next/server';
 import { ALL_EXCHANGES } from '@/lib/constants';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 
 type Variant =
   | 'default'

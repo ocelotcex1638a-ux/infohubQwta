@@ -16,7 +16,6 @@ import { requireMarketer, verifySameOrigin, auth } from '@/lib/auth';
 import { initDB, isDBConfigured, getSQL, recordAuditEvent } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9_-]{1,63}$/;

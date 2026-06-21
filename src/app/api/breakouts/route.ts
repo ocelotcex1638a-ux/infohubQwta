@@ -18,7 +18,6 @@ import { STABLE_SYMBOLS, BTC_PROXIES, ETH_PROXIES } from '@/lib/coin-filters';
 import { computeQualityScore } from './quality';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const CG_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&price_change_percentage=24h%2C7d%2C30d%2C1y';

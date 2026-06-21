@@ -23,7 +23,6 @@ import { fetchWithTimeout } from '../_shared/fetch';
 import { fetchFarsideFlows } from '@/lib/etf-flows-fetch';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 interface FarsideFlowDay { date: string; total: number /* $M */ }

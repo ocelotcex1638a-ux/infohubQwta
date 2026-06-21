@@ -9,7 +9,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithTimeout, maybeProxyUrl } from '../_shared/fetch';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /* ─── Cache ─────────────────────────────────────────────────────────── */

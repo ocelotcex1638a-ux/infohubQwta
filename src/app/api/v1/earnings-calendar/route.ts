@@ -3,7 +3,6 @@ import { authenticateV1Request } from '@/lib/api/v1-auth';
 import { buildEarningsCalendar } from '@/lib/earnings-calendar';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /**

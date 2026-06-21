@@ -11,7 +11,6 @@ import { isDBConfigured, initDB, addTrackedWallet, removeTrackedWallet } from '@
 import { detectChain } from '@/lib/whale-trades';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {

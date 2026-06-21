@@ -14,7 +14,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 const GMX_SUBSQUID_BY_CHAIN: Record<'arbitrum' | 'avalanche', string> = {

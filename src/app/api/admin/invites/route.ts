@@ -18,7 +18,6 @@ import { requireAdminOrAdvisor } from '@/lib/auth';
 import { isDBConfigured, getSQL, initDB } from '@/lib/db';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 interface TopReferrer {

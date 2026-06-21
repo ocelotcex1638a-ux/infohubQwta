@@ -4,7 +4,6 @@ import { authenticateV1Request } from '@/lib/api/v1-auth';
 import { TIER_LIMITS, type Tier } from '@/lib/constants/tiers';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 /**

@@ -13,7 +13,6 @@ import { UPCOMING_TGES, type TgeEntry } from '@/lib/tge-calendar';
 import { fetchWithTimeout } from '../_shared/fetch';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 interface RecentLaunch {

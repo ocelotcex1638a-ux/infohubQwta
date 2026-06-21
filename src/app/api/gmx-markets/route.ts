@@ -13,7 +13,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getGMXMarkets } from '@/lib/gmx/markets';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {

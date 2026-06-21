@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Node.js runtime (NOT Edge) — uses AWS Lambda IPs which are less likely to be blocked
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 

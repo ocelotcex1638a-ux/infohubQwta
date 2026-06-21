@@ -14,7 +14,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { buildListingRadar } from '@/lib/listing-radar';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 
 let l1: { ts: number; body: any } | null = null;

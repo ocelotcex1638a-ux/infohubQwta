@@ -27,7 +27,6 @@ import { dedupedFetch } from '../../_shared/inflight';
 import { tickerFetchers } from '../../tickers/exchanges';
 
 export const runtime = 'nodejs';
-export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
 // Bumped 30→55s after wiring runWatchTick onto the tail of every
 // snapshot run. Snapshot itself stays well under 30s; the watch tick
