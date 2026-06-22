@@ -13,10 +13,10 @@
  */
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { Percent, Zap, Ruler, TrendingUp, ChevronUp, ChevronDown } from 'lucide-react';
+import { Percent, Zap, Ruler, TrendingUp, ChevronUp, ChevronDown, BarChart2 } from 'lucide-react';
 import { useFundingRates, useTickers } from '@/hooks/useSWRApi';
 
-type TabKey = 'funding' | 'liquidations' | 'position-sizer' | 'top-movers';
+type TabKey = 'funding' | 'liquidations' | 'position-sizer' | 'top-movers' | 'spreads';
 
 const STORAGE_KEY = 'infohub_chart_bottom_tab_v1';
 const COLLAPSE_KEY = 'infohub_chart_bottom_collapsed_v1';
@@ -63,8 +63,8 @@ export function TerminalBottomTabs({
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved === 'funding' || saved === 'liquidations' || saved === 'position-sizer' || saved === 'top-movers') {
-        setTab(saved);
+      if (saved === 'funding' || saved === 'liquidations' || saved === 'position-sizer' || saved === 'top-movers' || saved === 'spreads') {
+        setTab(saved as TabKey);
       }
     } catch { /* ignore */ }
   }, []);
@@ -85,6 +85,7 @@ export function TerminalBottomTabs({
           <TabButton active={tab === 'liquidations'} onClick={() => { setTab('liquidations'); onCollapseChange(false); }} icon={Zap} label="Liquidations" />
           <TabButton active={tab === 'position-sizer'} onClick={() => { setTab('position-sizer'); onCollapseChange(false); }} icon={Ruler} label="Position Sizer" />
           <TabButton active={tab === 'top-movers'} onClick={() => { setTab('top-movers'); onCollapseChange(false); }} icon={TrendingUp} label="Top Movers" />
+          <TabButton active={tab === 'spreads'} onClick={() => { setTab('spreads'); onCollapseChange(false); }} icon={BarChart2} label="Price Spread" />
         </div>
         <button
           onClick={() => onCollapseChange(!collapsed)}
@@ -100,6 +101,7 @@ export function TerminalBottomTabs({
           {tab === 'liquidations' && <LiquidationsTab symbol={symbol} />}
           {tab === 'position-sizer' && <PositionSizerTab symbol={symbol} />}
           {tab === 'top-movers' && <TopMoversTab />}
+          {tab === 'spreads' && <PriceSpreadTab symbol={symbol} />}
         </div>
       )}
     </div>
@@ -419,6 +421,120 @@ function MoverCard({ title, rows, tone }: { title: string; rows: MoverRow[]; ton
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/* ─── Price Spread tab ───────────────────────────────────────────────── */
+
+interface TickerRow {
+  symbol?: string;
+  exchange?: string;
+  lastPrice?: number;
+  markPrice?: number;
+  price?: number;
+  change24h?: number;
+  volume24h?: number;
+}
+
+function PriceSpreadTab({ symbol }: { symbol: string }) {
+  const { data } = useTickers();
+
+  const rows = useMemo(() => {
+    if (!data) return [];
+    const sym = symbol.toUpperCase();
+    const all = (data as TickerRow[]).filter(r =>
+      (r.symbol ?? '').toUpperCase() === sym &&
+      r.exchange
+    );
+    if (all.length === 0) return [];
+    // Deduplicate by exchange — keep the one with the highest volume per exchange
+    const byExchange = new Map<string, TickerRow>();
+    for (const r of all) {
+      const ex = r.exchange!;
+      const existing = byExchange.get(ex);
+      if (!existing || (r.volume24h ?? 0) > (existing.volume24h ?? 0)) {
+        byExchange.set(ex, r);
+      }
+    }
+    return Array.from(byExchange.values()).sort((a, b) => (b.volume24h ?? 0) - (a.volume24h ?? 0));
+  }, [data, symbol]);
+
+  if (rows.length === 0) {
+    return <EmptyState message={`No multi-exchange price data for ${symbol} yet`} />;
+  }
+
+  // Reference price: median of all exchange prices
+  const prices = rows.map(r => r.lastPrice ?? r.markPrice ?? r.price ?? 0).filter(p => p > 0);
+  const sorted = [...prices].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+  const maxPrice = Math.max(...prices);
+  const minPrice = Math.min(...prices);
+  const pctSpread = median > 0 ? ((maxPrice - minPrice) / median) * 100 : 0;
+
+  function fmtPx(n: number): string {
+    if (!n) return '—';
+    if (n >= 10000) return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    if (n >= 1) return n.toFixed(2);
+    return n.toPrecision(4);
+  }
+
+  function fmtVol(n: number): string {
+    if (!n) return '—';
+    if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
+    if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+    if (n >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
+    return `$${n.toFixed(0)}`;
+  }
+
+  return (
+    <div>
+      {/* Spread summary bar */}
+      <div className="flex items-center gap-4 px-3 py-2 border-b border-white/[0.04] text-[10px] font-mono">
+        <span className="text-neutral-500">{rows.length} exchanges</span>
+        <span className="text-neutral-500">Median <span className="text-white">${fmtPx(median)}</span></span>
+        <span className={pctSpread >= 0.1 ? 'text-hub-yellow font-bold' : 'text-neutral-500'}>
+          Spread <span className={pctSpread >= 0.1 ? 'text-hub-yellow' : 'text-white'}>{pctSpread.toFixed(3)}%</span>
+        </span>
+        <span className="text-neutral-500">
+          Hi <span className="text-emerald-400">${fmtPx(maxPrice)}</span>
+          {' · '}
+          Lo <span className="text-red-400">${fmtPx(minPrice)}</span>
+        </span>
+      </div>
+      <table className="w-full text-xs font-mono tabular-nums">
+        <thead className="sticky top-0 bg-[#0c0e13] z-10">
+          <tr className="text-[10px] uppercase tracking-wider text-neutral-500">
+            <th className="text-left px-3 py-2 font-bold">Exchange</th>
+            <th className="text-right px-3 py-2 font-bold">Price</th>
+            <th className="text-right px-3 py-2 font-bold">vs Median</th>
+            <th className="text-right px-3 py-2 font-bold">24h Change</th>
+            <th className="text-right px-3 py-2 font-bold">24h Volume</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const price = r.lastPrice ?? r.markPrice ?? r.price ?? 0;
+            const diff = median > 0 ? ((price - median) / median) * 100 : 0;
+            const chg = r.change24h ?? 0;
+            return (
+              <tr key={`${r.exchange}-${i}`} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                <td className="px-3 py-1.5 text-[11px] text-neutral-300 font-semibold">{r.exchange}</td>
+                <td className="px-3 py-1.5 text-right text-neutral-200">${fmtPx(price)}</td>
+                <td className={`px-3 py-1.5 text-right text-[10px] ${
+                  Math.abs(diff) < 0.01 ? 'text-neutral-500' : diff > 0 ? 'text-emerald-400' : 'text-red-400'
+                }`}>
+                  {diff >= 0 ? '+' : ''}{diff.toFixed(3)}%
+                </td>
+                <td className={`px-3 py-1.5 text-right text-[10px] ${chg >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {chg >= 0 ? '+' : ''}{chg.toFixed(2)}%
+                </td>
+                <td className="px-3 py-1.5 text-right text-neutral-500 text-[10px]">{fmtVol(r.volume24h ?? 0)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
