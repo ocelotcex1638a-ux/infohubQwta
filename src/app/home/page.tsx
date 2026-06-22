@@ -1323,9 +1323,9 @@ function MoversList({ title, items, accent, sign }: { title: string; items: Move
               <TokenIconSimple symbol={m.symbol} size={18} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ color: 'var(--fg-default)', fontWeight: 600, fontSize: 12 }}>{m.symbol}</span>
-                {isValidNumber(m.price ?? NaN) && (
+                {isValidNumber(m.price ?? NaN) && m.price! > 0 && (
                   <span style={{ marginLeft: 6, color: 'var(--fg-faint)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
-                    {fmtUSD(m.price!)}
+                    {formatPrice(m.price!)}
                   </span>
                 )}
               </div>
