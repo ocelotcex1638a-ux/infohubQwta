@@ -104,11 +104,14 @@ export async function fetchFarsideFlows(asset: 'btc' | 'eth'): Promise<FarsideRe
   // IPs with a 403. Same pattern we use for Binance: route through PROXY_URL
   // (the InfoHub aggregator droplet) which lives on a clean IP. Skipped
   // when no proxy configured.
+  // Route through the aggregator droplet's dedicated /farside endpoint — the
+  // droplet's IP is not blocked by Farside's Cloudflare, unlike the DO App
+  // Platform IP. The endpoint is added to prices.info-hub.io/farside?asset=btc.
   let proxyError: string | undefined;
   const proxyUrlRaw = (process.env.PROXY_URL || '').trim();
   if (proxyUrlRaw && proxyUrlRaw.startsWith('https://')) {
     const proxyBase = proxyUrlRaw.replace(/\/$/, '');
-    const proxied = await tryFetchAndParse(`${proxyBase}/?url=${encodeURIComponent(directUrl)}`);
+    const proxied = await tryFetchAndParse(`${proxyBase}/farside?asset=${asset}`);
     if ('issuers' in proxied) {
       return { asset, issuers: proxied.issuers, days: proxied.days, dataAvailable: true, source: 'proxy' };
     }
@@ -123,12 +126,17 @@ export async function fetchFarsideFlows(asset: 'btc' | 'eth'): Promise<FarsideRe
   const waybackUrl = `https://web.archive.org/web/3/${directUrl}`;
   const wayback = await tryFetchAndParse(waybackUrl);
   if ('issuers' in wayback && wayback.days.length > 0) {
-    // parseFarsideTable returns newest-first (after its internal reverse()).
-    // days[0] is the most recent archived day; days[length-1] is the
-    // oldest (going back to ETF launch Jan 2024). The banner wants the
-    // NEWEST archived date — saying "through 2024-01-11" when the data
-    // actually has rows through 2026-04-06 was wrong.
     const newest = wayback.days[0]?.date ?? 'unknown';
+
+    // Fire-and-forget: ask Wayback to re-crawl farside.co.uk so the next
+    // request (minutes later) gets a fresher snapshot. Their crawlers use
+    // IPs that aren't blocked by Farside's Cloudflare.
+    fetch(`https://web.archive.org/save/${directUrl}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(8000),
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; InfoHub/1.0)' },
+    }).catch(() => {});
+
     return {
       asset,
       issuers: wayback.issuers,
@@ -136,7 +144,7 @@ export async function fetchFarsideFlows(asset: 'btc' | 'eth'): Promise<FarsideRe
       dataAvailable: true,
       stale: true,
       source: 'wayback',
-      note: `Showing archived data through ${newest}. Live source unreachable from this datacenter.`,
+      note: `ETF flow data through ${newest}. Refreshing in background — check back in a few minutes.`,
     };
   }
 
