@@ -6,9 +6,9 @@
  * happens one second later, at the start of June 22, 2026 PT.
  */
 
-export const LAUNCH_CUTOVER_AT_ISO = '2026-06-22T00:00:00-07:00';
-export const LAUNCH_CUTOVER_LABEL = 'June 21, 2026 at 11:59 PM PT';
-export const LAUNCH_CUTOVER_DAY_LABEL = 'June 21, 2026';
+export const LAUNCH_CUTOVER_AT_ISO = '2026-06-22T00:00:00Z';
+export const LAUNCH_CUTOVER_LABEL = 'June 22, 2026';
+export const LAUNCH_CUTOVER_DAY_LABEL = 'June 22, 2026';
 
 export function getLaunchCutoverAt(): Date {
   return new Date(LAUNCH_CUTOVER_AT_ISO);
