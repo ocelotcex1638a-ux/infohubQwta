@@ -370,12 +370,10 @@ Four tiers, single source of truth in `lib/constants/tiers.ts`:
 Annual = 10× monthly = 17% off. Admin role auto-resolves to Whale via
 `resolveUserTier` (in `lib/constants/tiers.ts`).
 
-**Today: "free during launch"** — `LAUNCH_GATING_ENABLED = false` in
-`src/components/TierGate.tsx`. Every signed-in user gets full access;
-the gate component shows a hint chip ("Pro tier feature — free during
-launch") instead of paywalling. Flip the constant when NowPayments
-checkout goes live and all `<TierGate requires="..."/>` boundaries
-auto-engage.
+**Tier gating is LIVE** (as of 2026-06-22) — `LAUNCH_GATING_ENABLED = true` in
+`src/components/TierGate.tsx` (evaluated by `isLaunchCutoverReached()` against
+`LAUNCH_CUTOVER_AT_ISO = '2026-06-22T00:00:00Z'`). All `<TierGate requires="..."/>`
+boundaries are enforced. Checkout via Maxelpay.
 
 ### Tier-gating pattern
 
@@ -416,7 +414,7 @@ Cookie attribution lives in `src/middleware.ts` — any `?ref=CODE`
 landing sets the `ih_ref` cookie with 60d max-age. Signup route reads
 it (or body field) and stamps `referred_by_user_id`. Commission events
 queue up; the actual conversion → commission row is logged when
-NowPayments confirms first paid month.
+Maxelpay confirms first paid month.
 
 Surfaces:
 - `/referrals` — public landing (program terms + how-it-works + FAQ)

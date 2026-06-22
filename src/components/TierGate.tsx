@@ -11,10 +11,9 @@
  *     features that would consume real backend resources for a Free user
  *     even if rendered (e.g. heavy API endpoints, paid integrations).
  *
- * Launch-mode override (May 2026): while the global flag below is true,
- * the gate is DISABLED entirely â€” children render unmodified for every
- * tier. This matches the /pricing "Free during launch" banner. Flip
- * LAUNCH_GATING_ENABLED to true when MaxelPay checkout goes live.
+ * Gating is LIVE (2026-06-22): LAUNCH_GATING_ENABLED evaluates to true
+ * via isLaunchCutoverReached(). All TierGate boundaries are enforced.
+ * Checkout via Maxelpay.
  *
  * Admin role is grandfathered (resolveUserTier already returns 'whale'),
  * so admins never see the paywall regardless of mode.
