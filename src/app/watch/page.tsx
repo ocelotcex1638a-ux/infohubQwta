@@ -23,6 +23,7 @@ import type { Venue, WatchEventKind, WatchEventPayload } from '@/lib/hl-watch';
 import { MAX_WATCHED_WALLETS } from '@/lib/hl-watch';
 import { resolveUserTier, TIER_LIMITS } from '@/lib/constants/tiers';
 
+
 interface Wallet {
   id: number;
   address: string;
@@ -250,6 +251,8 @@ function WatchPageInner() {
   // can triage signal from noise without clicking through to a trader
   // profile.
   const [tierMap, setTierMap] = useState<Map<string, TierInfo>>(new Map());
+  // HL weekly leaderboard top 6 — shown as "Top traders this week" quick-add section
+  const [hlLeaderboard, setHlLeaderboard] = useState<Array<{ address: string; rank: number; pnl: number }>>([]);
 
   // Deep-link affordance: when `?add=` is present the user came from
   // /trader/[address] expecting to add a wallet. Scroll the form into
@@ -412,6 +415,38 @@ function WatchPageInner() {
       })
       .catch(() => { /* non-critical, just don't show the section */ });
     return () => ac.abort();
+  }, [status]);
+
+  // Fetch HL weekly leaderboard for "Top traders this week" quick-add section.
+  // Uses the public HL info API — no auth required.
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('https://api.hyperliquid.xyz/info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'leaderboard', window: 'week' }),
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok || cancelled) return;
+        const json = await res.json();
+        // Response shape: { leaderboardRows: [{ ethAddress, accountValue, windowPnl, ... }] }
+        const rows: Array<{ ethAddress?: string; windowPnl?: { pnl?: string } }> =
+          json?.leaderboardRows ?? json ?? [];
+        const parsed = rows
+          .slice(0, 6)
+          .map((r, i) => ({
+            address: (r.ethAddress ?? '').toLowerCase(),
+            rank: i + 1,
+            pnl: parseFloat(r.windowPnl?.pnl ?? '0') || 0,
+          }))
+          .filter(r => r.address.startsWith('0x') && r.address.length === 42);
+        if (!cancelled) setHlLeaderboard(parsed);
+      } catch { /* non-critical */ }
+    })();
+    return () => { cancelled = true; };
   }, [status]);
 
   const handleSubscribe = useCallback(async (addr: string, label: string | null, chain = chainInput) => {
@@ -690,7 +725,53 @@ function WatchPageInner() {
           </div>
         </section>
 
-        {/* Suggested whales — shown when user has < 5 wallets so it
+        {/* Famous / community-known wallets from HL weekly leaderboard — shown when < 5 wallets watched */}
+        {wallets.length < 5 && hlLeaderboard.length > 0 && (
+          <section className="mb-6">
+            <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-white mb-2 px-1 flex items-center gap-2">
+              <Activity className="w-3.5 h-3.5 text-hub-yellow" />
+              Top traders this week
+              <span className="text-[10px] font-mono text-neutral-600">HL weekly leaderboard · click to watch</span>
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              {hlLeaderboard.map(fw => {
+                const alreadyWatching = wallets.some(x => x.address.toLowerCase() === fw.address.toLowerCase());
+                const submitting = addingAddr === fw.address;
+                return (
+                  <div key={fw.address} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 hover:bg-white/[0.04] transition-colors">
+                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                      <span className="text-[10px] font-bold text-hub-yellow">#{fw.rank}</span>
+                      <span className="text-[8px] font-bold px-1 py-px rounded uppercase tracking-wider text-emerald-400 bg-emerald-400/10">HL</span>
+                    </div>
+                    <p className="text-[9px] font-mono text-neutral-500 truncate mb-1">{fw.address.slice(0, 8)}…{fw.address.slice(-4)}</p>
+                    <p className={`text-[10px] font-mono font-bold mb-2 ${fw.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {fw.pnl >= 0 ? '+' : ''}{fw.pnl >= 1e6 ? `$${(fw.pnl/1e6).toFixed(1)}M` : fw.pnl >= 1e3 ? `$${(fw.pnl/1e3).toFixed(0)}K` : `$${fw.pnl.toFixed(0)}`}
+                    </p>
+                    <button
+                      onClick={() => handleSubscribe(fw.address, `HL #${fw.rank}`, 'hyperliquid')}
+                      disabled={alreadyWatching || submitting}
+                      className={`w-full inline-flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border transition-colors ${
+                        alreadyWatching
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-400/30 cursor-default'
+                          : submitting
+                            ? 'bg-white/[0.04] text-neutral-500 border-white/[0.08] cursor-wait'
+                            : 'bg-hub-yellow/10 text-hub-yellow border-hub-yellow/30 hover:bg-hub-yellow/20'
+                      }`}
+                    >
+                      {alreadyWatching
+                        ? <><CheckCircle2 className="w-2.5 h-2.5" /> Watching</>
+                        : submitting
+                          ? <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                          : <><Plus className="w-2.5 h-2.5" /> Watch</>}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Suggested whales — shown when user has < 10 wallets so it
             doesn't clutter the page once they've curated their own list */}
         {wallets.length < 10 && suggested && suggested.length > 0 && (
           <section className="mb-6">

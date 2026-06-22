@@ -25,11 +25,27 @@ const MIN_SIZES = [
   { label: '$1M',   value: 1_000_000 },
 ];
 
+// Aevo instrument names (BTC-PERP, ETH-PERP, SOL-PERP, etc.)
+const AEVO_MARKETS: Record<string, string> = {
+  BTC: 'BTC-PERP', ETH: 'ETH-PERP', SOL: 'SOL-PERP', ARB: 'ARB-PERP',
+  DOGE: 'DOGE-PERP', AVAX: 'AVAX-PERP', LINK: 'LINK-PERP', OP: 'OP-PERP',
+  SUI: 'SUI-PERP', APT: 'APT-PERP', WIF: 'WIF-PERP', PEPE: 'PEPE-PERP',
+};
+
+// Backpack symbol names (BTC_USDC_PERP, etc.)
+const BACKPACK_MARKETS: Record<string, string> = {
+  BTC: 'BTC_USDC_PERP', ETH: 'ETH_USDC_PERP', SOL: 'SOL_USDC_PERP',
+  LINK: 'LINK_USDC_PERP', AVAX: 'AVAX_USDC_PERP', SUI: 'SUI_USDC_PERP',
+  APT: 'APT_USDC_PERP', DOGE: 'DOGE_USDC_PERP',
+};
+
 // ── Types ──────────────────────────────────────────────────────────────────────
+
+type DexVenue = 'HL' | 'dYdX' | 'Aevo' | 'Backpack';
 
 interface DexTrade {
   id: string;
-  venue: 'HL' | 'dYdX';
+  venue: DexVenue;
   coin: string;
   side: 'buy' | 'sell';
   price: number;
@@ -67,6 +83,15 @@ function sizeEmoji(valueUsd: number): string {
 }
 
 // ── Row styling ────────────────────────────────────────────────────────────────
+
+function venueStyle(venue: DexVenue): string {
+  switch (venue) {
+    case 'HL':       return 'bg-violet-400/20 text-violet-400';
+    case 'dYdX':     return 'bg-sky-400/20 text-sky-400';
+    case 'Aevo':     return 'bg-rose-400/20 text-rose-400';
+    case 'Backpack': return 'bg-amber-400/20 text-amber-400';
+  }
+}
 
 function rowCls(valueUsd: number, isBuy: boolean): string {
   if (valueUsd >= 1_000_000) return isBuy
@@ -145,6 +170,125 @@ function useDyDxTrades(coin: string): DexTrade[] {
   return trades;
 }
 
+// ── Aevo polling hook ─────────────────────────────────────────────────────────
+
+function useAevoTrades(coin: string): DexTrade[] {
+  const [trades, setTrades] = useState<DexTrade[]>([]);
+  const seenIds = useRef(new Set<string>());
+  const instrument = AEVO_MARKETS[coin];
+
+  const poll = useCallback(async () => {
+    if (!instrument) return;
+    try {
+      const res = await fetch(
+        `https://api.aevo.xyz/trades?instrument_name=${instrument}&limit=30`,
+        { signal: AbortSignal.timeout(5000) },
+      );
+      if (!res.ok) return;
+      const json = await res.json() as { trades?: Array<{
+        trade_id?: string;
+        taker_side?: string;
+        price?: string;
+        amount?: string;
+        created_timestamp?: string;
+      }> };
+      const raw = json.trades ?? [];
+      const fresh: DexTrade[] = [];
+      for (const t of raw) {
+        const id = t.trade_id;
+        if (!id || seenIds.current.has(id)) continue;
+        const price = parseFloat(t.price ?? '');
+        const size  = parseFloat(t.amount ?? '');
+        if (!Number.isFinite(price) || !Number.isFinite(size) || price <= 0 || size <= 0) continue;
+        // Aevo timestamps are in microseconds
+        const ts = t.created_timestamp ? Math.floor(Number(t.created_timestamp) / 1000) : Date.now();
+        seenIds.current.add(id);
+        fresh.push({
+          id: `aevo:${id}`,
+          venue: 'Aevo',
+          coin,
+          side: t.taker_side === 'buy' ? 'buy' : 'sell',
+          price,
+          size,
+          valueUsd: price * size,
+          time: ts,
+        });
+      }
+      if (fresh.length > 0) setTrades(prev => [...fresh, ...prev].slice(0, 300));
+    } catch { /* network — next poll retries */ }
+  }, [instrument, coin]);
+
+  useEffect(() => {
+    seenIds.current.clear();
+    setTrades([]);
+    if (!instrument) return;
+    poll();
+    const id = setInterval(poll, 6_000);
+    return () => clearInterval(id);
+  }, [coin, instrument, poll]);
+
+  return trades;
+}
+
+// ── Backpack polling hook ──────────────────────────────────────────────────────
+
+function useBackpackTrades(coin: string): DexTrade[] {
+  const [trades, setTrades] = useState<DexTrade[]>([]);
+  const seenIds = useRef(new Set<string>());
+  const symbol = BACKPACK_MARKETS[coin];
+
+  const poll = useCallback(async () => {
+    if (!symbol) return;
+    try {
+      const res = await fetch(
+        `https://api.backpack.exchange/api/v1/trades?symbol=${symbol}&limit=30`,
+        { signal: AbortSignal.timeout(5000) },
+      );
+      if (!res.ok) return;
+      const raw = await res.json() as Array<{
+        id?: string;
+        price?: string;
+        quantity?: string;
+        isBuyerMaker?: boolean;
+        timestamp?: number;
+      }>;
+      if (!Array.isArray(raw)) return;
+      const fresh: DexTrade[] = [];
+      for (const t of raw) {
+        const id = String(t.id ?? '');
+        if (!id || seenIds.current.has(id)) continue;
+        const price = parseFloat(t.price ?? '');
+        const size  = parseFloat(t.quantity ?? '');
+        if (!Number.isFinite(price) || !Number.isFinite(size) || price <= 0 || size <= 0) continue;
+        seenIds.current.add(id);
+        fresh.push({
+          id: `bp:${id}`,
+          venue: 'Backpack',
+          coin,
+          // isBuyerMaker=true means the taker was selling (buy order already in book)
+          side: t.isBuyerMaker ? 'sell' : 'buy',
+          price,
+          size,
+          valueUsd: price * size,
+          time: t.timestamp ?? Date.now(),
+        });
+      }
+      if (fresh.length > 0) setTrades(prev => [...fresh, ...prev].slice(0, 300));
+    } catch { /* network — next poll retries */ }
+  }, [symbol, coin]);
+
+  useEffect(() => {
+    seenIds.current.clear();
+    setTrades([]);
+    if (!symbol) return;
+    poll();
+    const id = setInterval(poll, 7_000);
+    return () => clearInterval(id);
+  }, [coin, symbol, poll]);
+
+  return trades;
+}
+
 // ── Trade row ──────────────────────────────────────────────────────────────────
 
 function TradeRow({ trade }: { trade: DexTrade }) {
@@ -158,11 +302,7 @@ function TradeRow({ trade }: { trade: DexTrade }) {
     >
       <span className="text-neutral-600 text-[10px] tabular-nums">{fmtTime(trade.time)}</span>
 
-      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded self-center text-center ${
-        trade.venue === 'HL'
-          ? 'bg-violet-400/20 text-violet-400'
-          : 'bg-sky-400/20 text-sky-400'
-      }`}>
+      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded self-center text-center ${venueStyle(trade.venue)}`}>
         {trade.venue}
       </span>
 
@@ -196,6 +336,8 @@ function TradeRow({ trade }: { trade: DexTrade }) {
 function WhaleFeed({ coin, minSize }: { coin: string; minSize: number }) {
   const { trades: hlTrades, connected: hlConnected } = useHLTrades(coin);
   const dydxTrades = useDyDxTrades(coin);
+  const aevoTrades = useAevoTrades(coin);
+  const backpackTrades = useBackpackTrades(coin);
   const containerRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef(true);
 
@@ -205,12 +347,12 @@ function WhaleFeed({ coin, minSize }: { coin: string; minSize: number }) {
     [hlTrades],
   );
 
-  // Merge + sort by time desc
+  // Merge all venues + sort by time desc
   const allTrades = useMemo(() => {
-    return [...hlDexTrades, ...dydxTrades]
+    return [...hlDexTrades, ...dydxTrades, ...aevoTrades, ...backpackTrades]
       .sort((a, b) => b.time - a.time)
-      .slice(0, 400);
-  }, [hlDexTrades, dydxTrades]);
+      .slice(0, 600);
+  }, [hlDexTrades, dydxTrades, aevoTrades, backpackTrades]);
 
   const filtered = useMemo(
     () => allTrades.filter((t) => t.valueUsd >= minSize),
@@ -226,32 +368,46 @@ function WhaleFeed({ coin, minSize }: { coin: string; minSize: number }) {
 
   // Rolling stats
   const stats = useMemo(() => {
-    const big = allTrades.filter((t) => t.valueUsd >= minSize).slice(0, 500);
+    const big = allTrades.filter((t) => t.valueUsd >= minSize).slice(0, 600);
     const buyVol  = big.filter(t => t.side === 'buy').reduce((s, t) => s + t.valueUsd, 0);
     const sellVol = big.filter(t => t.side === 'sell').reduce((s, t) => s + t.valueUsd, 0);
     const total   = buyVol + sellVol;
     const buyPct  = total > 0 ? (buyVol / total) * 100 : 50;
-    const hlCount = filtered.filter(t => t.venue === 'HL').length;
-    const dydxCount = filtered.filter(t => t.venue === 'dYdX').length;
-    return { buyVol, sellVol, total, buyPct, hlCount, dydxCount };
+    const counts: Partial<Record<DexVenue, number>> = {};
+    for (const t of filtered) counts[t.venue] = (counts[t.venue] ?? 0) + 1;
+    return { buyVol, sellVol, total, buyPct, counts };
   }, [allTrades, filtered, minSize]);
 
   const hasDydx = !!DYDX_MARKETS[coin];
+  const hasAevo = !!AEVO_MARKETS[coin];
+  const hasBackpack = !!BACKPACK_MARKETS[coin];
 
   return (
     <div className="flex flex-col gap-3">
       {/* Connection status */}
-      <div className="flex items-center gap-4 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <span className={`w-1.5 h-1.5 rounded-full ${hlConnected ? 'bg-violet-400 shadow-[0_0_6px_rgba(167,139,250,0.7)]' : 'bg-neutral-600 animate-pulse'}`} />
           <span className="text-[10px] text-neutral-500 font-medium">
-            Hyperliquid {hlConnected ? 'live' : 'connecting…'}
+            HL {hlConnected ? 'live' : 'connecting…'}
           </span>
         </div>
         {hasDydx && (
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]" />
-            <span className="text-[10px] text-neutral-500 font-medium">dYdX polling 5s</span>
+            <span className="text-[10px] text-neutral-500 font-medium">dYdX 5s</span>
+          </div>
+        )}
+        {hasAevo && (
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shadow-[0_0_6px_rgba(251,113,133,0.7)]" />
+            <span className="text-[10px] text-neutral-500 font-medium">Aevo 6s</span>
+          </div>
+        )}
+        {hasBackpack && (
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]" />
+            <span className="text-[10px] text-neutral-500 font-medium">Backpack 7s</span>
           </div>
         )}
       </div>
@@ -268,16 +424,18 @@ function WhaleFeed({ coin, minSize }: { coin: string; minSize: number }) {
         <Stat label="Buy %" value={`${stats.buyPct.toFixed(0)}%`}
           tone={stats.buyPct >= 60 ? 'text-emerald-400' : stats.buyPct <= 40 ? 'text-red-400' : 'text-white'} />
         <div className="flex gap-2">
-          <div className="flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border border-white/[0.07] bg-white/[0.02]">
-            <span className="text-[9px] uppercase tracking-widest text-neutral-500">HL</span>
-            <span className="text-sm font-bold font-mono text-violet-400">{stats.hlCount}</span>
-          </div>
-          {hasDydx && (
-            <div className="flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border border-white/[0.07] bg-white/[0.02]">
-              <span className="text-[9px] uppercase tracking-widest text-neutral-500">dYdX</span>
-              <span className="text-sm font-bold font-mono text-sky-400">{stats.dydxCount}</span>
-            </div>
-          )}
+          {(['HL', 'dYdX', 'Aevo', 'Backpack'] as DexVenue[]).map(v => {
+            const count = stats.counts[v];
+            if (count == null) return null;
+            return (
+              <div key={v} className="flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border border-white/[0.07] bg-white/[0.02]">
+                <span className="text-[9px] uppercase tracking-widest text-neutral-500">{v}</span>
+                <span className={`text-sm font-bold font-mono ${
+                  v === 'HL' ? 'text-violet-400' : v === 'dYdX' ? 'text-sky-400' : v === 'Aevo' ? 'text-rose-400' : 'text-amber-400'
+                }`}>{count}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -370,8 +528,10 @@ export default function WhalesPage() {
               </h1>
               <p className="text-[12px] text-neutral-500 mt-1">
                 Real-time fills from{' '}
-                <span className="text-violet-400 font-semibold">Hyperliquid</span> (live WS) +{' '}
-                <span className="text-sky-400 font-semibold">dYdX</span> (5s poll)
+                <span className="text-violet-400 font-semibold">Hyperliquid</span> (WS) ·{' '}
+                <span className="text-sky-400 font-semibold">dYdX</span> ·{' '}
+                <span className="text-rose-400 font-semibold">Aevo</span> ·{' '}
+                <span className="text-amber-400 font-semibold">Backpack</span>
               </p>
             </div>
           </div>
@@ -423,7 +583,7 @@ export default function WhalesPage() {
         <WhaleFeed coin={coin} minSize={minSize} />
 
         <p className="text-[11px] text-neutral-700 mt-4 text-center">
-          Hyperliquid WebSocket · dYdX Indexer API · No auth required
+          Hyperliquid WebSocket · dYdX Indexer · Aevo REST · Backpack REST · No auth required
         </p>
       </main>
 

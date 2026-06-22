@@ -188,6 +188,7 @@ const DEFAULT_SECTIONS: SidebarSection[] = [
     { href: '/bitcoin-treasuries', label: 'BTC Treasuries', color: ACL, icon: I.bitcoin },
     { href: '/fear-greed',        label: 'Fear & Greed',   color: ACC,  icon: I.flame },
     { href: '/news',              label: 'News',           color: MUTE, icon: I.news },
+    { href: '/polymarket',        label: 'Prediction Mkts', color: PUR,  icon: I.signal },
   ]},
   { id: 'tools', label: 'Tools', items: [
     { href: '/tools',              label: 'Tools by Type', color: ACC,  icon: I.layers },
