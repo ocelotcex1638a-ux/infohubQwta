@@ -144,6 +144,11 @@ export const PAGE_META: Record<string, PageMeta> = {
     title: 'Options Data',
     description: 'Crypto options data including open interest, volume, and max pain. Track BTC and ETH options market activity.',
   },
+  '/options/builder': {
+    title: 'Options Strategy Builder',
+    description: 'Build and visualize multi-leg crypto options strategies. Model payoff diagrams, breakevens, max P/L, and net Greeks for BTC and ETH options using live IV data.',
+    ogVariant: 'options',
+  },
   '/basis': {
     title: 'Futures Basis',
     description: 'Futures basis (premium/discount) across exchanges. Track annualized basis rates for BTC, ETH, and altcoins.',
@@ -194,7 +199,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/pricing': {
     title: 'Pricing - Free, Trader, Pro, Whale',
-    description: 'Pricing for InfoHub - Free forever with the full data terminal, Trader ($15/mo) for active retail with every venue real-time, Pro ($49/mo) for daily traders with tax export, custom dashboards, and setup scanner, Whale ($99/mo) for funds and desks with priority alerts, custom webhooks, and 1:1 Telegram. Launch access is open while we onboard early users.',
+    description: 'Pricing for InfoHub — Free forever with the full data terminal, Trader ($12/mo) for active retail with every venue real-time, Pro ($29/mo) for daily traders with tax export, custom dashboards, and setup scanner, Whale ($59/mo) for funds and desks with priority alerts, custom webhooks, and 1:1 Telegram.',
     ogVariant: 'pricing',
   },
   '/brand': {
