@@ -59,7 +59,7 @@ const COMPARISON_ROWS: Row[] = [
   },
   {
     feature: 'Personal alerts (price / funding / OI)',
-    values: { infohub: '5 free · 75 Pro', coinglass: 'Premium', laevitas: 'Premium', coinank: 'Premium' },
+    values: { infohub: '3 free · 75 Pro', coinglass: 'Premium', laevitas: 'Premium', coinank: 'Premium' },
   },
   {
     feature: 'Telegram bot delivery',
@@ -67,7 +67,7 @@ const COMPARISON_ROWS: Row[] = [
   },
   {
     feature: 'Wallet watch (HL + gTrade)',
-    values: { infohub: '10 free · 200 Pro', coinglass: false, laevitas: false, coinank: false },
+    values: { infohub: '5 free · 200 Pro', coinglass: false, laevitas: false, coinank: false },
   },
   {
     feature: 'Public REST API',

@@ -307,7 +307,7 @@ export default function PricingPage() {
           <div className="space-y-2">
             <FaqItem
               q="Can I still use InfoHub for free?"
-              a="Yes — Free tier is free forever with no card required. It covers 100 req/min API, 5 price alerts, and 10 watched wallets. Trader, Pro, and Whale tiers unlock higher limits and advanced features."
+              a="Yes — Free tier is free forever with no card required. It covers 100 req/min API, 3 price alerts, and 5 watched wallets. Trader, Pro, and Whale tiers unlock higher limits and advanced features."
             />
             <FaqItem
               q="How does payment work?"

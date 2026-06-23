@@ -362,7 +362,7 @@ Four tiers, single source of truth in `lib/constants/tiers.ts`:
 
 | Tier   | Price    | API limits          | Alerts | Wallets | History |
 |--------|----------|---------------------|--------|---------|---------|
-| Free   | $0       | 100/min · 5k/day    | 5      | 10      | 90d     |
+| Free   | $0       | 100/min · 5k/day    | 3      | 5       | 90d     |
 | Trader | $12/mo   | 200/min · 25k/day   | 15     | 30      | 180d    |
 | Pro    | $29/mo   | 600/min · ∞/day     | 75     | 200     | 1y      |
 | Whale  | $59/mo   | ∞ · ∞               | ∞      | ∞       | 5y      |
