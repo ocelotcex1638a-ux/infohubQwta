@@ -8,8 +8,8 @@ import {
 
 describe('launch cutover helpers', () => {
   it('treats times before the cutoff as inside the launch window', () => {
-    expect(isLaunchAccessWindow(new Date('2026-06-21T23:59:58-07:00').getTime())).toBe(true);
-    expect(isLaunchCutoverReached(new Date('2026-06-21T23:59:58-07:00').getTime())).toBe(false);
+    expect(isLaunchAccessWindow(new Date('2026-06-21T23:59:58Z').getTime())).toBe(true);
+    expect(isLaunchCutoverReached(new Date('2026-06-21T23:59:58Z').getTime())).toBe(false);
   });
 
   it('flips exactly at the configured cutover timestamp', () => {
