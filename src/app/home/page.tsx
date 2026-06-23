@@ -595,7 +595,7 @@ export default function HomePage() {
                   borderRadius: 999, background: 'rgba(255,193,7,0.12)', border: '1px solid rgba(255,193,7,0.28)',
                   color: '#fbbf24', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
                 }}>
-                  Free during launch
+                  Free tier forever
                 </span>
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', height: 30, padding: '0 10px',

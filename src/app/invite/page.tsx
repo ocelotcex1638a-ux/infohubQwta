@@ -334,10 +334,10 @@ export default function InvitePage() {
           </h2>
           <ul className="text-[12px] text-neutral-400 leading-relaxed space-y-1.5 mt-2 list-disc list-inside marker:text-emerald-400/40">
             <li>
-              Trader, Pro + Whale tier features are open during launch —{' '}
+              The referred user gets 10% off forever —{' '}
               <Link href="/pricing" className="text-emerald-300 hover:underline">see pricing</Link>
             </li>
-            <li>Day-one supporter recognition when paid billing turns on</li>
+            <li>Day-one supporter recognition — invited users in the community from the start</li>
             <li>Priority on the new-feature feedback loop</li>
             <li>
               A spot on the{' '}

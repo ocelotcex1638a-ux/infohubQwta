@@ -653,7 +653,7 @@ function PricingPreview() {
           >
             <span style={{ fontSize: 10, fontWeight: 900, color: '#71717a', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 }}>{tier.name}</span>
             <span style={{ fontSize: 24, fontWeight: 900, color: tier.tone, letterSpacing: -1.1 }}>{tier.price}</span>
-            <span style={{ fontSize: 10, color: '#a1a1aa', marginTop: 6 }}>per month after launch</span>
+            <span style={{ fontSize: 10, color: '#a1a1aa', marginTop: 6 }}>per month</span>
           </div>
         ))}
       </div>

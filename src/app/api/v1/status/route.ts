@@ -73,17 +73,17 @@ export async function GET() {
       trader: {
         rateLimit: `${TRADER_TIER_PER_MINUTE} req/min`,
         dailyLimit: `${TRADER_TIER_PER_DAY.toLocaleString()} req/day`,
-        note: `Free during launch — see /pricing. $${TIER_PRICE_MONTHLY.trader}/mo after launch.`,
+        note: `$${TIER_PRICE_MONTHLY.trader}/mo. See /pricing.`,
       },
       pro: {
         rateLimit: `${PRO_TIER_PER_MINUTE} req/min`,
         dailyLimit: 'unlimited',
-        note: `Free during launch — see /pricing. $${TIER_PRICE_MONTHLY.pro}/mo after launch.`,
+        note: `$${TIER_PRICE_MONTHLY.pro}/mo. See /pricing.`,
       },
       whale: {
         rateLimit: 'unlimited',
         dailyLimit: 'unlimited',
-        note: `Free during launch — see /pricing. $${TIER_PRICE_MONTHLY.whale}/mo after launch. Includes custom alert webhooks, priority alert delivery, and a 1:1 Telegram channel.`,
+        note: `$${TIER_PRICE_MONTHLY.whale}/mo. Includes custom alert webhooks, priority alert delivery, and a 1:1 Telegram channel. See /pricing.`,
       },
     },
     documentation: 'https://info-hub.io/developers/docs',

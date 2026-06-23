@@ -42,10 +42,9 @@ export default function WebhooksGuidePage() {
         <section className="rounded-xl border border-amber-400/30 bg-amber-500/[0.04] px-4 py-3 mb-6 flex items-start gap-3">
           <Crown className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" aria-hidden />
           <div className="text-[12px] text-amber-200 leading-relaxed">
-            <span className="font-semibold text-amber-300">Whale tier required — even during launch.</span>{' '}
-            Webhook endpoints return 403 for Free / Trader / Pro accounts. The launch
-            unlock applies to in-app features, not this server-gated API endpoint, so
-            an active Whale subscription is required to configure webhooks here
+            <span className="font-semibold text-amber-300">Whale tier required.</span>{' '}
+            Webhook endpoints return 403 for Free / Trader / Pro accounts.
+            An active Whale subscription is required to configure webhooks here
             (admin accounts are auto-Whale).
           </div>
         </section>

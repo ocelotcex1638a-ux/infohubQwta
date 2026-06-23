@@ -176,8 +176,7 @@ export default async function ReferralsPage() {
             </p>
             <p className="text-neutral-500 text-xs sm:text-sm max-w-xl mx-auto">
               Your referrals get <strong className="text-white">10% off</strong> forever.
-              90-day cookie. $25 min payout. Active during launch, commissions begin
-              the day paid checkouts go live.
+              90-day cookie. $25 min payout. Commissions are recorded on every paid checkout.
             </p>
 
             <div className="mt-7 flex items-center gap-2 justify-center flex-wrap">

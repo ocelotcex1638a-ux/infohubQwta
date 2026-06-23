@@ -157,22 +157,16 @@ export default function PricingPage() {
           </div>
         )}
 
-        {/* Launch notice + Monthly/Annual toggle */}
-        <section className="rounded-xl border border-amber-400/30 bg-amber-500/[0.04] px-4 py-3 mb-5 text-center">
-          <p className="text-[12px] sm:text-[13px] text-amber-200">
-            <Sparkles className="inline w-3.5 h-3.5 -mt-0.5 mr-1.5 text-amber-300" aria-hidden />
-            <span className="font-semibold text-amber-300">Free during launch</span> — Trader,
-            Pro + Whale unlocked for all early users until {LAUNCH_CUTOVER_LABEL} /
+        {/* Billing-live notice + Monthly/Annual toggle */}
+        <section className="rounded-xl border border-emerald-400/30 bg-emerald-500/[0.04] px-4 py-3 mb-5 text-center">
+          <p className="text-[12px] sm:text-[13px] text-emerald-200">
+            <Sparkles className="inline w-3.5 h-3.5 -mt-0.5 mr-1.5 text-emerald-300" aria-hidden />
+            <span className="font-semibold text-emerald-300">Billing is live.</span>{' '}
+            Pay in crypto via MaxelPay — USDT/USDC, BTC, ETH across 5 chains. No card needed. /
             <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-2 py-[1px] mx-1 font-bold uppercase tracking-wide text-emerald-300 border border-emerald-400/30">
               Annual -{ANNUAL_DISCOUNT_PCT}%
             </span>
           </p>
-          <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
-            <LaunchCountdown />
-            <span className="text-[11px] text-neutral-300">
-              Anyone without an active subscription by {LAUNCH_CUTOVER_DAY_LABEL} moves back to Free.
-            </span>
-          </div>
         </section>
 
         <div className="flex justify-center mb-7">
@@ -475,7 +469,7 @@ function TierCard({
                 <span className="text-[10px] text-neutral-500">billed annually</span>
               )}
             </div>
-            <p className="text-[10px] text-amber-300/80 mt-1.5">Also free now during launch</p>
+            <p className="text-[10px] text-neutral-500 mt-1.5">Lucky Wheel reward</p>
           </>
         ) : pctPromo ? (
           <>
@@ -491,7 +485,7 @@ function TierCard({
             </div>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <span className="text-[12px] text-neutral-600 line-through">${displayMonthly}/mo</span>
-              <span className="text-[11px] text-amber-300">· free now during launch</span>
+              <span className="text-[11px] text-emerald-300">· {pctPromo}% off applied</span>
             </div>
             {period === 'annual' && (
               <p className="text-[10px] text-neutral-500 mt-1">
@@ -501,15 +495,13 @@ function TierCard({
           </>
         ) : (
           <>
-            {/* No promo — show strike-through during launch */}
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white/70 line-through decoration-[3px] decoration-rose-400/80">${displayMonthly}</span>
+              <span className="text-2xl font-bold text-white">${displayMonthly}</span>
               <span className="text-[12px] text-neutral-500">/mo{period === 'annual' ? ' · billed annually' : ''}</span>
             </div>
-            <p className="text-[11px] uppercase font-bold tracking-wider text-amber-300 mt-1.5">Free during launch</p>
             {period === 'annual' && (
               <p className="text-[10px] text-neutral-500 mt-1">
-                ${annual}/yr after launch · save ${annualSavingsUsd(tier)}/yr vs monthly
+                ${annual}/yr · save ${annualSavingsUsd(tier)}/yr vs monthly
               </p>
             )}
           </>

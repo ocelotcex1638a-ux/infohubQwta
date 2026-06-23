@@ -823,9 +823,7 @@ function BillingTab() {
       description={
         isAdminGrandfathered
           ? "Admin accounts are grandfathered to the Whale tier — all features unlocked, no billing."
-          : postLaunch
-          ? "Upgrade from /pricing. Payments are processed via MaxelPay (crypto). Your active-through date updates here after payment confirms."
-          : "Trader, Pro + Whale tiers are free during launch. Paid billing starts June 22, 2026 — see /pricing for tier limits."
+          : "Upgrade from /pricing. Payments are processed via MaxelPay (crypto). Your active-through date updates here after payment confirms."
       }
     >
       {/* Current-tier card */}
