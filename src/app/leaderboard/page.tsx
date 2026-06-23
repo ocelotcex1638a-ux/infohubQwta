@@ -99,6 +99,7 @@ async function fetchBoard(window: WindowId): Promise<ApiResponse> {
       // our own server boundary.
       headers: { cookie: h.get('cookie') ?? '' },
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) {
       return { window, updatedAt: new Date().toISOString(), rows: [] };
