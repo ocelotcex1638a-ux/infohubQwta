@@ -23,9 +23,31 @@ export interface ChangelogEntry {
 }
 
 /**
- * Last reviewed: 2026-05-26
+ * Last reviewed: 2026-06-23
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    date: '2026-06-23',
+    title: 'Prediction Markets · 4-venue Whale Tracker · Orderflow Panel · Price Spread tab',
+    summary: 'Six new features shipped across trading, analytics, and billing. Prediction markets cross-platform arb scanner, 4-venue real-time whale feed, Velo-style orderflow CVD panel, per-exchange price spread tab in chart, 24h gas gwei sparklines, and a Plan & Billing section in settings.',
+    tags: ['new', 'improved'],
+    bullets: [
+      '/polymarket — Prediction Markets: cross-platform odds comparison between Polymarket and Manifold. Markets fuzzy-matched across platforms, arb gaps ≥5% highlighted in yellow. Sort by volume, odds spread, or expiry. Category + source filters. 3-min cached API.',
+      '/whales — 4-venue DEX Whale Tracker: real-time large-trade feed now covers Hyperliquid, dYdX, Aevo, and Backpack. Each venue color-coded (violet/sky/rose/amber). REST-polled every 6-7s with venue-aware side detection. Stats bar shows per-venue counts.',
+      '/watch — HL Leaderboard Quick-Watch: when you have fewer than 5 wallets subscribed, a "Top traders this week" section shows the top 6 Hyperliquid traders by weekly PnL (live from HL leaderboard API). One-click subscribe to any of them.',
+      '/chart Order Flow panel — full Velo-style rewrite: CVD (cumulative volume delta) with mini sparkline, buy%/sell% gradient bar, VWAP, trade speed (trades/sec), big-buy and big-sell counts, net delta. Window selector (Live/5m/15m/1h/All). Trade rows show USD value instead of raw base quantity.',
+      '/chart Price Spread tab — new "Price Spread" tab in the chart bottom panel (alongside Order Book, Tape, etc.). Shows each exchange\'s price vs median, diff%, 24h change, and volume. Deduped by exchange, $100B sanity cap, TypeScript-safe Map iteration.',
+      '/gas-tracker — 24h gwei sparkline: API now accumulates 5-min ring-buffer samples (288 max per chain = 24h). A new "24h trend" column renders an inline SVG sparkline — green falling (cheaper), red rising (more expensive).',
+      '/settings — Plan & Billing section: shows current tier badge, expiry date, days remaining, 14-day renewal warning. Buttons: upgrade to next tier, view all plans, referrals & earnings. No extra API call — reads from the NextAuth session.',
+    ],
+    links: [
+      { label: 'Prediction Markets', href: '/polymarket' },
+      { label: 'DEX Whale Tracker', href: '/whales' },
+      { label: 'Wallet Watch', href: '/watch' },
+      { label: 'Chart', href: '/chart' },
+      { label: 'Gas Tracker', href: '/gas-tracker' },
+    ],
+  },
   {
     date: '2026-06-21',
     title: 'Daily Digest · DEX Whales · What\'s New popover · mobile fixes',

@@ -63,6 +63,48 @@ interface WhatsNewItem {
 const WHATS_NEW: WhatsNewItem[] = [
   {
     tag: 'new',
+    label: 'Prediction Markets',
+    href: '/polymarket',
+    desc: 'Polymarket vs Manifold odds side-by-side — surface 5%+ arb gaps, sorted by volume',
+    date: '2026-06-23',
+  },
+  {
+    tag: 'improved',
+    label: 'Whale Tracker · 4 venues',
+    href: '/whales',
+    desc: 'Now covers HL, dYdX, Aevo & Backpack — filter by coin and min size across all four',
+    date: '2026-06-23',
+  },
+  {
+    tag: 'new',
+    label: 'Chart · Orderflow Panel',
+    href: '/chart',
+    desc: 'Velo-style bid/ask depth, cumulative delta, and large-print tape on the chart page',
+    date: '2026-06-23',
+  },
+  {
+    tag: 'new',
+    label: 'Chart · Price Spread tab',
+    href: '/chart',
+    desc: 'Multi-exchange price spread overlay — see basis between venues at a glance',
+    date: '2026-06-23',
+  },
+  {
+    tag: 'improved',
+    label: 'Gas Tracker · 24h trend',
+    href: '/gas-tracker',
+    desc: '5-min ring-buffer sparkline shows whether gas is rising or falling over 24h',
+    date: '2026-06-23',
+  },
+  {
+    tag: 'new',
+    label: 'Settings · Billing',
+    href: '/settings',
+    desc: 'Current plan, expiry, days remaining, and upgrade link — now visible in /settings',
+    date: '2026-06-23',
+  },
+  {
+    tag: 'new',
     label: 'Daily Digest',
     href: '/today',
     desc: 'Shareable daily snapshot — prices, carry, movers, OI, trade ideas',
@@ -107,7 +149,7 @@ const WHATS_NEW: WhatsNewItem[] = [
     tag: 'new',
     label: 'Billing flow',
     href: '/pricing',
-    desc: 'NowPayments checkout live — crypto billing for Trader / Pro / Whale',
+    desc: 'Maxelpay checkout live — crypto billing for Trader / Pro / Whale tiers',
     date: '2026-06-18',
   },
   {
