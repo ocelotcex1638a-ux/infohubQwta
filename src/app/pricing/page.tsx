@@ -6,7 +6,6 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PageHero from '@/components/PageHero';
-import LaunchCountdown from '@/components/LaunchCountdown';
 import { Sparkles, Compass, Zap, Crown, Check, X as XIcon, ArrowRight, CreditCard, Loader2, Gift } from 'lucide-react';
 import {
   PRICING_CARD_ORDER,
@@ -23,7 +22,6 @@ import {
   type Tier,
   type TierToolList,
 } from '@/lib/constants/tiers';
-import { LAUNCH_CUTOVER_LABEL, LAUNCH_CUTOVER_DAY_LABEL } from '@/lib/launch';
 import { parsePromoDiscount, type PromoDiscount } from '@/lib/promo';
 
 type Period = 'monthly' | 'annual';

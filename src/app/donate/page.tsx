@@ -416,8 +416,8 @@ export default function DonatePage() {
           }}>Day-one supporter perk</div>
         </div>
         <p style={{ fontSize: 12, color: 'var(--fg-default)', lineHeight: 1.55, margin: 0 }}>
-          When paid billing turns on (MaxelPay crypto checkout), anyone who donated before launch will be recognized as a day-one supporter.
-          Either a permanent free upgrade to one of the paid tiers (Trader, Pro, or Whale), a meaningful discount, or something bigger. Exact details will be locked in when ready, but no one who put in crypto early will get forgotten.
+          Anyone who donated before launch has been recognized as a day-one supporter.
+          Either a permanent free upgrade to one of the paid tiers (Trader, Pro, or Whale), a meaningful discount, or something bigger. Exact details are being locked in, but no one who put in crypto early will get forgotten.
           <span style={{ display: 'block', marginTop: 6, color: 'var(--fg-muted)', fontSize: 11 }}>
             💡 Save your tx hash so I can verify and credit you.
           </span>

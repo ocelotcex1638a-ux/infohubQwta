@@ -40,7 +40,6 @@ import {
   TIER_PRICE_MONTHLY,
   type Tier,
 } from '@/lib/constants/tiers';
-import { isLaunchCutoverReached } from '@/lib/launch';
 
 interface AccountStats {
   memberSince: string | null;
@@ -813,8 +812,6 @@ function BillingTab() {
       .finally(() => { if (mounted) setOrdersLoading(false); });
     return () => { mounted = false; };
   }, []);
-
-  const postLaunch = isLaunchCutoverReached();
 
   return (
     <SectionCard

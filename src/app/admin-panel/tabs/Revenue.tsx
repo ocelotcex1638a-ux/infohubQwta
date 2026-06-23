@@ -3,10 +3,9 @@
 /**
  * Revenue tab — projected MRR/ARR + affiliate revenue + commission owed.
  *
- * "Projected" because most paid tiers are comped during launch — the
- * numbers show the upside ceiling assuming every paid-tier user pays.
- * As MaxelPay conversions come through, these move from ceiling estimates
- * toward the real paid run-rate.
+ * "Projected" because not all paid-tier users have converted to paid yet.
+ * Numbers show the upside ceiling assuming every paid-tier user pays.
+ * As MaxelPay conversions come through, these move toward the real paid run-rate.
  */
 
 import { useCallback, useEffect, useState } from 'react';

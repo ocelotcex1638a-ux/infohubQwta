@@ -301,7 +301,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/developers/webhooks': {
     title: 'Custom Webhooks Setup Â· Developers',
-    description: 'Set up HMAC-signed HTTPS webhooks for InfoHub alerts. Copy-paste curl commands, Node.js + Python signature verification examples. Whale tier â€” free during launch.',
+    description: 'Set up HMAC-signed HTTPS webhooks for InfoHub alerts. Copy-paste curl commands, Node.js + Python signature verification examples. Whale tier required.',
   },
   '/home': {
     title: 'Live Crypto Derivatives Dashboard',
@@ -330,7 +330,7 @@ export const PAGE_META: Record<string, PageMeta> = {
   },
   '/account/api-keys': {
     title: 'API Keys',
-    description: 'Manage your InfoHub Public API keys â€” create, revoke, and check usage. Free tier 100 req/min, Trader 200, Pro 600, Whale unlimited (free during launch).',
+    description: 'Manage your InfoHub Public API keys â€” create, revoke, and check usage. Free tier 100 req/min, Trader 200, Pro 600, Whale unlimited.',
   },
   '/watch': {
     title: 'Wallet Watch Â· Hyperliquid + gTrade Position Alerts',
