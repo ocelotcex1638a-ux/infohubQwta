@@ -6,7 +6,7 @@
  * chains we also call `eth_feeHistory` to derive a priority-fee suggestion.
  *
  * Returns: chain name, current gwei, blocks/sec, ETH-denominated cost of a
- * standard transfer / swap, 24h gwei trend placeholder (TODO: historical).
+ * standard transfer / swap, plus a 24h gwei sparkline (5-min samples, max 288).
  *
  * Cache: 15s.
  */
@@ -38,6 +38,8 @@ const CHAINS: ChainConfigWithFallbacks[] = [
   { key: 'bsc',      label: 'BNB Chain', rpc: 'https://bsc-rpc.publicnode.com',      fallbacks: ['https://bsc-dataseed.binance.org'], nativeSymbol: 'BNB', color: '#F3BA2F', blockTimeSec: 3, usdPriceHint: 'binancecoin' },
 ];
 
+interface GasSample { ts: number; gwei: number }
+
 interface GasRow {
   chain: string;
   label: string;
@@ -50,6 +52,7 @@ interface GasRow {
   transferCostUsd: number;     // 21000 gas
   swapCostUsd: number;         // 150k gas estimate (Uniswap v3 simple swap)
   status: 'low' | 'moderate' | 'high';
+  gwei24h: GasSample[];        // 5-min samples, up to 288 (24h)
 }
 
 interface GasResponse {
@@ -65,6 +68,25 @@ interface GasResponse {
 
 const cache = new Map<string, { body: GasResponse; ts: number }>();
 const CACHE_TTL = 15_000;
+
+// 24h ring buffer: one sample per chain every 5 min, max 288 entries.
+const HISTORY_SAMPLE_INTERVAL = 5 * 60 * 1000;
+const HISTORY_MAX_SAMPLES = 288; // 24h
+const gweiHistory = new Map<string, GasSample[]>();
+let lastHistorySample = 0;
+
+function recordHistorySample(chainKey: string, gwei: number): void {
+  const now = Date.now();
+  if (now - lastHistorySample < HISTORY_SAMPLE_INTERVAL) return;
+  if (!gweiHistory.has(chainKey)) gweiHistory.set(chainKey, []);
+  const arr = gweiHistory.get(chainKey)!;
+  arr.push({ ts: now, gwei });
+  if (arr.length > HISTORY_MAX_SAMPLES) arr.splice(0, arr.length - HISTORY_MAX_SAMPLES);
+}
+
+function getHistory(chainKey: string): GasSample[] {
+  return gweiHistory.get(chainKey) ?? [];
+}
 
 async function rpcCall(url: string, method: string, params: unknown[] = [], timeoutMs = 5000): Promise<any | null> {
   try {
@@ -160,6 +182,9 @@ export async function GET(_request: NextRequest) {
   const prices = await getPriceUsd(Array.from(new Set(CHAINS.map(c => c.usdPriceHint))));
   const results = await Promise.all(CHAINS.map(getChainData));
 
+  const now = Date.now();
+  const shouldSample = now - lastHistorySample >= HISTORY_SAMPLE_INTERVAL;
+
   const rows: GasRow[] = CHAINS.map((c, i) => {
     const r = results[i];
     const gwei = r?.gwei ?? 0;
@@ -168,6 +193,7 @@ export async function GET(_request: NextRequest) {
     // gas * price (gwei) * 1e-9 (gwei->native) * usd/native
     const transferCostUsd = 21_000 * gwei * 1e-9 * nativeUsd;
     const swapCostUsd = 150_000 * gwei * 1e-9 * nativeUsd;
+    if (gwei > 0 && shouldSample) recordHistorySample(c.key, gwei);
     return {
       chain: c.key,
       label: c.label,
@@ -180,8 +206,11 @@ export async function GET(_request: NextRequest) {
       transferCostUsd,
       swapCostUsd,
       status: statusFor(c.key, gwei),
+      gwei24h: getHistory(c.key),
     };
   });
+
+  if (shouldSample && rows.some(r => r.gwei > 0)) lastHistorySample = now;
 
   const l2s = rows.filter(r => r.chain !== 'ethereum' && r.chain !== 'polygon' && r.chain !== 'bsc' && r.gwei > 0);
   const l2Avg = l2s.length ? l2s.reduce((s, r) => s + r.gwei, 0) / l2s.length : 0;

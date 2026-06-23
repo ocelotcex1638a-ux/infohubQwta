@@ -10,6 +10,8 @@ import PageHero from '@/components/PageHero';
 import { Fuel, Info, CheckCircle2, AlertTriangle, Zap } from 'lucide-react';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 
+interface GasSample { ts: number; gwei: number }
+
 interface GasRow {
   chain: string;
   label: string;
@@ -22,6 +24,7 @@ interface GasRow {
   transferCostUsd: number;
   swapCostUsd: number;
   status: 'low' | 'moderate' | 'high';
+  gwei24h?: GasSample[];
 }
 
 interface GasResponse {
@@ -33,6 +36,27 @@ interface GasResponse {
     ethToL2Multiplier: number;
   };
   meta: { timestamp: number };
+}
+
+function GweiSparkline({ samples, color }: { samples: GasSample[]; color: string }) {
+  if (samples.length < 2) {
+    return <span className="text-[9px] text-neutral-700 font-mono">no history yet</span>;
+  }
+  const W = 80, H = 22;
+  const vals = samples.map(s => s.gwei);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const range = max - min || 1;
+  const toY = (v: number) => H - ((v - min) / range) * (H - 2) - 1;
+  const toX = (i: number) => (i / (vals.length - 1)) * W;
+  const d = vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+  const trend = vals[vals.length - 1] - vals[0];
+  const trendColor = trend > 0 ? '#f87171' : trend < 0 ? '#34d399' : color;
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }}>
+      <path d={d} fill="none" stroke={trendColor} strokeWidth="1.5" strokeLinejoin="round" opacity={0.8} />
+    </svg>
+  );
 }
 
 function StatusBadge({ status }: { status: GasRow['status'] }) {
@@ -130,7 +154,7 @@ export default function GasTrackerPage() {
         )}
 
         <div className="card-premium p-3 min-h-[300px]">
-          <div className="hidden md:grid md:grid-cols-[160px,100px,110px,100px,140px,140px,70px] gap-3 px-3 py-1.5 text-[10px] uppercase tracking-wider text-neutral-500 font-semibold border-b border-white/[0.04] mb-1">
+          <div className="hidden md:grid md:grid-cols-[160px,100px,110px,100px,140px,140px,70px,90px] gap-3 px-3 py-1.5 text-[10px] uppercase tracking-wider text-neutral-500 font-semibold border-b border-white/[0.04] mb-1">
             <div>Chain</div>
             <div className="text-right">Gas (gwei)</div>
             <div className="text-right">Priority</div>
@@ -138,6 +162,7 @@ export default function GasTrackerPage() {
             <div className="text-right">Transfer · 21k</div>
             <div className="text-right">Swap · 150k</div>
             <div className="text-right">Status</div>
+            <div className="text-right">24h trend</div>
           </div>
 
           {isLoading && (
@@ -153,7 +178,7 @@ export default function GasTrackerPage() {
           {data?.data?.map(r => (
             <div
               key={r.chain}
-              className="md:grid md:grid-cols-[160px,100px,110px,100px,140px,140px,70px] gap-3 px-3 py-2 items-center rounded hover:bg-white/[0.02] transition-colors"
+              className="md:grid md:grid-cols-[160px,100px,110px,100px,140px,140px,70px,90px] gap-3 px-3 py-2 items-center rounded hover:bg-white/[0.02] transition-colors"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: r.color }} />
@@ -187,6 +212,9 @@ export default function GasTrackerPage() {
               </div>
               <div className="text-right">
                 <StatusBadge status={r.status} />
+              </div>
+              <div className="hidden md:flex justify-end items-center">
+                <GweiSparkline samples={r.gwei24h ?? []} color={r.color} />
               </div>
             </div>
           ))}
