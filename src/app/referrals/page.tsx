@@ -259,7 +259,7 @@ export default async function ReferralsPage() {
           <div className="space-y-2">
             <FaqRow
               q="When do commissions actually start?"
-              a="The program is active and tracking right now. Commissions accrue from the day MaxelPay checkout goes live. Until then we're recording every signup against your code so when paid launches, your retroactive commissions are already attributed."
+              a="The program is live now. Commissions accrue from a referred user's first paid subscription. Any signups you drove before checkout went live are already attributed retroactively — nothing to do."
             />
             <FaqRow
               q="Why USDT and not USD / PayPal?"
