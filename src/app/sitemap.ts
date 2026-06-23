@@ -90,6 +90,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/cliff-watch',        priority: 0.7, changeFrequency: 'daily' as const },
     { path: '/listings',           priority: 0.7, changeFrequency: 'daily' as const },
     { path: '/fomc-playbook',      priority: 0.6, changeFrequency: 'monthly' as const },
+    { path: '/polymarket',         priority: 0.7, changeFrequency: 'hourly' as const },
 
     // ─── Institutional flow + on-chain ────────────────────────────────
     { path: '/etf',                priority: 0.7, changeFrequency: 'daily' as const },
