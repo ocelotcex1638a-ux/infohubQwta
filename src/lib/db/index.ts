@@ -428,8 +428,7 @@ async function _doInitDB(): Promise<void> {
   // referral_events — event log for the affiliate flywheel. We record:
   //   'click'      — ?ref=CODE landing-page hit (cookie set, no auth)
   //   'signup'     — referred user completed signup
-  //   'conversion' — referred user's first paid month confirmed (when
-  //                  NowPayments webhook lands — held until then)
+  //   'conversion' — referred user's first paid month confirmed via Maxelpay webhook
   //   'payout'     — USDT payout sent to the affiliate's wallet
   // Amount/currency only present on conversion + payout rows.
   await sql`
