@@ -314,8 +314,8 @@ export default function PricingPage() {
           <h2 className="text-base font-bold text-white mb-3 px-1">Pricing FAQ</h2>
           <div className="space-y-2">
             <FaqItem
-              q="What happens when launch ends?"
-              a="We'll email every signed-in user ahead of time with the exact date. You'll keep all your data and your account; you'll just need to subscribe to keep Trader/Pro/Whale features. Free tier stays free forever."
+              q="Can I still use InfoHub for free?"
+              a="Yes — Free tier is free forever with no card required. It covers 100 req/min API, 5 price alerts, and 10 watched wallets. Trader, Pro, and Whale tiers unlock higher limits and advanced features."
             />
             <FaqItem
               q="How does payment work?"
@@ -335,7 +335,7 @@ export default function PricingPage() {
             />
             <FaqItem
               q="Is there a free trial?"
-              a="No traditional trial - but right now everyone gets full Trader + Pro + Whale features during launch, which is effectively an open access period for every paid tier. The Free tier itself stays free forever (no card required, no time limit), so you can always test the data terminal without committing to anything."
+              a="No traditional trial, but the Free tier (no card, no time limit) lets you use the full data terminal and all free-tier features indefinitely. If you want to test Trader/Pro/Whale features before committing, reach out on Telegram and we can set up a short comp window."
             />
             <FaqItem
               q="Earn 20% commission as an affiliate?"

@@ -11,10 +11,9 @@
  * existing public endpoints. Each tile encapsulates its own data fetch
  * so adding a new widget type is a single component, not a refactor.
  *
- * Tier behaviour: wrapped in <TierGate requires="pro">. With
- * LAUNCH_GATING_ENABLED=false (current launch window) every signed-in
- * user sees the hint chip + full grid. When gating flips on, Free +
- * Trader users see the paywall card instead.
+ * Tier behaviour: wrapped in <TierGate requires="pro">. Gating is LIVE
+ * (2026-06-22) — Free + Trader users see the paywall card. Pro+ users
+ * see the full drag/drop grid.
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';

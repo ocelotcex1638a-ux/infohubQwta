@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       const blocked = channels.filter(c => WHALE_ONLY_CHANNELS.has(c));
       return NextResponse.json(
         {
-          error: `Channels ${blocked.join(', ')} require Whale tier. Your tier is ${tierForChannel}. See /pricing — free during launch.`,
+          error: `Channels ${blocked.join(', ')} require Whale tier. Your current tier is ${tierForChannel}. Upgrade at /pricing.`,
         },
         { status: 403, headers: NO_STORE },
       );

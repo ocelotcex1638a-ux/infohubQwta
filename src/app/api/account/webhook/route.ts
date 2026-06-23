@@ -49,7 +49,7 @@ async function requireWhale(userId: string): Promise<NextResponse | null> {
   if (tier !== 'whale') {
     return NextResponse.json(
       {
-        error: `Custom HTTPS webhooks are a Whale-tier feature. Your current tier is ${tier}. See /pricing to upgrade — free during launch.`,
+        error: `Custom HTTPS webhooks are a Whale-tier feature. Your current tier is ${tier}. Upgrade at /pricing.`,
       },
       { status: 403, headers: NO_STORE },
     );

@@ -33,7 +33,7 @@ export default function WebhooksGuidePage() {
               Receive HMAC-signed alert payloads on your own HTTPS endpoint.
               Set up in three curl commands. Whale tier only —{' '}
               <Link href="/pricing" className="text-emerald-300 hover:underline">see /pricing</Link>{' '}
-              (free during launch).
+              Upgrade to unlock.
             </>
           }
         />

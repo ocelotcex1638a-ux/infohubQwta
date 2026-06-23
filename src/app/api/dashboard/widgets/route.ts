@@ -4,12 +4,10 @@
  *
  * Auth: NextAuth session required. Layout is per-user; not shared.
  *
- * Tier note: this endpoint is OPEN during the "free during launch"
- * window so every signed-in user can experiment with the widget grid.
- * When LAUNCH_GATING_ENABLED flips in src/components/TierGate.tsx, the
- * /dashboard/widgets page will paywall non-Pro users at the UI level —
- * this endpoint stays open so existing layouts continue to load for
- * downgrade-to-Free users (read-only fallback) rather than 403ing.
+ * Tier note: gating is enforced at the UI layer in /dashboard/widgets
+ * (Pro+ required via TierGate). This endpoint stays open so saved layouts
+ * continue to load for Free users who downgraded — read-only fallback
+ * rather than 403ing existing widget data.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, verifySameOrigin } from '@/lib/auth';
