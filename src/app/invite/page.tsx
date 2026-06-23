@@ -180,9 +180,8 @@ export default function InvitePage() {
           description={
             <>
               Share your personal link. Every friend who signs up through it is
-              counted below — and you both lock in the launch perks (Trader,
-              Pro + Whale tiers free, day-one supporter status when paid billing
-              turns on).
+              counted below — and you earn 20% recurring commission on their
+              paid subscription for life.
             </>
           }
         />

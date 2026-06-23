@@ -343,7 +343,7 @@ export default function DonatePage() {
         </div>
         <p style={{ flex: 1, fontSize: 13, color: 'var(--fg-default)', lineHeight: 1.55, margin: 0 }}>
           Running InfoHub costs real money in API calls, RPC quotas, and DB storage. Trader, Pro + Whale tiers are live — see <Link href="/pricing" style={{ color: 'var(--hub-accent)' }}>/pricing</Link>, but core tools stay free for most users. A tip now keeps me shipping
-          full-time, and you get credited as a <strong style={{ color: 'var(--hub-accent)' }}>day-one supporter</strong> when paid billing turns on.
+          full-time. Early supporters have been recognized as <strong style={{ color: 'var(--hub-accent)' }}>day-one supporters</strong> — thank you.
         </p>
       </div>
 
