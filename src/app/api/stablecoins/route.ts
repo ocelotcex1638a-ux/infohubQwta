@@ -15,9 +15,11 @@ export async function GET() {
     const [stableRes, chartRes] = await Promise.all([
       fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true', {
         next: { revalidate: 300 },
+        signal: AbortSignal.timeout(15000),
       }).then((r) => (r.ok ? r.json() : null)),
       fetch('https://stablecoins.llama.fi/stablecoincharts/all?stablecoin=1', {
         next: { revalidate: 300 },
+        signal: AbortSignal.timeout(15000),
       }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]);
 

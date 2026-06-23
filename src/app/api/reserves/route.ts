@@ -30,6 +30,7 @@ export async function GET() {
     // Must use full /protocols — the /lite/v2/protocols strips CEX category
     const res = await fetch('https://api.llama.fi/protocols', {
       next: { revalidate: 300 }, // 5-min cache
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!res.ok) throw new Error(`DefiLlama HTTP ${res.status}`);
