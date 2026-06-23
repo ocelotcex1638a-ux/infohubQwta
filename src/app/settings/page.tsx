@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import { Sun, Moon, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import ProfileHeroSection from './components/ProfileHeroSection';
+import BillingSection from './components/BillingSection';
 import ConnectedAccountsSection from './components/ConnectedAccountsSection';
 import SecuritySection from './components/SecuritySection';
 import TwoFactorSection from './components/TwoFactorSection';
@@ -113,6 +114,7 @@ export default function SettingsPage() {
       <main className="text-white">
         <div className="max-w-[700px] mx-auto px-4 sm:px-6 py-6">
           <ProfileHeroSection session={session} avatar={avatar} accountStats={accountStats} />
+          <BillingSection session={session} />
           <ConnectedAccountsSection connectedProviders={accountStats?.connectedProviders ?? []} />
           <SecuritySection />
           <TwoFactorSection email={email} />
