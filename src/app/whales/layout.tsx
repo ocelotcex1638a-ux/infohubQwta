@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'DEX Whale Tracker — Live Hyperliquid Large Trades | InfoHub',
+  title: 'DEX Whale Tracker — Live Large Trades Across 4 Venues | InfoHub',
   description:
-    'Real-time whale trade feed from Hyperliquid perpetuals. Filter by coin and minimum size ($50K–$1M+). Live WebSocket data — no delays.',
+    'Real-time whale trade feed across Hyperliquid, dYdX, Aevo and Backpack perps. Filter by coin and minimum size ($50K–$1M+). Live data — no delays.',
   openGraph: {
     title: 'DEX Whale Tracker | InfoHub',
-    description: 'Live $100K+ trades on Hyperliquid perps — real-time feed.',
+    description: 'Live $100K+ trades on HL · dYdX · Aevo · Backpack — 4-venue real-time feed.',
     type: 'website',
   },
 };
