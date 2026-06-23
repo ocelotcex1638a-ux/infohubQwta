@@ -81,6 +81,7 @@ async function loginToUmami(): Promise<string | null> {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: UMAMI_USERNAME, password: UMAMI_PASSWORD }),
+        signal: AbortSignal.timeout(10000),
       });
       if (!res.ok) {
         loginFailedUntil = Date.now() + 60_000;
