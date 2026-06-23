@@ -506,7 +506,7 @@ export default function TerminalHeader({ onSearch }: { onSearch?: () => void }) 
       </button>
       {/* Top-level Pricing pill — Pricing was previously buried in the
           Research dropdown (position #25). Promoting it to chrome makes
-          the launch tier system actually discoverable. */}
+          the tier system actually discoverable. */}
       <Link
         href="/pricing"
         title="Free, Trader, Pro, Whale"

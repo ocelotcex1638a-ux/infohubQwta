@@ -118,7 +118,7 @@ const STEPS: Step[] = [
           gets 10% off forever — and you earn 20% of their subscription for life. Paid in USDT.
         </p>
         <p style={{ margin: 0, color: '#a3a3a3', fontSize: 12 }}>
-          Set your USDT wallet now so the commissions go to the right place when paid launches.
+          Set your USDT wallet now so commissions go to the right place.
         </p>
       </>
     ),
