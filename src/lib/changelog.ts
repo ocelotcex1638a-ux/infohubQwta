@@ -23,9 +23,22 @@ export interface ChangelogEntry {
 }
 
 /**
- * Last reviewed: 2026-06-23
+ * Last reviewed: 2026-06-24
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    date: '2026-06-24',
+    title: 'Prediction Markets now compares Polymarket vs Kalshi',
+    summary: 'Swapped the second prediction-market venue from Manifold to Kalshi — a regulated US exchange with deeper, more recognizable markets (2028 election, GTA VI price, next UK PM, and more). Cross-platform arb gaps now surface between Polymarket and Kalshi.',
+    tags: ['improved', 'fix'],
+    bullets: [
+      '/polymarket — Kalshi feed pulls the highest-volume headline markets (capped per event so a single multi-candidate race doesn\'t flood the list), with live yes/no odds and a degraded-source banner when either venue is temporarily unavailable.',
+      'Fixed category tagging so entertainment and culture markets no longer land under Science/Tech.',
+    ],
+    links: [
+      { label: 'Prediction Markets', href: '/polymarket' },
+    ],
+  },
   {
     date: '2026-06-23',
     title: 'Prediction Markets · 4-venue Whale Tracker · Orderflow Panel · Price Spread tab',
