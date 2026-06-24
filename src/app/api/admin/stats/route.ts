@@ -68,16 +68,23 @@ export async function GET() {
       await initDB();
       const db = getSQL();
 
+    const toArr = (rows: any[]) => rows.map((r: any) => Number(r.count));
+
+    // All queries are independent — run everything in one Promise.all so
+    // we pay one round-trip to Postgres instead of 5 sequential batches.
     const [
-      userCount,
-      alertNotifCount,
-      fundingRows,
-      oiRows,
-      liqRows,
-      telegramUsers,
-      pushSubs,
-      dbSize,
+      userCount, alertNotifCount, fundingRows, oiRows, liqRows, telegramUsers, pushSubs, dbSize,
+      recentNotifs, recentFunding, recentLiqs,
+      trendAlerts, trendFunding, trendOI, trendLiqs,
+      tierMix, roleMix, verifiedMix,
+      signups7d, signups30d, signups90d,
+      recentSignups, retentionRows, dauWauMau,
+      alertsActive, alertsTotal,
+      watchedWallets, watchedWalletsUnique, connectedKeys, connectedWallets,
+      notifsByChannel, notifsSuccess,
+      referredUsers, payoutsConfigured,
     ] = await Promise.all([
+      // ── Totals ─────────────────────────────────────────────────────
       db`SELECT COUNT(*) as count FROM users`,
       db`SELECT COUNT(*) as count FROM alert_notifications`,
       db`SELECT COUNT(*) as count FROM funding_snapshots`,
@@ -86,41 +93,16 @@ export async function GET() {
       db`SELECT COUNT(*) as count FROM telegram_users WHERE active = true`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM push_subscriptions`.catch(() => [{ count: 0 }]),
       db`SELECT pg_size_pretty(pg_database_size(current_database())) as size`.catch(() => [{ size: 'unknown' }]),
-    ]);
-
-    // Recent activity (last 24h) + 7-day trends for sparklines.
-    const [
-      recentNotifs, recentFunding, recentLiqs,
-      trendAlerts, trendFunding, trendOI, trendLiqs,
-    ] = await Promise.all([
+      // ── Recent 24h ─────────────────────────────────────────────────
       db`SELECT COUNT(*) as count FROM alert_notifications WHERE sent_at > NOW() - INTERVAL '24 hours'`,
       db`SELECT COUNT(*) as count FROM funding_snapshots WHERE ts > NOW() - INTERVAL '24 hours'`,
       db`SELECT COUNT(*) as count FROM liquidation_snapshots WHERE ts > NOW() - INTERVAL '24 hours'`,
+      // ── 7-day sparklines ───────────────────────────────────────────
       db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM alert_notifications WHERE sent_at::date = d::date) x ON true ORDER BY d`,
       db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM funding_snapshots WHERE ts::date = d::date) x ON true ORDER BY d`,
       db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM oi_snapshots WHERE ts::date = d::date) x ON true ORDER BY d`,
       db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM liquidation_snapshots WHERE ts::date = d::date) x ON true ORDER BY d`,
-    ]);
-
-    const toArr = (rows: any[]) => rows.map((r: any) => Number(r.count));
-
-    // ─── NEW: user-side metrics ────────────────────────────────────
-    // Some columns are optional / new — wrap each in .catch so a
-    // missing column doesn't take down the whole endpoint. Returning
-    // an empty array makes the UI gracefully fall back to "—".
-
-    const [
-      tierMix, roleMix, verifiedMix,
-      signups7d, signups30d, signups90d,
-      recentSignups,
-      // Retention cohort: % of signups in window W that have been
-      // seen >= D days after signup. Requires `last_seen` column on
-      // users (set in /api/user/heartbeat or session refresh).
-      // Falls back to "no data" if missing.
-      retentionRows,
-      // DAU/WAU/MAU from last_seen.
-      dauWauMau,
-    ] = await Promise.all([
+      // ── User metrics ───────────────────────────────────────────────
       db`SELECT COALESCE(billing_tier, 'free') as tier, COUNT(*) as count FROM users GROUP BY billing_tier`.catch(() => []),
       db`SELECT COALESCE(role, 'user') as role, COUNT(*) as count FROM users GROUP BY role`.catch(() => []),
       db`SELECT (email_verified IS NOT NULL) as verified, COUNT(*) as count FROM users GROUP BY verified`.catch(() => []),
@@ -128,11 +110,7 @@ export async function GET() {
       db`SELECT COUNT(*) as count FROM users WHERE created_at > NOW() - INTERVAL '30 days'`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM users WHERE created_at > NOW() - INTERVAL '90 days'`.catch(() => [{ count: 0 }]),
       db`SELECT id, email, name, created_at, billing_tier, role FROM users ORDER BY created_at DESC LIMIT 10`.catch(() => []),
-      // D1 / D7 / D30 retention: of users created BETWEEN (e.g.) 7-37d
-      // ago for D30, what fraction have last_seen >= 30d after their
-      // created_at? The "cohort window" is offset so partial cohorts
-      // don't drag the number down (users created yesterday can't
-      // have D30 retention yet).
+      // D1/D7/D30 cohort retention — requires last_seen column (added Jun 2026).
       db`
         WITH cohorts AS (
           SELECT
@@ -153,16 +131,7 @@ export async function GET() {
           COUNT(*) FILTER (WHERE last_seen > NOW() - INTERVAL '30 days') AS mau
         FROM users
       `.catch(() => []),
-    ]);
-
-    // ─── Engagement (per-user activity scale) ───────────────────────
-    const [
-      alertsActive, alertsTotal,
-      watchedWallets, watchedWalletsUnique, connectedKeys, connectedWallets,
-    ] = await Promise.all([
-      // Alerts live in user_prefs.prefs->'alerts' (jsonb array).
-      // activeAlertsTotal = SUM of array lengths across all users.
-      // usersWithAlerts   = users whose array has at least one entry.
+      // ── Engagement ─────────────────────────────────────────────────
       db`SELECT COALESCE(SUM(jsonb_array_length(prefs->'alerts')), 0) AS count
            FROM user_prefs
            WHERE jsonb_typeof(prefs->'alerts') = 'array'`.catch(() => [{ count: 0 }]),
@@ -174,16 +143,10 @@ export async function GET() {
       db`SELECT COUNT(DISTINCT address) as count FROM hl_watched_wallets`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM user_exchange_keys`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM user_wallets`.catch(() => [{ count: 0 }]),
-    ]);
-
-    // ─── Notifications by channel + success rate (last 7d) ──────────
-    const [notifsByChannel, notifsSuccess] = await Promise.all([
+      // ── Notifications (last 7d) ─────────────────────────────────────
       db`SELECT channel, COUNT(*) as count FROM alert_notifications WHERE sent_at > NOW() - INTERVAL '7 days' GROUP BY channel ORDER BY count DESC`.catch(() => []),
       db`SELECT COUNT(*) FILTER (WHERE status = 'sent') as sent, COUNT(*) FILTER (WHERE status = 'failed') as failed, COUNT(*) as total FROM alert_notifications WHERE sent_at > NOW() - INTERVAL '7 days'`.catch(() => []),
-    ]);
-
-    // ─── Affiliate program metrics ──────────────────────────────────
-    const [referredUsers, payoutsConfigured] = await Promise.all([
+      // ── Affiliate ──────────────────────────────────────────────────
       db`SELECT COUNT(*) as count FROM users WHERE referred_by_user_id IS NOT NULL`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM users WHERE usdt_payout_wallet IS NOT NULL AND usdt_payout_wallet <> ''`.catch(() => [{ count: 0 }]),
     ]);
