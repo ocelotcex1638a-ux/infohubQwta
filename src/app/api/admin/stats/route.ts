@@ -85,11 +85,18 @@ export async function GET() {
       referredUsers, payoutsConfigured,
     ] = await Promise.all([
       // ── Totals ─────────────────────────────────────────────────────
+      // users is the headline figure + small → exact. The append-only
+      // tables (alert_notifications + the 3 snapshot tables) reach
+      // millions of rows, where an exact COUNT(*) is a multi-second seq
+      // scan. For a "1.2M snapshots" KPI an estimate is fine, so read
+      // the planner's row estimate from pg_class (sub-ms catalog lookup,
+      // refreshed by autovacuum/ANALYZE). GREATEST guards the -1 a
+      // never-analyzed table reports. Same [{ count }] shape downstream.
       db`SELECT COUNT(*) as count FROM users`,
-      db`SELECT COUNT(*) as count FROM alert_notifications`,
-      db`SELECT COUNT(*) as count FROM funding_snapshots`,
-      db`SELECT COUNT(*) as count FROM oi_snapshots`,
-      db`SELECT COUNT(*) as count FROM liquidation_snapshots`,
+      db`SELECT GREATEST(reltuples, 0)::bigint as count FROM pg_class WHERE relname = 'alert_notifications' AND relkind = 'r'`.catch(() => [{ count: 0 }]),
+      db`SELECT GREATEST(reltuples, 0)::bigint as count FROM pg_class WHERE relname = 'funding_snapshots' AND relkind = 'r'`.catch(() => [{ count: 0 }]),
+      db`SELECT GREATEST(reltuples, 0)::bigint as count FROM pg_class WHERE relname = 'oi_snapshots' AND relkind = 'r'`.catch(() => [{ count: 0 }]),
+      db`SELECT GREATEST(reltuples, 0)::bigint as count FROM pg_class WHERE relname = 'liquidation_snapshots' AND relkind = 'r'`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM telegram_users WHERE active = true`.catch(() => [{ count: 0 }]),
       db`SELECT COUNT(*) as count FROM push_subscriptions`.catch(() => [{ count: 0 }]),
       db`SELECT pg_size_pretty(pg_database_size(current_database())) as size`.catch(() => [{ size: 'unknown' }]),
@@ -98,10 +105,15 @@ export async function GET() {
       db`SELECT COUNT(*) as count FROM funding_snapshots WHERE ts > NOW() - INTERVAL '24 hours'`,
       db`SELECT COUNT(*) as count FROM liquidation_snapshots WHERE ts > NOW() - INTERVAL '24 hours'`,
       // ── 7-day sparklines ───────────────────────────────────────────
-      db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM alert_notifications WHERE sent_at::date = d::date) x ON true ORDER BY d`,
-      db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM funding_snapshots WHERE ts::date = d::date) x ON true ORDER BY d`,
-      db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM oi_snapshots WHERE ts::date = d::date) x ON true ORDER BY d`,
-      db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM liquidation_snapshots WHERE ts::date = d::date) x ON true ORDER BY d`,
+      // Half-open range per day (`col >= d AND col < d+1`) instead of
+      // `col::date = d::date`. The latter wraps the column in a cast so
+      // the planner can't use the ts/sent_at index → a seq scan per day
+      // (×7 ×4 tables ≈ 28 scans on million-row tables). The range form
+      // is sargable and rides the (ts DESC, …) indexes. Same output shape.
+      db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM alert_notifications WHERE sent_at >= d::date AND sent_at < d::date + INTERVAL '1 day') x ON true ORDER BY d`,
+      db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM funding_snapshots WHERE ts >= d::date AND ts < d::date + INTERVAL '1 day') x ON true ORDER BY d`,
+      db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM oi_snapshots WHERE ts >= d::date AND ts < d::date + INTERVAL '1 day') x ON true ORDER BY d`,
+      db`SELECT d::date as day, COALESCE(c, 0) as count FROM generate_series(NOW() - INTERVAL '6 days', NOW(), '1 day') d LEFT JOIN LATERAL (SELECT COUNT(*) as c FROM liquidation_snapshots WHERE ts >= d::date AND ts < d::date + INTERVAL '1 day') x ON true ORDER BY d`,
       // ── User metrics ───────────────────────────────────────────────
       db`SELECT COALESCE(billing_tier, 'free') as tier, COUNT(*) as count FROM users GROUP BY billing_tier`.catch(() => []),
       db`SELECT COALESCE(role, 'user') as role, COUNT(*) as count FROM users GROUP BY role`.catch(() => []),
