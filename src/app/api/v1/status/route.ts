@@ -64,7 +64,7 @@ export async function GET() {
     tiers: {
       // All 4 tiers documented. Was missing trader after the May 2026
       // 4-tier restructure — API consumers reading this endpoint to
-      // size their requests saw a Free→Pro gap with no $12 Trader
+      // size their requests saw a Free→Pro gap with no $15 Trader
       // option, so might've over-paid for Pro when Trader was enough.
       free: {
         rateLimit: `${FREE_TIER_PER_MINUTE} req/min`,
