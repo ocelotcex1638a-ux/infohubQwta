@@ -36,7 +36,7 @@ export default function ScalperPage() {
   const loadLs = useCallback(async (sym: string) => {
     setLs({ longPct: null, ratio: null });
     try {
-      const r = await fetch(`/api/longshort?symbol=${sym}USDT&period=5m&limit=1`);
+      const r = await fetch(`/api/longshort?symbol=${sym}USDT&period=5m&limit=1`, { signal: AbortSignal.timeout(8_000) });
       if (!r.ok) return;
       const json = await r.json();
       // Tolerate a few response shapes — read the last data point defensively.

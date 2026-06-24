@@ -497,7 +497,7 @@ function SmartMoneyContent() {
   const { data: overviewData } = useApi<OverviewResponse>({
     key: 'smart-money-overview',
     fetcher: async () => {
-      const res = await fetch('/api/smart-money?min_pnl=250000&min_volume=10000000&min_wr=55&include=both&limit=10');
+      const res = await fetch('/api/smart-money?min_pnl=250000&min_volume=10000000&min_wr=55&include=both&limit=10', { signal: AbortSignal.timeout(12_000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     },
