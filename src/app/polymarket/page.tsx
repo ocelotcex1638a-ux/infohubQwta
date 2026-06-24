@@ -375,8 +375,21 @@ export default function PredictionMarketsPage() {
           </div>
         )}
 
+        {/* Degraded-source banner — one platform's feed failed to load */}
+        {!loading && !error && data && data.meta.sources.length === 1 && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 mb-4 text-center text-xs text-amber-400">
+            Showing {data.meta.sources[0] === 'polymarket' ? 'Polymarket' : 'Kalshi'} only —
+            {' '}{data.meta.sources[0] === 'polymarket' ? 'Kalshi' : 'Polymarket'} data is temporarily unavailable.
+            Cross-platform arb gaps won&apos;t show until both feeds recover.
+          </div>
+        )}
+
         {!loading && !error && sorted.length === 0 && (
-          <div className="text-center py-16 text-neutral-500">No markets match your filters.</div>
+          <div className="text-center py-16 text-neutral-500">
+            {data && data.meta.sources.length === 0
+              ? 'Both Polymarket and Kalshi are temporarily unavailable. Try again shortly.'
+              : 'No markets match your filters.'}
+          </div>
         )}
 
         {!loading && sorted.length > 0 && (
