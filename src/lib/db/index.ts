@@ -390,9 +390,9 @@ async function _doInitDB(): Promise<void> {
   // role auto-resolves to 'whale' via resolveUserTier regardless of this
   // column.
   //
-  // Tier-rename migration (May 2026): we split the old "Pro" $12 tier
-  // into Trader $12 + Pro $29. Existing 'pro' billing_tier rows stay
-  // 'pro' (they auto-bump to the new $29 tier — a generous grandfather
+  // Tier-rename migration (May 2026): we split the old "Pro" tier
+  // into Trader ($15) + Pro ($49). Existing 'pro' billing_tier rows stay
+  // 'pro' (they auto-bump to the new Pro tier — a generous grandfather).
   // 'trader' is a new value added in this migration.
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_tier TEXT NOT NULL DEFAULT 'free'`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_expires_at TIMESTAMPTZ`;

@@ -19,9 +19,9 @@ const redis = Redis.fromEnv(); // reads UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_R
  *  3. The cross-surface consistency test can grep these literals
  *     against the user-facing copy.
  *
- * 4-tier ladder (May 2026): Free → Trader $12 → Pro $29 → Whale $59.
- * Pro bumped 500→600/min so the new $29 middle tier feels meaningfully
- * bigger than Trader $12 at 200/min. Whale stays unlimited.
+ * 4-tier ladder: Free → Trader $15 → Pro $49 → Whale $99.
+ * Pro bumped 500→600/min so the Pro tier feels meaningfully
+ * bigger than Trader at 200/min. Whale stays unlimited.
  *
  * Bump cautiously. The Upstash free tier covers ~1k req/s aggregate
  * across all prefixes; the current ceiling (600 Pro × N partners)

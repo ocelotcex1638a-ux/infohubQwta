@@ -39,7 +39,7 @@ export const TIER_ORDER: Tier[] = ['free', 'trader', 'pro', 'whale'];
  * here (not in pricing/page.tsx) so changing the conversion anchor is a
  * single-file edit. Picked as Pro because it's the conversion sweet
  * spot — wide enough features for trade-for-a-living users without
- * Whale's $59/mo barrier.
+ * Whale's $99/mo barrier.
  */
 export const MOST_POPULAR_TIER: Tier = 'pro';
 
@@ -320,7 +320,7 @@ export function resolveUserTier(args: {
   return 'free';
 }
 
-/** Annualised savings copy: "Save $24/yr" for Trader at $12/mo. */
+/** Annualised savings copy: "Save $30/yr" for Trader at $15/mo. */
 export function annualSavingsUsd(tier: Tier): number {
   return TIER_PRICE_MONTHLY[tier] * 12 - TIER_PRICE_ANNUAL[tier];
 }

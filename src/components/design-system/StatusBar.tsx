@@ -65,7 +65,7 @@ const WHATS_NEW: WhatsNewItem[] = [
     tag: 'new',
     label: 'Prediction Markets',
     href: '/polymarket',
-    desc: 'Polymarket vs Manifold odds side-by-side — surface 5%+ arb gaps, sorted by volume',
+    desc: 'Polymarket vs Kalshi odds side-by-side — surface 5%+ arb gaps, sorted by volume',
     date: '2026-06-23',
   },
   {

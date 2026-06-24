@@ -3,7 +3,7 @@
  * composite formula can be unit-tested — without that, a tweak to
  * any one of the four sub-scores silently re-orders the entire
  * /breakouts page and users see "10/100 ATH proximity" instead of
- * "25/100". The Pro $29 tier is partly justified by this surface
+ * "25/100". The Pro $49 tier is partly justified by this surface
  * being usable, so a regression that misranks setups is real.
  *
  * Score components (each clamped):
