@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     title: 'Crypto Trading Tools | InfoHub',
     description: '50+ real-time crypto tools grouped by trader type — directional, scalper, carry, options, and more.',
     type: 'website',
+    images: [{ url: 'https://info-hub.io/api/og?v=screener&title=Crypto+Trading+Tools', width: 1200, height: 630 }],
   },
   alternates: {
     canonical: 'https://info-hub.io/tools',

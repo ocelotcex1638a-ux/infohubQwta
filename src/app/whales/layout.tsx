@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     title: 'DEX Whale Tracker | InfoHub',
     description: 'Live $100K+ trades on HL · dYdX · Aevo · Backpack — 4-venue real-time feed.',
     type: 'website',
+    images: [{ url: 'https://info-hub.io/api/og?v=tape&title=DEX+Whale+Tracker', width: 1200, height: 630 }],
   },
 };
 
