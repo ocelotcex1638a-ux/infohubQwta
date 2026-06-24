@@ -10,6 +10,12 @@ export const metadata: Metadata = {
     type: 'website',
     images: [{ url: 'https://info-hub.io/api/og?v=spreads&title=Polymarket+%C3%97+Kalshi+Odds', width: 1200, height: 630 }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Prediction Markets · Polymarket × Kalshi | InfoHub',
+    description: 'Cross-platform odds comparison — spot 5%+ arb gaps between Polymarket and Kalshi in real time.',
+    images: ['https://info-hub.io/api/og?v=spreads&title=Polymarket+%C3%97+Kalshi+Odds'],
+  },
   alternates: {
     canonical: 'https://info-hub.io/polymarket',
   },
