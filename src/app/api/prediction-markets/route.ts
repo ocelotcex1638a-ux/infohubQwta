@@ -109,9 +109,66 @@ interface PredictionMarketsResponse {
   meta: {
     polymarketCount: number;
     kalshiCount: number;
+    matchedCount: number;
+    arbCount: number;
     fetchedAt: number;
     sources: string[];
   };
+}
+
+// Stopwords + the framing verbs that appear in almost every prediction
+// question ("will the next president be…") so they don't inflate the
+// token overlap and create spurious matches.
+const MATCH_STOPWORDS = new Set([
+  'will', 'the', 'be', 'to', 'of', 'in', 'on', 'for', 'by', 'next', 'who',
+  'what', 'when', 'how', 'much', 'wins', 'win', 'and', 'or', 'does', 'did',
+  'is', 'are', 'at', 'it', 'his', 'her', 'their', 'from', 'with', 'become',
+  'before', 'after', 'during', 'term', 'this', 'that', 'than', 'a', 'an',
+]);
+
+function significantTokens(s: string): Set<string> {
+  const out = new Set<string>();
+  for (const w of s.toLowerCase().match(/[a-z0-9]+/g) ?? []) {
+    if (w.length >= 4 && !MATCH_STOPWORDS.has(w) && !/^\d+$/.test(w)) out.add(w);
+  }
+  return out;
+}
+
+function fourDigitYears(s: string): Set<string> {
+  return new Set(s.match(/\b20\d\d\b/g) ?? []);
+}
+
+/** Find the Kalshi market that refers to the SAME event as a Polymarket
+ *  question, or null. High precision by design — see the call site. */
+function bestKalshiMatch(question: string, kalshi: PredictionMarket[]): PredictionMarket | null {
+  const pt = significantTokens(question);
+  if (pt.size < 2) return null;
+  const py = fourDigitYears(question);
+
+  let best: PredictionMarket | null = null;
+  let bestScore = 0;
+  for (const km of kalshi) {
+    const kt = significantTokens(km.question);
+    let shared = 0;
+    pt.forEach(w => { if (kt.has(w)) shared++; });
+    if (shared < 2) continue;
+
+    // Reject when both name a year and the years don't overlap — this is
+    // what keeps "win the 2026 World Cup" from matching "host 2038".
+    const ky = fourDigitYears(km.question);
+    if (py.size && ky.size) {
+      let yearOverlap = false;
+      py.forEach(y => { if (ky.has(y)) yearOverlap = true; });
+      if (!yearOverlap) continue;
+    }
+
+    const jaccard = shared / (pt.size + kt.size - shared);
+    if (jaccard >= 0.4 && jaccard > bestScore) {
+      bestScore = jaccard;
+      best = km;
+    }
+  }
+  return best;
 }
 
 async function fetchPolymarket(): Promise<PredictionMarket[]> {
@@ -265,17 +322,25 @@ export async function GET(_req: NextRequest) {
   // Sort Polymarket by 24h volume desc
   const polyByVol = polyMarkets.sort((a, b) => b.volume24h - a.volume24h);
 
-  // Enrich Polymarket entries with matching Kalshi odds (keyword fuzzy match)
+  // Cross-list Polymarket entries against Kalshi by matching the SAME
+  // event. Cross-platform arb is genuinely rare (the two venues mostly
+  // list different events, and where they overlap — e.g. 2028 election
+  // candidates — the odds usually agree), so precision matters far more
+  // than recall: a fake match manufactures fake arb, which is worse than
+  // showing none. We require ≥2 shared significant tokens AND a Jaccard
+  // ≥0.4, AND reject pairs whose 4-digit years conflict (this is what
+  // stops "win 2026 World Cup" matching "host 2038 World Cup").
+  let matchedCount = 0;
   for (const pm of polyByVol) {
-    const pmWords = pm.question.toLowerCase().split(/\s+/).filter(w => w.length > 4);
-    const match = kalshiMarkets.find(km => {
-      const kmWords = km.question.toLowerCase();
-      return pmWords.filter(w => kmWords.includes(w)).length >= 3;
-    });
+    const match = bestKalshiMatch(pm.question, kalshiMarkets);
     if (match) {
       pm.kalshiOdds = match.yesOdds;
+      matchedCount++;
     }
   }
+  const arbCount = polyByVol.filter(
+    pm => pm.kalshiOdds != null && pm.polyOdds != null && Math.abs(pm.polyOdds - pm.kalshiOdds) >= 0.05,
+  ).length;
 
   // Kalshi already sorted by 24h volume in the fetcher; take the top 25.
   const kalshiByVol = kalshiMarkets.slice(0, 25);
@@ -287,6 +352,12 @@ export async function GET(_req: NextRequest) {
     meta: {
       polymarketCount: polyMarkets.length,
       kalshiCount: kalshiMarkets.length,
+      // How many Polymarket markets are cross-listed on Kalshi (same
+      // event), and how many of those have a ≥5% gap. arbCount is almost
+      // always 0 — that's the honest state, not a failure — so the UI can
+      // explain "N cross-listed, odds agree" instead of looking broken.
+      matchedCount,
+      arbCount,
       fetchedAt: Date.now(),
       sources: [
         polyResult.status   === 'fulfilled' ? 'polymarket' : '',
