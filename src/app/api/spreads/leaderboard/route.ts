@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   const cached = cacheMap.get(days);
   if (cached && Date.now() - cached.ts < CACHE_MS) {
-    return NextResponse.json(cached.data);
+    return NextResponse.json(cached.data, { headers: { 'X-Cache': 'HIT', 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' } });
   }
 
   try {

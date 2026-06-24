@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   const cached = cache.get(cacheKey);
 
   if (cached && Date.now() - cached.ts < CACHE_MS) {
-    return NextResponse.json(cached.data, { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=60' } });
+    return NextResponse.json(cached.data, { headers: { 'X-Cache': 'HIT', 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } });
   }
 
   try {
