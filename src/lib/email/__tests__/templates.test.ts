@@ -89,10 +89,10 @@ describe('email templates · render', () => {
     const whale = renderLaunchCutover({ cutoverDate: '2026-06-15', currentTier: 'whale' });
     // Free users see the "stays free forever" line
     expect(free.html.toLowerCase()).toContain('free tier stays free');
-    // Pro users get the grandfather pitch (auto-bump to new Pro $49)
-    expect(pro.html).toContain('grandfathered to Pro');
-    // Whale users get the whale grandfather line
-    expect(whale.html).toContain('grandfathered to Whale');
+    // Pro users keep their current features at the new Pro $49 price
+    expect(pro.html).toContain('on Pro ($49/mo)');
+    // Whale users keep the same features at the same Whale $99 price
+    expect(whale.html).toContain('on Whale ($99/mo)');
   });
 
   it('renderSubscriptionConfirmed mirrors the tier label + amount + period', () => {
