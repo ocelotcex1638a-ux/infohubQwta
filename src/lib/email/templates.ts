@@ -301,43 +301,41 @@ export async function sendPayoutSent(args: BaseSendArgs & PayoutSentData): Promi
   return deliver({ to, subject, html, dryRun });
 }
 
-/* ─── Template 5: Launch-cutover heads-up (T-14 days) ────────────── */
+/* ─── Template 5: Launch-cutover heads-up (already sent 2026-06-08) ── */
 
 export interface LaunchCutoverData {
-  /** ISO date, e.g. "2026-06-15" */
+  /** ISO date, e.g. "2026-06-22" */
   cutoverDate: string;
-  /** Current grandfathered tier for the recipient. Pro users get a
-   *  reminder they retain the new Pro $29 features for free during
-   *  launch; everyone else gets the standard pitch. */
+  /** Tier of the recipient at send time. */
   currentTier: 'free' | 'trader' | 'pro' | 'whale';
 }
 
 export function renderLaunchCutover(data: LaunchCutoverData): { subject: string; html: string } {
-  const subject = `Heads-up: free during launch ends ${data.cutoverDate}`;
+  const subject = `Heads-up: free access period ends ${data.cutoverDate}`;
   const tierLine =
-    data.currentTier === 'whale' ? "You're auto-grandfathered to Whale ($59) — same features, same price post-launch."
-    : data.currentTier === 'pro'   ? "You're auto-grandfathered to Pro ($29) — the new middle tier. Same features you have today."
-    : data.currentTier === 'trader' ? "You're on Trader ($12). Free during launch turns into a real subscription on the cutover date — no surprise charges, you'll need to add a payment method."
-    : "Free tier stays free forever. Trader / Pro / Whale features become paid on the cutover date.";
+    data.currentTier === 'whale'  ? "You're on Whale ($99/mo) — same features, same price."
+    : data.currentTier === 'pro'   ? "You're on Pro ($49/mo) — same features you have today."
+    : data.currentTier === 'trader' ? "You're on Trader ($15/mo). You'll need to add a payment method before the cutover date to keep your current features."
+    : "Free tier stays free forever. Trader / Pro / Whale features require a subscription from the cutover date.";
 
   const html = shell({
-    headline: 'Free during launch ends soon',
+    headline: 'Paid access begins soon',
     body: `
-      <p>You've been using InfoHub during our "free during launch" window. That ends on <strong style="color:#fff;">${data.cutoverDate}</strong>.</p>
+      <p>The free access period ends on <strong style="color:#fff;">${data.cutoverDate}</strong>.</p>
       <p>${tierLine}</p>
       <p style="margin-top:20px;">What changes on cutover:</p>
       <ul style="padding-left:20px;margin:12px 0;">
         <li>Free tier stays free — no card required, no time limit, same data terminal.</li>
-        <li>Trader / Pro / Whale features (custom dashboards, API archive, priority alerts, etc.) require a subscription.</li>
-        <li>Crypto checkout via MaxelPay. No card needed.</li>
-        <li>20% lifetime affiliate program goes live the same day. Get your code at
-          <a href="https://info-hub.io/settings/referrals" style="color:#34d399;">your dashboard</a>.</li>
+        <li>Trader / Pro / Whale features (custom dashboards, priority alerts, tax export, etc.) require a subscription from this date.</li>
+        <li>Crypto checkout via Maxelpay — no card needed.</li>
+        <li>20% lifetime affiliate commissions are live now. Get your code at
+          <a href="https://info-hub.io/settings/referrals" style="color:#34d399;">your referral dashboard</a>.</li>
       </ul>
       <p style="margin-top:16px;color:#a3a3a3;font-size:12px;">Questions? Reply to this email — we read everything.</p>
     `,
     ctaLabel: 'See pricing',
     ctaHref: 'https://info-hub.io/pricing',
-    footerNote: "You're getting this because you have an active InfoHub account. There is no way to disable launch-related comms — they only fire at major milestones.",
+    footerNote: "You're getting this because you have an active InfoHub account.",
   });
   return { subject, html };
 }

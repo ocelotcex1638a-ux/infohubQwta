@@ -267,7 +267,7 @@ export default async function ReferralsPage() {
             />
             <FaqRow
               q="What counts as a 'paid signup'?"
-              a="Their first successful paid month — Trader $12, Pro $29, or Whale $59. Commission is 20% of whatever tier they're on, recurring every renewal."
+              a="Their first successful paid month — Trader $15, Pro $49, or Whale $99. Commission is 20% of whatever tier they're on, recurring every renewal."
             />
             <FaqRow
               q="What if they cancel?"

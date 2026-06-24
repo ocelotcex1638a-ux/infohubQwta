@@ -23,26 +23,33 @@ interface PolyMarket {
   tags?: string[];
   startDate?: string;
   negRisk?: boolean;
-  // multi-outcome markets won't have binary yes/no
   enableOrderBook?: boolean;
 }
 
-interface ManifoldMarket {
-  id: string;
-  question: string;
-  url: string;
-  probability?: number;
-  totalTraders?: number;
-  volume?: number;
-  createdTime?: number;
-  closeTime?: number;
-  isResolved?: boolean;
-  outcomeType?: string;
+interface KalshiMarket {
+  ticker: string;
+  title: string;
+  yes_bid?: number;    // cents (0–100)
+  yes_ask?: number;
+  no_bid?: number;
+  no_ask?: number;
+  last_price?: number; // cents
+  volume?: number;     // contracts
+  volume_24h?: number;
+  liquidity?: number;
+  close_time?: string;
+  category?: string;
+  status?: string;
+}
+
+interface KalshiResponse {
+  markets: KalshiMarket[];
+  cursor?: string;
 }
 
 export interface PredictionMarket {
   id: string;
-  source: 'polymarket' | 'manifold';
+  source: 'polymarket' | 'kalshi';
   question: string;
   slug?: string;
   url: string;
@@ -56,14 +63,14 @@ export interface PredictionMarket {
   traders?: number;
   // cross-platform fields
   polyOdds?: number;
-  manifoldOdds?: number;
+  kalshiOdds?: number;
 }
 
 interface PredictionMarketsResponse {
   markets: PredictionMarket[];
   meta: {
     polymarketCount: number;
-    manifoldCount: number;
+    kalshiCount: number;
     fetchedAt: number;
     sources: string[];
   };
@@ -91,7 +98,6 @@ async function fetchPolymarket(): Promise<PredictionMarket[]> {
         const noIdx  = outcomes.findIndex(o => o.toLowerCase() === 'no');
         if (yesIdx >= 0 && prices[yesIdx]) yesOdds = parseFloat(prices[yesIdx]);
         if (noIdx  >= 0 && prices[noIdx])  noOdds  = parseFloat(prices[noIdx]);
-        // Non-binary multi-outcome markets: use first outcome as "yes" proxy
         if (yesIdx < 0 && prices[0]) {
           yesOdds = parseFloat(prices[0]);
           noOdds  = 1 - yesOdds;
@@ -102,7 +108,6 @@ async function fetchPolymarket(): Promise<PredictionMarket[]> {
     const vol24h = m.volume24hr ?? 0;
     const totalVol = m.volume ?? 0;
 
-    // Categorize from tags or defaults
     const rawTag = (m.tags?.[0] || m.category || '').toLowerCase();
     const category = rawTag.includes('crypto') || rawTag.includes('bitcoin') || rawTag.includes('eth')
       ? 'Crypto'
@@ -119,7 +124,7 @@ async function fetchPolymarket(): Promise<PredictionMarket[]> {
       source: 'polymarket',
       question: m.question,
       slug: m.slug,
-      url: `https://polymarket.com/event/${m.slug || m.id}`,
+      url: m.slug ? `https://polymarket.com/event/${m.slug}` : 'https://polymarket.com/markets',
       yesOdds: Math.min(1, Math.max(0, yesOdds)),
       noOdds: Math.min(1, Math.max(0, noOdds)),
       volume24h: vol24h,
@@ -134,31 +139,56 @@ async function fetchPolymarket(): Promise<PredictionMarket[]> {
   return markets;
 }
 
-async function fetchManifold(): Promise<PredictionMarket[]> {
+async function fetchKalshi(): Promise<PredictionMarket[]> {
   const res = await fetch(
-    'https://api.manifold.markets/v0/markets?limit=20&sort=liquidity&filter=open',
-    { signal: AbortSignal.timeout(8000) },
+    'https://trading-api.kalshi.com/trade-api/v2/markets?status=open&limit=100',
+    {
+      signal: AbortSignal.timeout(8000),
+      headers: { 'Accept': 'application/json' },
+    },
   );
-  if (!res.ok) throw new Error(`Manifold ${res.status}`);
-  const data: ManifoldMarket[] = await res.json();
+  if (!res.ok) throw new Error(`Kalshi ${res.status}`);
+  const data: KalshiResponse = await res.json();
 
-  return data
-    .filter(m => !m.isResolved && m.outcomeType === 'BINARY' && m.probability != null)
-    .map(m => ({
-      id: `manifold:${m.id}`,
-      source: 'manifold' as const,
-      question: m.question,
-      url: m.url ?? `https://manifold.markets/${m.id}`,
-      yesOdds: m.probability ?? 0.5,
-      noOdds: 1 - (m.probability ?? 0.5),
-      volume24h: 0,
-      totalVolume: m.volume ?? 0,
-      liquidity: 0,
-      category: 'Other',
-      endDate: m.closeTime ? new Date(m.closeTime).toISOString() : null,
-      traders: m.totalTraders,
-      manifoldOdds: m.probability,
-    }));
+  const markets = data.markets ?? [];
+  return markets
+    .filter(m => m.status === 'open' && m.title)
+    .map(m => {
+      // Kalshi prices are in cents (0–100); convert to 0..1
+      const yesMid = m.yes_bid != null && m.yes_ask != null
+        ? ((m.yes_bid + m.yes_ask) / 2) / 100
+        : m.last_price != null
+        ? m.last_price / 100
+        : 0.5;
+      const yesOdds = Math.min(1, Math.max(0, yesMid));
+      const noOdds  = 1 - yesOdds;
+
+      const rawCat = (m.category || '').toLowerCase();
+      const category = rawCat.includes('crypto') || rawCat.includes('bitcoin')
+        ? 'Crypto'
+        : rawCat.includes('polit') || rawCat.includes('election') || rawCat.includes('fed')
+        ? 'Politics'
+        : rawCat.includes('sport') || rawCat.includes('nfl') || rawCat.includes('nba')
+        ? 'Sports'
+        : rawCat.includes('tech') || rawCat.includes('science')
+        ? 'Science/Tech'
+        : 'Other';
+
+      return {
+        id: `kalshi:${m.ticker}`,
+        source: 'kalshi' as const,
+        question: m.title,
+        url: `https://kalshi.com/markets/${m.ticker}`,
+        yesOdds,
+        noOdds,
+        volume24h: m.volume_24h ?? 0,
+        totalVolume: m.volume ?? 0,
+        liquidity: m.liquidity ?? 0,
+        category,
+        endDate: m.close_time ?? null,
+        kalshiOdds: yesOdds,
+      };
+    });
 }
 
 export async function GET(_req: NextRequest) {
@@ -168,40 +198,43 @@ export async function GET(_req: NextRequest) {
     });
   }
 
-  const [polyResult, manifoldResult] = await Promise.allSettled([
+  const [polyResult, kalshiResult] = await Promise.allSettled([
     fetchPolymarket(),
-    fetchManifold(),
+    fetchKalshi(),
   ]);
 
-  const polyMarkets = polyResult.status === 'fulfilled' ? polyResult.value : [];
-  const manifoldMarkets = manifoldResult.status === 'fulfilled' ? manifoldResult.value : [];
+  const polyMarkets   = polyResult.status   === 'fulfilled' ? polyResult.value   : [];
+  const kalshiMarkets = kalshiResult.status === 'fulfilled' ? kalshiResult.value : [];
 
-  // Merge: sort Polymarket by 24h volume desc, then append Manifold
+  // Sort Polymarket by 24h volume desc
   const polyByVol = polyMarkets.sort((a, b) => b.volume24h - a.volume24h);
 
-  // Try to enrich Polymarket entries with matching Manifold odds (keyword fuzzy match)
+  // Enrich Polymarket entries with matching Kalshi odds (keyword fuzzy match)
   for (const pm of polyByVol) {
     const pmWords = pm.question.toLowerCase().split(/\s+/).filter(w => w.length > 4);
-    const match = manifoldMarkets.find(mm => {
-      const mmWords = mm.question.toLowerCase();
-      return pmWords.filter(w => mmWords.includes(w)).length >= 3;
+    const match = kalshiMarkets.find(km => {
+      const kmWords = km.question.toLowerCase();
+      return pmWords.filter(w => kmWords.includes(w)).length >= 3;
     });
     if (match) {
-      pm.manifoldOdds = match.yesOdds;
+      pm.kalshiOdds = match.yesOdds;
     }
   }
 
-  const markets = [...polyByVol, ...manifoldMarkets.slice(0, 15)];
+  // Kalshi sorted by volume desc, take top 20
+  const kalshiByVol = kalshiMarkets.sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 20);
+
+  const markets = [...polyByVol, ...kalshiByVol];
 
   const response: PredictionMarketsResponse = {
     markets,
     meta: {
       polymarketCount: polyMarkets.length,
-      manifoldCount: manifoldMarkets.length,
+      kalshiCount: kalshiMarkets.length,
       fetchedAt: Date.now(),
       sources: [
-        polyResult.status === 'fulfilled' ? 'polymarket' : '',
-        manifoldResult.status === 'fulfilled' ? 'manifold' : '',
+        polyResult.status   === 'fulfilled' ? 'polymarket' : '',
+        kalshiResult.status === 'fulfilled' ? 'kalshi'     : '',
       ].filter(Boolean),
     },
   };

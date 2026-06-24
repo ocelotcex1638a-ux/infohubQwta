@@ -22,7 +22,7 @@ export default function PolymarketError({
       </div>
       <h1 className="text-lg font-semibold text-white mb-2">Prediction markets failed to load</h1>
       <p className="text-neutral-400 text-sm mb-6 max-w-sm">
-        Unable to fetch Polymarket or Manifold data. This usually resolves on retry.
+        Unable to fetch Polymarket or Kalshi data. This usually resolves on retry.
       </p>
       <div className="flex gap-3">
         <button

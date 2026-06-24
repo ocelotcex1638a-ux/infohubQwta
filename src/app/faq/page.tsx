@@ -51,7 +51,7 @@ const faqs: FAQEntry[] = [
   {
     category: 'General',
     q: 'Can I refer friends to InfoHub?',
-    a: 'Yes \u2014 two layers. (1) /invite is your personal invite link for free InfoHub access; friends who sign up through it are counted on your dashboard and you both lock in launch perks (Trader, Pro + Whale tier features free while we onboard early users \u2014 see /pricing). The link is the same forever, so bookmark /invite and re-use it. (2) /referrals is the paid InfoHub Affiliate Program: 20% recurring lifetime commission on every referred subscription, USDT payouts on Solana/Arbitrum/Base ($25 min), 90-day attribution cookie, and the referred friend gets 10% off forever. The exchange affiliate links you see embedded in spreads / funding / scanner pages (Bybit, MEXC, Hyperliquid, etc.) are separate \u2014 they\'re fee-discount perks for trading on the venues, not part of the InfoHub program.',
+    a: 'Yes \u2014 two layers. (1) /invite is your personal invite link; friends who sign up through it are counted on your dashboard. The link is the same forever, so bookmark /invite and re-use it. (2) /referrals is the paid InfoHub Affiliate Program: 20% recurring lifetime commission on every referred subscription, USDT payouts on Solana/Arbitrum/Base ($25 min), 90-day attribution cookie, and the referred friend gets 10% off their subscription forever. The exchange affiliate links you see embedded in spreads / funding / scanner pages (Bybit, MEXC, Hyperliquid, etc.) are separate \u2014 they\'re fee-discount perks for trading on the venues, not part of the InfoHub program.',
   },
   {
     category: 'General',
@@ -111,12 +111,12 @@ const faqs: FAQEntry[] = [
   {
     category: 'Data & Features',
     q: 'Can I track other traders’ wallets?',
-    a: 'Yes — /watch lets you paste any Hyperliquid or gTrade address and get Telegram pings the moment they open, close, resize, get close to liq, take realized PnL, or pay funding. Six trigger types per wallet, each individually toggleable. Limits depend on your tier (10 Free / 30 Trader / 200 Pro / ∞ Whale — see /pricing). Polled every 60 seconds via our snapshot cron. The "Test ping" button verifies your Telegram link before any real event fires.',
+    a: 'Yes — /watch lets you paste any Hyperliquid or gTrade address and get Telegram pings the moment they open, close, resize, get close to liq, take realized PnL, or pay funding. Six trigger types per wallet, each individually toggleable. Limits depend on your tier (5 Free / 30 Trader / 200 Pro / ∞ Whale — see /pricing). Polled every 60 seconds via our snapshot cron. The "Test ping" button verifies your Telegram link before any real event fires.',
   },
   {
     category: 'Data & Features',
     q: 'Is there a public API?',
-    a: `Yes — /developers/docs has the full reference. Free tier covers basically everything: tickers, funding, OI, liquidations, arbitrage, spreads, klines, options. Every fee-aware endpoint returns the canonical fee schedule with a versioned identifier so partners can verify the assumption baked into net-PnL calculations. Rate limits scale with tier: ${FREE_TIER_PER_MINUTE} req/min (Free), ${TRADER_TIER_PER_MINUTE} (Trader), ${PRO_TIER_PER_MINUTE} (Pro), unlimited (Whale). OpenAPI 3.1 spec at /api/v1/openapi.`,
+    a: `Yes — a free account is required to get your API key (sign up at /login, then generate a key at /account/api-keys). The free tier covers everything: tickers, funding, OI, liquidations, arbitrage, spreads, klines, options. Every fee-aware endpoint returns the canonical fee schedule with a versioned identifier so partners can verify the assumption baked into net-PnL calculations. Rate limits scale with tier: ${FREE_TIER_PER_MINUTE} req/min (Free), ${TRADER_TIER_PER_MINUTE} (Trader), ${PRO_TIER_PER_MINUTE} (Pro), unlimited (Whale). Full reference and OpenAPI 3.1 spec at /developers/docs.`,
   },
   {
     category: 'Data & Features',

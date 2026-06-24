@@ -10,7 +10,7 @@ import DataFreshness from '@/components/DataFreshness';
 
 interface PredictionMarket {
   id: string;
-  source: 'polymarket' | 'manifold';
+  source: 'polymarket' | 'kalshi';
   question: string;
   slug?: string;
   url: string;
@@ -23,21 +23,21 @@ interface PredictionMarket {
   endDate: string | null;
   traders?: number;
   polyOdds?: number;
-  manifoldOdds?: number;
+  kalshiOdds?: number;
 }
 
 interface ApiResponse {
   markets: PredictionMarket[];
   meta: {
     polymarketCount: number;
-    manifoldCount: number;
+    kalshiCount: number;
     fetchedAt: number;
     sources: string[];
   };
 }
 
 const CATEGORIES = ['All', 'Crypto', 'Politics', 'Sports', 'Science/Tech', 'Other'];
-const SOURCES = ['All', 'Polymarket', 'Manifold'];
+const SOURCES = ['All', 'Polymarket', 'Kalshi'];
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
 
@@ -69,8 +69,8 @@ function oddsColor(odds: number): string {
 }
 
 function arbGap(pm: PredictionMarket): number | null {
-  if (pm.polyOdds == null || pm.manifoldOdds == null) return null;
-  return Math.abs(pm.polyOdds - pm.manifoldOdds);
+  if (pm.polyOdds == null || pm.kalshiOdds == null) return null;
+  return Math.abs(pm.polyOdds - pm.kalshiOdds);
 }
 
 /* ── Market card ─────────────────────────────────────────────────── */
@@ -120,7 +120,7 @@ function MarketCard({ m }: { m: PredictionMarket }) {
       {hasArb && (
         <div className="mb-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-hub-yellow/10 border border-hub-yellow/20 text-[10px] font-bold text-hub-yellow">
           <Activity className="w-2.5 h-2.5" />
-          ARB {(gap! * 100).toFixed(1)}% gap · Poly {fmtPct(m.polyOdds!)} vs Manifold {fmtPct(m.manifoldOdds!)}
+          ARB {(gap! * 100).toFixed(1)}% gap · Poly {fmtPct(m.polyOdds!)} vs Kalshi {fmtPct(m.kalshiOdds!)}
         </div>
       )}
 
@@ -153,9 +153,9 @@ function MarketCard({ m }: { m: PredictionMarket }) {
           <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
             m.source === 'polymarket'
               ? 'bg-violet-400/10 text-violet-400'
-              : 'bg-sky-400/10 text-sky-400'
+              : 'bg-emerald-400/10 text-emerald-400'
           }`}>
-            {m.source === 'polymarket' ? 'Poly' : 'Manifold'}
+            {m.source === 'polymarket' ? 'Poly' : 'Kalshi'}
           </span>
           <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-neutral-500 font-medium">
             {m.category}
@@ -212,7 +212,7 @@ export default function PredictionMarketsPage() {
     // Filters
     if (category !== 'All') markets = markets.filter(m => m.category === category);
     if (source === 'Polymarket') markets = markets.filter(m => m.source === 'polymarket');
-    else if (source === 'Manifold') markets = markets.filter(m => m.source === 'manifold');
+    else if (source === 'Kalshi') markets = markets.filter(m => m.source === 'kalshi');
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       markets = markets.filter(m => m.question.toLowerCase().includes(q));
@@ -271,7 +271,7 @@ export default function PredictionMarketsPage() {
             <span className="text-hub-yellow">Prediction</span> Markets
           </h1>
           <p className="text-[13px] text-neutral-400 mt-2 max-w-xl leading-relaxed">
-            Live odds from Polymarket and Manifold. Markets highlighted in yellow have a ≥5% price gap between platforms — a potential arb opportunity.
+            Live odds from Polymarket and Kalshi. Markets highlighted in yellow have a ≥5% price gap between platforms — a potential arb opportunity.
           </p>
 
           {/* Meta stats */}
@@ -387,7 +387,7 @@ export default function PredictionMarketsPage() {
 
         {/* Disclaimer */}
         <p className="text-[10px] text-neutral-700 mt-8 text-center leading-relaxed">
-          Data from Polymarket and Manifold Markets. Not financial advice.
+          Data from Polymarket and Kalshi. Not financial advice.
           Odds represent market consensus, not guaranteed outcomes.
           Trading prediction markets may be restricted in your jurisdiction.
         </p>
