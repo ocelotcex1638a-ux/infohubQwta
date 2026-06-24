@@ -26,25 +26,63 @@ interface PolyMarket {
   enableOrderBook?: boolean;
 }
 
-interface KalshiMarket {
+// Kalshi's public market data lives on the elections host. The old
+// trading-api.kalshi.com host now requires an authed session (401), and
+// the v2 schema switched from integer cents to dollar strings (e.g.
+// "0.0170" = 1.7% implied probability), so all the *_dollars fields are
+// already in 0..1 — no /100 conversion. The bare /markets list is
+// flooded with zero-volume multivariate sports parlays; the /events
+// feed with nested markets is the only way to get the recognizable
+// headline questions ("2028 President", "GTA VI price", etc).
+interface KalshiNestedMarket {
   ticker: string;
-  title: string;
-  yes_bid?: number;    // cents (0–100)
-  yes_ask?: number;
-  no_bid?: number;
-  no_ask?: number;
-  last_price?: number; // cents
-  volume?: number;     // contracts
-  volume_24h?: number;
-  liquidity?: number;
+  title?: string;
+  yes_sub_title?: string;
+  yes_bid_dollars?: string;
+  yes_ask_dollars?: string;
+  last_price_dollars?: string;
+  volume_fp?: string;
+  volume_24h_fp?: string;
+  liquidity_dollars?: string;
+  open_interest_fp?: string;
   close_time?: string;
-  category?: string;
   status?: string;
 }
 
-interface KalshiResponse {
-  markets: KalshiMarket[];
+interface KalshiEvent {
+  event_ticker: string;
+  series_ticker: string;
+  title: string;
+  sub_title?: string;
+  category?: string;
+  markets?: KalshiNestedMarket[];
+}
+
+interface KalshiEventsResponse {
+  events: KalshiEvent[];
   cursor?: string;
+}
+
+/** Parse a Kalshi numeric string field ("0.0170", "122446.21") → number. */
+function kNum(s: string | number | undefined | null): number {
+  if (s == null) return 0;
+  const n = typeof s === 'number' ? s : parseFloat(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Map Kalshi's event category onto the 5 buckets the UI filters on.
+ *  Kalshi's real categories (Jun 2026): Politics, Sports, Entertainment,
+ *  Elections, Science and Technology, Economics, Climate and Weather,
+ *  Companies, Financials, World, Health, Social, Transportation.
+ *  NB: keyword tests must be specific — a loose `'ai'` substring matches
+ *  "entertAInment" and miscategorizes 31 events as Science/Tech. */
+function mapKalshiCategory(cat?: string): string {
+  const c = (cat || '').toLowerCase();
+  if (c.includes('crypto') || c.includes('bitcoin') || c.includes('ethereum')) return 'Crypto';
+  if (c.includes('sport')) return 'Sports';
+  if (c.includes('science') || c.includes('technology') || c.includes('climate') || c.includes('weather')) return 'Science/Tech';
+  if (c.includes('polit') || c.includes('election') || c.includes('econ') || c.includes('financ') || c.includes('world') || c.includes('fed')) return 'Politics';
+  return 'Other';
 }
 
 export interface PredictionMarket {
@@ -108,14 +146,16 @@ async function fetchPolymarket(): Promise<PredictionMarket[]> {
     const vol24h = m.volume24hr ?? 0;
     const totalVol = m.volume ?? 0;
 
+    // Keyword tests must be specific: a bare 'eth' substring matches
+    // "ethics"/"whether" and 'ai' matches "entertainment"/"ukraine".
     const rawTag = (m.tags?.[0] || m.category || '').toLowerCase();
-    const category = rawTag.includes('crypto') || rawTag.includes('bitcoin') || rawTag.includes('eth')
+    const category = rawTag.includes('crypto') || rawTag.includes('bitcoin') || rawTag.includes('ethereum')
       ? 'Crypto'
       : rawTag.includes('politic') || rawTag.includes('election') || rawTag.includes('trump') || rawTag.includes('president')
       ? 'Politics'
       : rawTag.includes('sport') || rawTag.includes('nba') || rawTag.includes('nfl') || rawTag.includes('soccer')
       ? 'Sports'
-      : rawTag.includes('science') || rawTag.includes('tech') || rawTag.includes('ai')
+      : rawTag.includes('science') || rawTag.includes('tech')
       ? 'Science/Tech'
       : 'Other';
 
@@ -141,54 +181,70 @@ async function fetchPolymarket(): Promise<PredictionMarket[]> {
 
 async function fetchKalshi(): Promise<PredictionMarket[]> {
   const res = await fetch(
-    'https://trading-api.kalshi.com/trade-api/v2/markets?status=open&limit=100',
+    'https://api.elections.kalshi.com/trade-api/v2/events?status=open&limit=200&with_nested_markets=true',
     {
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(9000),
       headers: { 'Accept': 'application/json' },
     },
   );
   if (!res.ok) throw new Error(`Kalshi ${res.status}`);
-  const data: KalshiResponse = await res.json();
+  const data: KalshiEventsResponse = await res.json();
+  const events = data.events ?? [];
 
-  const markets = data.markets ?? [];
-  return markets
-    .filter(m => m.status === 'open' && m.title)
-    .map(m => {
-      // Kalshi prices are in cents (0–100); convert to 0..1
-      const yesMid = m.yes_bid != null && m.yes_ask != null
-        ? ((m.yes_bid + m.yes_ask) / 2) / 100
-        : m.last_price != null
-        ? m.last_price / 100
-        : 0.5;
-      const yesOdds = Math.min(1, Math.max(0, yesMid));
-      const noOdds  = 1 - yesOdds;
+  // Flatten (event, market) pairs and sort by 24h volume so the leading
+  // outcome of each event surfaces first.
+  const pairs: { ev: KalshiEvent; m: KalshiNestedMarket; v24: number }[] = [];
+  for (const ev of events) {
+    for (const m of ev.markets ?? []) {
+      if (m.status && m.status !== 'active' && m.status !== 'open') continue;
+      pairs.push({ ev, m, v24: kNum(m.volume_24h_fp) });
+    }
+  }
+  pairs.sort((a, b) => b.v24 - a.v24);
 
-      const rawCat = (m.category || '').toLowerCase();
-      const category = rawCat.includes('crypto') || rawCat.includes('bitcoin')
-        ? 'Crypto'
-        : rawCat.includes('polit') || rawCat.includes('election') || rawCat.includes('fed')
-        ? 'Politics'
-        : rawCat.includes('sport') || rawCat.includes('nfl') || rawCat.includes('nba')
-        ? 'Sports'
-        : rawCat.includes('tech') || rawCat.includes('science')
-        ? 'Science/Tech'
-        : 'Other';
+  const out: PredictionMarket[] = [];
+  const perEvent = new Map<string, number>();
 
-      return {
-        id: `kalshi:${m.ticker}`,
-        source: 'kalshi' as const,
-        question: m.title,
-        url: `https://kalshi.com/markets/${m.ticker}`,
-        yesOdds,
-        noOdds,
-        volume24h: m.volume_24h ?? 0,
-        totalVolume: m.volume ?? 0,
-        liquidity: m.liquidity ?? 0,
-        category,
-        endDate: m.close_time ?? null,
-        kalshiOdds: yesOdds,
-      };
+  for (const { ev, m, v24 } of pairs) {
+    const yb = kNum(m.yes_bid_dollars);
+    const ya = kNum(m.yes_ask_dollars);
+    const last = kNum(m.last_price_dollars);
+    // Skip markets with no real pricing signal at all (no book, no trade).
+    if (yb === 0 && ya === 0 && last === 0) continue;
+
+    const yesMid = yb > 0 && ya > 0 ? (yb + ya) / 2 : last > 0 ? last : 0.5;
+    const yesOdds = Math.min(1, Math.max(0, yesMid));
+
+    // Cap to 2 outcomes per event so a 20-candidate election doesn't
+    // dominate the whole list.
+    const seen = perEvent.get(ev.event_ticker) ?? 0;
+    if (seen >= 2) continue;
+    perEvent.set(ev.event_ticker, seen + 1);
+
+    // Readable question — append the outcome label when it disambiguates
+    // (multi-outcome events) and isn't already echoed in the title.
+    const sub = (m.yes_sub_title || '').trim();
+    const question = sub && !ev.title.toLowerCase().includes(sub.toLowerCase())
+      ? `${ev.title} — ${sub}`
+      : ev.title;
+
+    out.push({
+      id: `kalshi:${m.ticker}`,
+      source: 'kalshi',
+      question,
+      url: `https://kalshi.com/markets/${ev.series_ticker.toLowerCase()}`,
+      yesOdds,
+      noOdds: 1 - yesOdds,
+      volume24h: v24,
+      totalVolume: kNum(m.volume_fp),
+      liquidity: kNum(m.liquidity_dollars),
+      category: mapKalshiCategory(ev.category),
+      endDate: m.close_time ?? null,
+      kalshiOdds: yesOdds,
     });
+  }
+
+  return out;
 }
 
 export async function GET(_req: NextRequest) {
@@ -221,8 +277,8 @@ export async function GET(_req: NextRequest) {
     }
   }
 
-  // Kalshi sorted by volume desc, take top 20
-  const kalshiByVol = kalshiMarkets.sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 20);
+  // Kalshi already sorted by 24h volume in the fetcher; take the top 25.
+  const kalshiByVol = kalshiMarkets.slice(0, 25);
 
   const markets = [...polyByVol, ...kalshiByVol];
 
