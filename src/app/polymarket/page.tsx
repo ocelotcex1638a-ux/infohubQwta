@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { TrendingUp, RefreshCw, ExternalLink, Search, ChevronUp, ChevronDown, Activity } from 'lucide-react';
 import DataFreshness from '@/components/DataFreshness';
+import TrackedMarkets from './TrackedMarkets';
 
 /* ── Types ───────────────────────────────────────────────────────── */
 
@@ -284,10 +285,6 @@ export default function PredictionMarketsPage() {
                 <span className="text-sm font-bold text-white">{data.markets.length}</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.07]">
-                <span className="text-[9px] uppercase tracking-widest text-neutral-500">Cross-listed</span>
-                <span className="text-sm font-bold text-white">{data.meta.matchedCount ?? 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.07]">
                 <span className="text-[9px] uppercase tracking-widest text-neutral-500">Arb ≥5%</span>
                 <span className="text-sm font-bold text-hub-yellow">{arbMarkets}</span>
               </div>
@@ -310,29 +307,11 @@ export default function PredictionMarketsPage() {
           )}
         </header>
 
-        {/* Arb context — cross-platform arb is genuinely rare (the venues
-            mostly list different events; where they overlap the odds tend
-            to agree). Explain the zero state so it reads as intentional,
-            not broken. */}
-        {data && !loading && !error && arbMarkets === 0 && (
-          <div className="mb-5 rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 text-[12px] leading-relaxed text-neutral-400">
-            {(data.meta.matchedCount ?? 0) > 0 ? (
-              <>
-                <span className="text-neutral-200 font-semibold">No ≥5% arb right now.</span>{' '}
-                {data.meta.matchedCount} market{(data.meta.matchedCount ?? 0) === 1 ? ' is' : 's are'} listed on
-                both Polymarket and Kalshi, and their odds currently agree. A gap opens here whenever the two
-                venues diverge — these are efficient markets, so it doesn&apos;t happen often.
-              </>
-            ) : (
-              <>
-                <span className="text-neutral-200 font-semibold">No cross-listed markets right now.</span>{' '}
-                Polymarket and Kalshi are tracking mostly different events at the moment, so there&apos;s no
-                shared market to compare. Both feeds are live below — cross-platform arb appears here once their
-                coverage overlaps.
-              </>
-            )}
-          </div>
-        )}
+        {/* Curated cross-venue board — the markets that genuinely exist on
+            both platforms (crypto strikes + FOMC), matched on structured
+            fields. This is the high-signal counterpart to the fuzzy
+            full-list comparison below. */}
+        <TrackedMarkets />
 
         {/* Controls */}
         <div className="flex flex-wrap gap-3 mb-5">
