@@ -52,15 +52,17 @@ function PairRow({ p }: { p: TrackedPair }) {
       <div className="flex items-center gap-2 mt-3 text-[13px]">
         <a
           href={p.polyUrl} target="_blank" rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-between gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 py-1.5 hover:border-sky-400/30 group"
+          aria-label={`${p.label} on Polymarket: ${pct(p.polyOdds)} (opens in new tab)`}
+          className="flex-1 flex items-center justify-between gap-2 min-h-[38px] rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 py-1.5 hover:border-sky-400/30 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
         >
           <span className="text-[11px] text-neutral-500 group-hover:text-sky-300">Polymarket</span>
           <span className="font-bold text-white tabular-nums">{pct(p.polyOdds)}</span>
         </a>
-        <ArrowLeftRight className="w-3.5 h-3.5 text-neutral-600 shrink-0" />
+        <ArrowLeftRight className="w-3.5 h-3.5 text-neutral-600 shrink-0" aria-hidden="true" />
         <a
           href={p.kalshiUrl} target="_blank" rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-between gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 py-1.5 hover:border-emerald-400/30 group"
+          aria-label={`${p.label} on Kalshi: ${pct(p.kalshiOdds)} (opens in new tab)`}
+          className="flex-1 flex items-center justify-between gap-2 min-h-[38px] rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 py-1.5 hover:border-emerald-400/30 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
         >
           <span className="text-[11px] text-neutral-500 group-hover:text-emerald-300">Kalshi</span>
           <span className="font-bold text-white tabular-nums">{pct(p.kalshiOdds)}</span>
@@ -105,15 +107,15 @@ export default function TrackedMarkets() {
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400/15 to-emerald-400/[0.03] border border-emerald-400/20 flex items-center justify-center">
-            <Target className="w-4 h-4 text-emerald-400" />
+            <Target className="w-4 h-4 text-emerald-400" aria-hidden="true" />
           </div>
           <div>
             <h2 className="text-base font-bold text-white leading-tight">Tracked Markets</h2>
             <p className="text-[11px] text-neutral-500">Same contract on both venues — matched on strike/date (crypto) and meeting/move (Fed)</p>
           </div>
         </div>
-        <button onClick={load} className="p-1.5 rounded-lg text-neutral-500 hover:text-white transition-colors" aria-label="Refresh tracked markets">
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        <button type="button" onClick={load} disabled={loading} className="inline-flex items-center justify-center min-h-[38px] min-w-[38px] rounded-lg text-neutral-500 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 disabled:opacity-60" aria-label="Refresh tracked markets">
+          <RefreshCw className={`w-4 h-4 motion-reduce:animate-none ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
         </button>
       </div>
 
@@ -127,7 +129,7 @@ export default function TrackedMarkets() {
       {loading && !data ? (
         <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-[104px] rounded-xl border border-white/[0.05] bg-white/[0.015] animate-pulse" />
+            <div key={i} className="h-[104px] rounded-xl border border-white/[0.05] bg-white/[0.015] animate-pulse motion-reduce:animate-none" />
           ))}
         </div>
       ) : pairs.length === 0 ? (
@@ -142,7 +144,7 @@ export default function TrackedMarkets() {
       )}
 
       <div className="flex items-center gap-1.5 mt-2.5 text-[10px] text-neutral-600">
-        <ExternalLink className="w-3 h-3" />
+        <ExternalLink className="w-3 h-3" aria-hidden="true" />
         Tap either side to open the live market. Not financial advice.
       </div>
     </section>

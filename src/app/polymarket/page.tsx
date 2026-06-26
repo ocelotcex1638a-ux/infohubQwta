@@ -88,7 +88,7 @@ function MarketCard({ m }: { m: PredictionMarket }) {
       href={m.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="block bg-hub-darker border border-white/[0.06] rounded-xl p-4 hover:border-hub-yellow/30 hover:bg-white/[0.03] transition-all group"
+      className="block bg-hub-darker border border-white/[0.06] rounded-xl p-4 hover:border-hub-yellow/30 hover:bg-white/[0.03] transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/50"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -97,7 +97,7 @@ function MarketCard({ m }: { m: PredictionMarket }) {
             {m.question}
           </p>
         </div>
-        <ExternalLink className="w-3.5 h-3.5 text-neutral-600 group-hover:text-hub-yellow shrink-0 mt-0.5 transition-colors" />
+        <ExternalLink className="w-3.5 h-3.5 text-neutral-600 group-hover:text-hub-yellow shrink-0 mt-0.5 transition-colors" aria-hidden="true" />
       </div>
 
       {/* Odds bar */}
@@ -122,7 +122,7 @@ function MarketCard({ m }: { m: PredictionMarket }) {
       {/* Arb opportunity badge */}
       {hasArb && (
         <div className="mb-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-hub-yellow/10 border border-hub-yellow/20 text-[10px] font-bold text-hub-yellow">
-          <Activity className="w-2.5 h-2.5" />
+          <Activity className="w-2.5 h-2.5" aria-hidden="true" />
           ARB {(gap! * 100).toFixed(1)}% gap · Poly {fmtPct(m.polyOdds!)} vs Kalshi {fmtPct(m.kalshiOdds!)}
         </div>
       )}
@@ -246,13 +246,15 @@ export default function PredictionMarketsPage() {
     const active = sortKey === k;
     return (
       <button
+        type="button"
         onClick={() => handleSort(k)}
-        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+        aria-pressed={active}
+        className={`inline-flex items-center justify-center gap-1 min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/60 ${
           active ? 'bg-hub-yellow text-black' : 'bg-white/[0.04] text-neutral-400 hover:text-white'
         }`}
       >
         {label}
-        {active ? (sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
+        {active ? (sortAsc ? <ChevronUp className="w-3 h-3" aria-hidden="true" /> : <ChevronDown className="w-3 h-3" aria-hidden="true" />) : null}
       </button>
     );
   }
@@ -266,7 +268,7 @@ export default function PredictionMarketsPage() {
         <header className="mb-6">
           <div className="inline-flex items-center gap-2 mb-2">
             <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-hub-yellow/20 to-hub-yellow/[0.04] border border-hub-yellow/20 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-hub-yellow" />
+              <TrendingUp className="w-4 h-4 text-hub-yellow" aria-hidden="true" />
             </div>
             <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-500 font-bold">Prediction Markets</span>
           </div>
@@ -298,10 +300,13 @@ export default function PredictionMarketsPage() {
                 </div>
               )}
               <button
+                type="button"
                 onClick={fetchData}
-                className="p-1.5 rounded-lg text-neutral-500 hover:text-white transition-colors"
+                disabled={loading}
+                aria-label="Refresh markets"
+                className="inline-flex items-center justify-center min-h-[38px] min-w-[38px] rounded-lg text-neutral-500 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/60 disabled:opacity-60"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 motion-reduce:animate-none ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
               </button>
             </div>
           )}
@@ -317,13 +322,16 @@ export default function PredictionMarketsPage() {
         <div className="flex flex-wrap gap-3 mb-5">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 pointer-events-none" aria-hidden="true" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search markets…"
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-hub-yellow/50"
+              aria-label="Search markets"
+              autoComplete="off"
+              spellCheck={false}
+              className="w-full min-h-[38px] bg-white/[0.04] border border-white/[0.08] rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/60 focus:border-hub-yellow/50"
             />
           </div>
 
@@ -332,8 +340,10 @@ export default function PredictionMarketsPage() {
             {CATEGORIES.map(c => (
               <button
                 key={c}
+                type="button"
                 onClick={() => setCategory(c)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                aria-pressed={category === c}
+                className={`inline-flex items-center justify-center min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/60 ${
                   category === c ? 'bg-hub-yellow text-black' : 'bg-white/[0.04] text-neutral-400 hover:text-white'
                 }`}
               >
@@ -347,8 +357,10 @@ export default function PredictionMarketsPage() {
             {SOURCES.map(s => (
               <button
                 key={s}
+                type="button"
                 onClick={() => setSource(s)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                aria-pressed={source === s}
+                className={`inline-flex items-center justify-center min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/60 ${
                   source === s ? 'bg-hub-yellow text-black' : 'bg-white/[0.04] text-neutral-400 hover:text-white'
                 }`}
               >
@@ -370,15 +382,19 @@ export default function PredictionMarketsPage() {
 
         {/* Content */}
         {loading && (
-          <div className="flex items-center justify-center py-24 text-neutral-500">
-            <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Loading prediction markets…
+          <div className="flex items-center justify-center py-24 text-neutral-500" aria-live="polite">
+            <RefreshCw className="w-5 h-5 animate-spin motion-reduce:animate-none mr-2" aria-hidden="true" /> Loading prediction markets…
           </div>
         )}
 
         {error && !loading && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
-            <p className="text-red-400 text-sm">{error}</p>
-            <button onClick={fetchData} className="mt-3 text-xs text-neutral-400 hover:text-white underline">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center" role="alert">
+            <p className="text-red-400 text-sm">Couldn&apos;t load markets ({error}). Check your connection and try again.</p>
+            <button
+              type="button"
+              onClick={fetchData}
+              className="mt-3 inline-flex items-center justify-center min-h-[38px] px-3 text-xs text-neutral-300 hover:text-white underline rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hub-yellow/60"
+            >
               Retry
             </button>
           </div>
