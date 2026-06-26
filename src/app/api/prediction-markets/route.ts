@@ -24,6 +24,26 @@ interface PolyMarket {
   startDate?: string;
   negRisk?: boolean;
   enableOrderBook?: boolean;
+  // Gamma /markets returns category/tags = null, but each market carries
+  // its parent event ({slug,title}) and a groupItemTitle (the outcome,
+  // e.g. "Ecuador"). We use the event slug to collapse multi-outcome
+  // families so one event ("world-cup-winner") doesn't flood the list
+  // with 35 near-0% team longshots.
+  events?: Array<{ slug?: string; title?: string; ticker?: string }>;
+  groupItemTitle?: string;
+}
+
+/** Categorize a market from its QUESTION text. Polymarket's gamma feed
+ *  returns category/tags = null, so the old tag-based mapping put every
+ *  market in "Other"; deriving from the question is the only signal.
+ *  Word-boundaried so 'ai' doesn't match "entertainment". */
+function categorizeQuestion(text: string): string {
+  const q = text.toLowerCase();
+  if (/\bbitcoin\b|\bethereum\b|\bcrypto\b|\bsolana\b|dogecoin|\bxrp\b|\bnft\b|\bstablecoin\b/.test(q)) return 'Crypto';
+  if (/world cup|\bfifa\b|\bnba\b|\bnfl\b|super bowl|wimbledon|tennis|\bsoccer\b|\bgolf\b|olympic|champions league|premier league|\bmlb\b|\bnhl\b|grand prix|\bf1\b|\bufc\b|heavyweight|ballon|playoff|\bopen\b.*winner|\bwin on \d{4}-\d{2}-\d{2}/.test(q)) return 'Sports';
+  if (/president|election|prime minister|\bsenate\b|\bcongress\b|\btrump\b|governor|parliament|nominee|nomination|attorney general|secretary of|impeach|cabinet|\bmayor\b|chancellor|referendum|\bpoll\b/.test(q)) return 'Politics';
+  if (/\bai\b|openai|anthropic|\bgpt\b|spacex|\bnasa\b|rocket|vaccine|climate|nobel|quantum|\btesla\b|iphone|\bgta\b|nvidia|satellite|\bllm\b/.test(q)) return 'Science/Tech';
+  return 'Other';
 }
 
 // Kalshi's public market data lives on the elections host. The old
@@ -179,7 +199,10 @@ async function fetchPolymarket(): Promise<PredictionMarket[]> {
   if (!res.ok) throw new Error(`Polymarket ${res.status}`);
   const data: PolyMarket[] = await res.json();
 
-  const markets: PredictionMarket[] = [];
+  // Build markets tagged with their parent event slug so we can collapse
+  // multi-outcome families afterwards.
+  type TaggedMarket = { pm: PredictionMarket; eventSlug: string | null };
+  const tagged: TaggedMarket[] = [];
   for (const m of data) {
     if (!m.question || m.closed || !m.active) continue;
 
@@ -200,40 +223,47 @@ async function fetchPolymarket(): Promise<PredictionMarket[]> {
       } catch { /* skip */ }
     }
 
-    const vol24h = m.volume24hr ?? 0;
-    const totalVol = m.volume ?? 0;
-
-    // Keyword tests must be specific: a bare 'eth' substring matches
-    // "ethics"/"whether" and 'ai' matches "entertainment"/"ukraine".
-    const rawTag = (m.tags?.[0] || m.category || '').toLowerCase();
-    const category = rawTag.includes('crypto') || rawTag.includes('bitcoin') || rawTag.includes('ethereum')
-      ? 'Crypto'
-      : rawTag.includes('politic') || rawTag.includes('election') || rawTag.includes('trump') || rawTag.includes('president')
-      ? 'Politics'
-      : rawTag.includes('sport') || rawTag.includes('nba') || rawTag.includes('nfl') || rawTag.includes('soccer')
-      ? 'Sports'
-      : rawTag.includes('science') || rawTag.includes('tech')
-      ? 'Science/Tech'
-      : 'Other';
-
-    markets.push({
-      id: `poly:${m.id}`,
-      source: 'polymarket',
-      question: m.question,
-      slug: m.slug,
-      url: m.slug ? `https://polymarket.com/event/${m.slug}` : 'https://polymarket.com/markets',
-      yesOdds: Math.min(1, Math.max(0, yesOdds)),
-      noOdds: Math.min(1, Math.max(0, noOdds)),
-      volume24h: vol24h,
-      totalVolume: totalVol,
-      liquidity: m.liquidityNum ?? 0,
-      category,
-      endDate: m.endDate ?? null,
-      polyOdds: yesOdds,
+    tagged.push({
+      eventSlug: m.events?.[0]?.slug ?? null,
+      pm: {
+        id: `poly:${m.id}`,
+        source: 'polymarket',
+        question: m.question,
+        slug: m.slug,
+        url: m.slug ? `https://polymarket.com/event/${m.slug}` : 'https://polymarket.com/markets',
+        yesOdds: Math.min(1, Math.max(0, yesOdds)),
+        noOdds: Math.min(1, Math.max(0, noOdds)),
+        volume24h: m.volume24hr ?? 0,
+        totalVolume: m.volume ?? 0,
+        liquidity: m.liquidityNum ?? 0,
+        category: categorizeQuestion(m.question),
+        endDate: m.endDate ?? null,
+        polyOdds: yesOdds,
+      },
     });
   }
 
-  return markets;
+  // Collapse multi-outcome event families to their top 3 by probability.
+  // "world-cup-winner" otherwise contributes ~35 near-0% team longshots
+  // that bury everything else; keeping the 3 favourites is the signal.
+  const PER_EVENT_CAP = 3;
+  const groups = new Map<string, TaggedMarket[]>();
+  const out: PredictionMarket[] = [];
+  for (const t of tagged) {
+    if (!t.eventSlug) { out.push(t.pm); continue; }
+    const g = groups.get(t.eventSlug);
+    if (g) g.push(t); else groups.set(t.eventSlug, [t]);
+  }
+  for (const g of Array.from(groups.values())) {
+    if (g.length <= PER_EVENT_CAP) { out.push(...g.map(x => x.pm)); continue; }
+    g.sort((a, b) => b.pm.yesOdds - a.pm.yesOdds);
+    out.push(...g.slice(0, PER_EVENT_CAP).map(x => x.pm));
+  }
+
+  // Drop near-settled longshots (≤2% / ≥98%). High-volume 0.1% markets
+  // ("Will Netanyahu enter Iran? 0.1%") carry no information for a browse
+  // list and bury the markets with genuine uncertainty.
+  return out.filter(m => m.yesOdds >= 0.02 && m.yesOdds <= 0.98);
 }
 
 async function fetchKalshi(): Promise<PredictionMarket[]> {
